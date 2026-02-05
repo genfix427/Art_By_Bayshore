@@ -28,42 +28,52 @@ import CategoryDetails from './pages/CategoryDetails.jsx';
 import Wishlist from './pages/Wishlist.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import About from './pages/About.jsx';
+import VerifyEmail from './pages/auth/VerifyEmail.jsx';
+import ResendVerification from './pages/auth/ResendVerification.jsx';
+import ForgotPassword from './pages/auth/ForgotPassword.jsx';
+import ResetPassword from './pages/auth/ResetPassword.jsx';
+import VerifyEmailPending from './pages/auth/VerifyEmailPending.jsx';
 
 function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <WishlistProvider>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            {/* Public Routes */}
-            <Route index element={<Home />} />
-            <Route path="products" element={<Products />} />
-            <Route path="products/:slug" element={<ProductDetail />} />
-            <Route path="artists" element={<Artists />} />
-            <Route path="artists/:slug" element={<ArtistDetails />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="categories/:slug" element={<CategoryDetails />} />
-            <Route path="contact" element={<ContactPage />} />
-            <Route path="about" element={<About />} />
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-            <Route path="newsletter/unsubscribe/:token" element={<NewsletterUnsubscribe />} />
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              {/* Public Routes */}
+              <Route index element={<Home />} />
+              <Route path="products" element={<Products />} />
+              <Route path="products/:slug" element={<ProductDetail />} />
+              <Route path="artists" element={<Artists />} />
+              <Route path="artists/:slug" element={<ArtistDetails />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="categories/:slug" element={<CategoryDetails />} />
+              <Route path="contact" element={<ContactPage />} />
+              <Route path="about" element={<About />} />
+              <Route path="login" element={<Login />} />
+              <Route path="register" element={<Register />} />
+              <Route path="/verify-email/:token" element={<VerifyEmail />} />
+              <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
+              <Route path="/resend-verification" element={<ResendVerification />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="newsletter/unsubscribe/:token" element={<NewsletterUnsubscribe />} />
 
-            {/* Protected Routes */}
-            <Route path="cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-            <Route path="wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
-            <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-            <Route path="order-confirmation/:orderId" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
-            <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-            <Route path="orders/:orderId" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
-            <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              {/* Protected Routes */}
+              <Route path="cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+              <Route path="wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+              <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+              <Route path="order-confirmation/:orderId" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
+              <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+              <Route path="orders/:orderId" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+              <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
-            {/* 404 */}
-            <Route path="404" element={<NotFound />} />
-            <Route path="*" element={<Navigate to="/404" replace />} />
-          </Route>
-        </Routes>
+              {/* 404 */}
+              <Route path="404" element={<NotFound />} />
+              <Route path="*" element={<Navigate to="/404" replace />} />
+            </Route>
+          </Routes>
         </WishlistProvider>
       </CartProvider>
     </AuthProvider>

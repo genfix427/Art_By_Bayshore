@@ -4,6 +4,7 @@ import {
   confirmPayment,
   getPaymentMethods,
   createSetupIntent,
+  getPaymentStatus,
 } from '../controllers/paymentController.js';
 import { protect } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
@@ -16,9 +17,11 @@ const router = express.Router();
 
 router.use(protect);
 
-router.post('/create-intent', createPaymentIntentValidator, validate, createPaymentIntent);
-router.post('/confirm', confirmPaymentValidator, validate, confirmPayment);
+// FIX: Pass validators TO the validate function
+router.post('/create-intent', validate(createPaymentIntentValidator), createPaymentIntent);
+router.post('/confirm', validate(confirmPaymentValidator), confirmPayment);
 router.get('/methods', getPaymentMethods);
 router.post('/setup-intent', createSetupIntent);
+router.get('/status/:paymentIntentId', getPaymentStatus);
 
 export default router;

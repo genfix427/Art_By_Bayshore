@@ -139,6 +139,7 @@ const server = app.listen(PORT, () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error(`Unhandled Rejection: ${err.message}`);
+  console.error("❌ Unhandled Rejection FULL ERROR:", err);
   console.error(`❌ Unhandled Rejection: ${err.message}`);
   server.close(() => process.exit(1));
 });
@@ -146,6 +147,7 @@ process.on('unhandledRejection', (err) => {
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   logger.error(`Uncaught Exception: ${err.message}`);
+  console.error("❌ Uncaught Exception FULL ERROR:", err);
   console.error(`❌ Uncaught Exception: ${err.message}`);
   process.exit(1);
 });

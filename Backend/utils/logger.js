@@ -60,15 +60,19 @@ const logger = winston.createLogger({
   format,
   transports,
   exceptionHandlers: [
-    new winston.transports.File({
-      filename: path.join(__dirname, '../logs/exceptions.log'),
-    }),
-  ],
+  new winston.transports.Console(),
+  new winston.transports.File({
+    filename: path.join(__dirname, '../logs/exceptions.log'),
+  }),
+],
+
   rejectionHandlers: [
-    new winston.transports.File({
-      filename: path.join(__dirname, '../logs/rejections.log'),
-    }),
-  ],
+  new winston.transports.Console(),
+  new winston.transports.File({
+    filename: path.join(__dirname, '../logs/rejections.log'),
+  }),
+],
+
 });
 
 export default logger;

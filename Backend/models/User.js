@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import validator from 'validator';
+import crypto from 'crypto';
 
 const addressSchema = new mongoose.Schema({
   fullName: {
@@ -121,7 +122,7 @@ const userSchema = new mongoose.Schema({
   stripeCustomerId: {
     type: String,
   },
-   wishlist: [{
+  wishlist: [{
     product: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
@@ -147,9 +148,11 @@ userSchema.virtual('fullName').get(function() {
 });
 
 // Index for better query performance
-userSchema.index({ email: 1 });
+userSchema.index({ email: 1 }); // ← UNCOMMENTED - This is important!
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
+userSchema.index({ emailVerificationToken: 1 }); // ← Added for faster verification lookups
+userSchema.index({ passwordResetToken: 1 }); // ← Added for faster reset lookups
 
 // Encrypt password before saving
 userSchema.pre('save', async function(next) {
@@ -213,6 +216,49 @@ userSchema.methods.resetLoginAttempts = function() {
     $set: { loginAttempts: 0 },
     $unset: { lockUntil: 1 }
   });
+};
+
+// Generate email verification token
+userSchema.methods.generateEmailVerificationToken = function() {
+  // Step 1: Generate random bytes and convert to hex string (this is the PLAIN token)
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  
+  console.log('🔐 Token Generation:');
+  console.log('Plain token generated:', verificationToken);
+  console.log('Plain token length:', verificationToken.length); // Should be 64
+  
+  // Step 2: Hash the plain token (this goes to the database)
+  this.emailVerificationToken = crypto
+    .createHash('sha256')
+    .update(verificationToken)
+    .digest('hex');
+  
+  console.log('Hashed token for DB:', this.emailVerificationToken);
+  console.log('Hashed token length:', this.emailVerificationToken.length); // Should be 64
+  
+  // Step 3: Set expiration
+  this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  
+  // Step 4: Return the PLAIN token (NOT the hashed one!)
+  return verificationToken;
+};
+
+// Generate password reset token
+userSchema.methods.generatePasswordResetToken = function() {
+  // Generate random token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token and set to passwordResetToken field
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  
+  // Set expire time to 1 hour
+  this.passwordResetExpire = Date.now() + 60 * 60 * 1000;
+  
+  // Return unhashed token (this is what goes in the email)
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

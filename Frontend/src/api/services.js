@@ -1,3 +1,4 @@
+// api/services.js
 import api from './axios';
 
 // Auth Services
@@ -8,6 +9,14 @@ export const authService = {
   getProfile: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/update-profile', data),
   updatePassword: (data) => api.put('/auth/update-password', data),
+  
+  // Email Verification
+  verifyEmail: (token) => api.get(`/auth/verify-email/${token}`),
+  resendVerification: (data) => api.post('/auth/resend-verification', data),
+  
+  // Password Reset
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (token, data) => api.put(`/auth/reset-password/${token}`, data),
 };
 
 // Product Services
@@ -82,6 +91,7 @@ export const newsletterService = {
   unsubscribe: (token) => api.get(`/newsletter/unsubscribe/${token}`),
 };
 
+// Wishlist Services
 export const wishlistService = {
   getWishlist: () => api.get('/wishlist'),
   addToWishlist: (productId) => api.post('/wishlist', { productId }),

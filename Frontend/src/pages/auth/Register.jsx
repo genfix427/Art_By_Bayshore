@@ -15,7 +15,6 @@ import {
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 // Floating petal component
 const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
@@ -55,24 +54,6 @@ const FlowerDecor = ({ className }) => (
     <ellipse cx="19" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
   </svg>
 );
-
-// Decorative corner
-const CornerDecor = ({ position }) => {
-  const positions = {
-    'top-left': 'top-0 left-0',
-    'top-right': 'top-0 right-0 rotate-90',
-    'bottom-left': 'bottom-0 left-0 -rotate-90',
-    'bottom-right': 'bottom-0 right-0 rotate-180',
-  };
-  
-  return (
-    <div className={`absolute w-8 h-8 ${positions[position]}`}>
-      <svg viewBox="0 0 32 32" className="w-full h-full text-gray-900/10">
-        <path d="M0 0 L32 0 L32 4 L4 4 L4 32 L0 32 Z" fill="currentColor" />
-      </svg>
-    </div>
-  );
-};
 
 // Password strength indicator
 const PasswordStrength = ({ password }) => {
@@ -139,7 +120,6 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focused, setFocused] = useState({});
   const [feedback, setFeedback] = useState({ show: false, message: '', type: 'success' });
-  const [step, setStep] = useState(1); // For multi-step animation
 
   // Generate floating petals
   const petals = Array.from({ length: 8 }).map((_, i) => ({
@@ -203,10 +183,13 @@ const Register = () => {
 
     try {
       await register(formData);
-      showFeedback('Account created successfully!', 'success');
-      setTimeout(() => navigate('/'), 1500);
+      setTimeout(() => {
+        navigate('/verify-email-pending', { 
+          state: { email: formData.email } 
+        });
+      }, 1500);
     } catch (error) {
-      showFeedback(error.message || 'Registration failed', 'error');
+      console.error('Registration error:', error);
     } finally {
       setLoading(false);
     }
@@ -308,7 +291,6 @@ const Register = () => {
           variants={itemVariants}
           className="relative bg-white border border-gray-900/10 p-8 sm:p-10"
         >
-
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
@@ -523,7 +505,7 @@ const Register = () => {
                 disabled={loading || !passwordsMatch}
                 whileHover={{ scale: loading ? 1 : 1.02 }}
                 whileTap={{ scale: loading ? 1 : 0.98 }}
-                className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
+                className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group cursor-pointer"
               >
                 {loading ? (
                   <>
@@ -539,16 +521,6 @@ const Register = () => {
               </motion.button>
             </motion.div>
           </form>
-
-          {/* Divider */}
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-900/10" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-900/40">or sign up with</span>
-            </div>
-          </div>
         </motion.div>
 
         {/* Login Link */}

@@ -15,8 +15,8 @@ const router = express.Router();
 
 router.use(protect);
 
-router.post('/validate-address', validateAddressValidator, validate, validateAddress);
-router.post('/calculate-rates', calculateRatesValidator, validate, calculateShippingRates);
+router.post('/validate-address', validate(validateAddressValidator), validateAddress);
+router.post('/calculate-rates', validate(calculateRatesValidator), calculateShippingRates);
 router.get('/track/:trackingNumber', trackShipment);
 
 export default router;
