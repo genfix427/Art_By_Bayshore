@@ -66,7 +66,7 @@ const InquiryForm = ({ product, onClose, onSuccess }) => {
         overflow: 'auto',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2>Ask for Price</h2>
+          <h2>Ask Upon Price</h2>
           <button
             onClick={onClose}
             style={{

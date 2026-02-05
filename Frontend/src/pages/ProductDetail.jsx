@@ -830,7 +830,7 @@ const ProductDetails = () => {
               {isAskForPrice ? (
                 <div>
                   <span className="font-playfair text-3xl font-bold text-gray-900">
-                    Price on Request
+                    Price Upon Request
                   </span>
                   <p className="text-sm text-gray-900/50 mt-2">
                     Contact us for pricing and availability

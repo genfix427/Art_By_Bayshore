@@ -107,7 +107,7 @@ const ProductFilters = ({ filters, onFilterChange }) => {
         >
           <option value="">All Types</option>
           <option value="price-based">Buy Now</option>
-          <option value="ask-for-price">Ask for Price</option>
+          <option value="ask-for-price">Ask Upon Price</option>
         </select>
       </div>
 

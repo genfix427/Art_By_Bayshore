@@ -229,7 +229,7 @@ const ProductCard = ({ product, index = 0 }) => {
           {isAskForPrice && (
             <div className="absolute top-4 left-4 z-10">
               <span className="bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                Ask for Price
+                Ask Upon Price
               </span>
             </div>
           )}
@@ -279,7 +279,7 @@ const ProductCard = ({ product, index = 0 }) => {
             <div className="flex items-baseline justify-center space-x-2 flex-wrap">
               {isAskForPrice ? (
                 <span className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
-                  Price on Request
+                  Price Upon Request
                 </span>
               ) : (
                 <>

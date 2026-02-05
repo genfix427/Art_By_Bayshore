@@ -1,29 +1,179 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useSEO } from '../hooks/useSEO.jsx';
 import { formatCurrency, getImageUrl } from '../utils/formatters';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import {
+  ShoppingBag,
+  Minus,
+  Plus,
+  Trash2,
+  X,
+  ArrowRight,
+  ArrowLeft,
+  Package,
+  ShieldCheck,
+  Gift,
+  Tag,
+  ChevronRight,
+  AlertCircle,
+  Check,
+  Loader2,
+  Heart,
+  Sparkles,
+  CreditCard,
+  RotateCcw,
+  Calculator,
+  Info
+} from 'lucide-react';
+
+// Floating petal component
+const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0"
+    style={{ left: `${startX}%`, top: "-5%" }}
+    initial={{ opacity: 0, y: -20, rotate: 0 }}
+    animate={{
+      opacity: [0, 0.08, 0.08, 0],
+      y: [-20, 400, 800],
+      rotate: [0, 180, 360],
+      x: [0, 30, -20],
+    }}
+    transition={{
+      duration: duration,
+      delay: delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-900">
+      <path
+        d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z"
+        fill="currentColor"
+      />
+    </svg>
+  </motion.div>
+);
+
+// Flower decoration component
+const FlowerDecor = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+    <ellipse cx="12" cy="5" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="12" cy="19" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="5" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+    <ellipse cx="19" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+  </svg>
+);
 
 const Cart = () => {
-  useSEO({ title: 'Shopping Cart' });
+  useSEO({ title: 'Shopping Cart | Art Haven' });
 
   const { cart, loading, updateCartItem, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
+  
+  const [updatingItem, setUpdatingItem] = useState(null);
+  const [removingItem, setRemovingItem] = useState(null);
+  const [clearing, setClearing] = useState(false);
+  const [feedback, setFeedback] = useState({ show: false, message: '', type: 'success' });
+  const [promoCode, setPromoCode] = useState('');
+  const [applyingPromo, setApplyingPromo] = useState(false);
+
+  // Generate floating petals
+  const petals = Array.from({ length: 8 }).map((_, i) => ({
+    delay: i * 2,
+    startX: 10 + i * 12,
+    duration: 18 + Math.random() * 10,
+    size: 10 + Math.random() * 8,
+  }));
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
+    exit: {
+      opacity: 0,
+      x: -100,
+      height: 0,
+      marginBottom: 0,
+      padding: 0,
+      transition: { duration: 0.3 },
+    },
+  };
+
+  const showFeedback = (message, type = 'success') => {
+    setFeedback({ show: true, message, type });
+    setTimeout(() => setFeedback({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const handleQuantityChange = async (itemId, newQuantity) => {
     if (newQuantity < 1) return;
-    await updateCartItem(itemId, newQuantity);
+    
+    setUpdatingItem(itemId);
+    try {
+      await updateCartItem(itemId, newQuantity);
+    } catch (error) {
+      showFeedback('Failed to update quantity', 'error');
+    } finally {
+      setUpdatingItem(null);
+    }
   };
 
   const handleRemoveItem = async (itemId) => {
-    if (window.confirm('Remove this item from cart?')) {
+    setRemovingItem(itemId);
+    try {
       await removeFromCart(itemId);
+      showFeedback('Item removed from cart');
+    } catch (error) {
+      showFeedback('Failed to remove item', 'error');
+    } finally {
+      setRemovingItem(null);
     }
   };
 
   const handleClearCart = async () => {
-    if (window.confirm('Are you sure you want to clear your cart?')) {
+    if (!window.confirm('Are you sure you want to clear your cart?')) return;
+    
+    setClearing(true);
+    try {
       await clearCart();
+      showFeedback('Cart cleared');
+    } catch (error) {
+      showFeedback('Failed to clear cart', 'error');
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    
+    setApplyingPromo(true);
+    try {
+      // Add your promo code API call here
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      showFeedback('Promo code applied!');
+      setPromoCode('');
+    } catch (error) {
+      showFeedback('Invalid promo code', 'error');
+    } finally {
+      setApplyingPromo(false);
     }
   };
 
@@ -31,266 +181,561 @@ const Cart = () => {
     navigate('/checkout');
   };
 
+  // Calculate subtotal only (shipping and taxes calculated at checkout)
+  const subtotal = cart?.subtotal || 0;
+
+  // Loading State
   if (loading && !cart) {
-    return <LoadingSpinner fullScreen />;
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border border-gray-900/20 flex items-center justify-center"
+        >
+          <div className="w-8 h-8 border-t border-gray-900" />
+        </motion.div>
+      </div>
+    );
   }
 
+  // Empty Cart State
   if (!cart || cart.items.length === 0) {
     return (
-      <div style={{
-        maxWidth: '800px',
-        margin: '0 auto',
-        padding: '4rem 2rem',
-        textAlign: 'center',
-      }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Your Cart is Empty</h1>
-        <p style={{ color: '#666', marginBottom: '2rem' }}>
-          Add some artworks to your cart to get started
-        </p>
-        <Link to="/products">
-          <button style={{
-            padding: '0.75rem 2rem',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-          }}>
-            Browse Products
-          </button>
-        </Link>
+      <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center px-4">
+        {/* Background Pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.02] pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
+
+        {/* Floating Petals */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {petals.map((petal, i) => (
+            <FloatingPetal key={i} {...petal} />
+          ))}
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 text-center max-w-md"
+        >
+          {/* Empty Cart Icon */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring" }}
+            className="relative w-32 h-32 mx-auto mb-8"
+          >
+            <div className="absolute inset-0 border border-gray-900/10 flex items-center justify-center">
+              <ShoppingBag className="w-16 h-16 text-gray-900/20" />
+            </div>
+            {/* Decorative elements */}
+            <motion.div
+              className="absolute -top-2 -right-2 w-6 h-6"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+            >
+              <FlowerDecor className="w-full h-full text-gray-900/10" />
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="w-16 h-px bg-gray-900 mx-auto mb-6"
+          />
+
+          <h1 className="font-playfair text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            Your Cart is Empty
+          </h1>
+          <p className="text-gray-900/50 mb-8 leading-relaxed">
+            Discover our curated collection of beautiful artworks and start building your personal gallery.
+          </p>
+
+          <Link to="/products">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-flex items-center gap-3 bg-gray-900 text-white px-8 py-4 font-medium hover:bg-gray-800 transition-colors group"
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>Explore Collection</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+          </Link>
+
+          {/* Benefits */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-16 grid grid-cols-3 gap-6"
+          >
+            {[
+              { icon: Calculator, label: 'Shipping', sublabel: 'Calculated at checkout' },
+              { icon: ShieldCheck, label: 'Secure Payment', sublabel: '100% Protected' },
+              { icon: RotateCcw, label: 'Easy Returns', sublabel: '30-Day Policy' },
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 + index * 0.1 }}
+                className="text-center"
+              >
+                <div className="w-12 h-12 mx-auto mb-3 border border-gray-900/10 flex items-center justify-center">
+                  <item.icon className="w-5 h-5 text-gray-900/40" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 block">{item.label}</span>
+                <span className="text-xs text-gray-900/40">{item.sublabel}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Shopping Cart ({cart.items.length} {cart.items.length === 1 ? 'item' : 'items'})</h1>
-        {cart.items.length > 0 && (
-          <button
-            onClick={handleClearCart}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Clear Cart
-          </button>
-        )}
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Floating Petals */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {petals.map((petal, i) => (
+          <FloatingPetal key={i} {...petal} />
+        ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-        {/* Cart Items */}
-        <div>
-          {cart.items.map((item) => (
-            <div
-              key={item._id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '120px 1fr auto',
-                gap: '1rem',
-                padding: '1rem',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                marginBottom: '1rem',
-              }}
+      {/* Feedback Toast */}
+      <AnimatePresence>
+        {feedback.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 shadow-lg ${
+              feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
+            } text-white`}
+          >
+            {feedback.type === 'error' ? (
+              <AlertCircle className="w-4 h-4" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
+            <span className="text-sm font-medium">{feedback.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        
+        {/* Breadcrumb */}
+        <motion.nav
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 text-sm text-gray-900/50 mb-8"
+        >
+          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-gray-900">Shopping Cart</span>
+        </motion.nav>
+
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10"
+        >
+          <div>
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.8 }}
+              className="w-12 h-px bg-gray-900 mb-6 origin-left"
+            />
+            <h1 className="font-playfair text-4xl lg:text-5xl font-bold text-gray-900 mb-2">
+              Shopping Cart
+            </h1>
+            <p className="text-gray-900/50">
+              {cart.items.length} {cart.items.length === 1 ? 'item' : 'items'} in your cart
+            </p>
+          </div>
+
+          {cart.items.length > 0 && (
+            <motion.button
+              onClick={handleClearCart}
+              disabled={clearing}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 text-sm font-medium cursor-pointer"
             >
-              {/* Product Image */}
-              <Link to={`/products/${item.product?.slug}`}>
-                <div style={{
-                  width: '120px',
-                  height: '120px',
-                  backgroundColor: '#f5f5f5',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                }}>
-                  {item.image && (
-                    <img
-                      src={getImageUrl(item.image)}
-                      alt={item.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  )}
-                </div>
+              {clearing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Clear Cart
+            </motion.button>
+          )}
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+          
+          {/* Cart Items */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="lg:col-span-2"
+          >
+            <div className="relative bg-white border border-gray-900/10">
+
+              <AnimatePresence mode="popLayout">
+                {cart.items.map((item, index) => {
+                  const isUpdating = updatingItem === item._id;
+                  const isRemoving = removingItem === item._id;
+                  const itemTotal = item.price * item.quantity;
+                  const isUnavailable = item.product && !item.product.isActive;
+                  const isLowStock = item.product && item.quantity > item.product.stockQuantity;
+
+                  return (
+                    <motion.div
+                      key={item._id}
+                      variants={itemVariants}
+                      layout
+                      exit="exit"
+                      className={`p-6 border-b border-gray-900/10 last:border-b-0 transition-opacity ${
+                        isRemoving ? 'opacity-50' : ''
+                      }`}
+                    >
+                      <div className="flex gap-4 sm:gap-6">
+                        {/* Product Image */}
+                        <Link 
+                          to={`/products/${item.product?.slug}`}
+                          className="flex-shrink-0 group"
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            className="w-24 h-24 sm:w-32 sm:h-32 border border-gray-900/10 overflow-hidden bg-gray-50 relative"
+                          >
+                            {item.image ? (
+                              <img
+                                src={getImageUrl(item.image)}
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="w-8 h-8 text-gray-300" />
+                              </div>
+                            )}
+                            
+                            {/* Unavailable overlay */}
+                            {isUnavailable && (
+                              <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                                <span className="text-xs text-red-600 font-medium">Unavailable</span>
+                              </div>
+                            )}
+                          </motion.div>
+                        </Link>
+
+                        {/* Product Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              <Link 
+                                to={`/products/${item.product?.slug}`}
+                                className="group"
+                              >
+                                <h3 className="font-playfair text-lg font-bold text-gray-900 truncate group-hover:text-gray-700 transition-colors">
+                                  {item.title}
+                                </h3>
+                              </Link>
+                              
+                              {item.product?.artist && (
+                                <p className="text-sm text-gray-900/50 mt-1">
+                                  by {item.product.artist.name}
+                                </p>
+                              )}
+
+                              {/* Price */}
+                              <div className="mt-3">
+                                <span className="font-playfair text-xl font-bold text-gray-900">
+                                  {formatCurrency(item.price)}
+                                </span>
+                              </div>
+
+                              {/* Warnings */}
+                              {isUnavailable && (
+                                <motion.p
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  className="flex items-center gap-1 text-red-600 text-sm mt-2"
+                                >
+                                  <AlertCircle className="w-4 h-4" />
+                                  This item is no longer available
+                                </motion.p>
+                              )}
+                              
+                              {isLowStock && !isUnavailable && (
+                                <motion.p
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  className="flex items-center gap-1 text-amber-600 text-sm mt-2"
+                                >
+                                  <AlertCircle className="w-4 h-4" />
+                                  Only {item.product.stockQuantity} available
+                                </motion.p>
+                              )}
+                            </div>
+
+                            {/* Remove Button (Mobile visible, Desktop on hover) */}
+                            <motion.button
+                              onClick={() => handleRemoveItem(item._id)}
+                              disabled={isRemoving}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className="w-8 h-8 flex items-center justify-center text-gray-900/30 hover:text-red-600 transition-colors self-start"
+                            >
+                              {isRemoving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <X className="w-5 h-5" />
+                              )}
+                            </motion.button>
+                          </div>
+
+                          {/* Quantity & Total Row */}
+                          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-900/5">
+                            {/* Quantity Control */}
+                            <div className="flex items-center">
+                              <span className="text-xs text-gray-900/40 uppercase tracking-wide mr-3">Qty</span>
+                              <div className="flex items-center border border-gray-900/10">
+                                <motion.button
+                                  onClick={() => handleQuantityChange(item._id, item.quantity - 1)}
+                                  disabled={isUpdating || item.quantity <= 1}
+                                  whileHover={{ backgroundColor: 'rgba(0,0,0,0.02)' }}
+                                  whileTap={{ scale: 0.95 }}
+                                  className="w-10 h-10 flex items-center justify-center text-gray-900/50 hover:text-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </motion.button>
+                                
+                                <div className="w-14 h-10 flex items-center justify-center border-x border-gray-900/10 bg-gray-50/50">
+                                  {isUpdating ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-gray-900/50" />
+                                  ) : (
+                                    <input
+                                      type="number"
+                                      value={item.quantity}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value);
+                                        if (val > 0 && val <= (item.product?.stockQuantity || 999)) {
+                                          handleQuantityChange(item._id, val);
+                                        }
+                                      }}
+                                      min="1"
+                                      max={item.product?.stockQuantity || 999}
+                                      className="w-full h-full text-center bg-transparent outline-none font-medium text-gray-900"
+                                    />
+                                  )}
+                                </div>
+                                
+                                <motion.button
+                                  onClick={() => handleQuantityChange(item._id, item.quantity + 1)}
+                                  disabled={isUpdating || item.quantity >= (item.product?.stockQuantity || 999)}
+                                  whileHover={{ backgroundColor: 'rgba(0,0,0,0.02)' }}
+                                  whileTap={{ scale: 0.95 }}
+                                  className="w-10 h-10 flex items-center justify-center text-gray-900/50 hover:text-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </motion.button>
+                              </div>
+                            </div>
+
+                            {/* Item Total */}
+                            <div className="text-right">
+                              <span className="text-xs text-gray-900/40 uppercase tracking-wide block mb-1">Total</span>
+                              <p className="font-playfair text-xl font-bold text-gray-900">
+                                {formatCurrency(itemTotal)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+
+            {/* Continue Shopping Link */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-8"
+            >
+              <Link
+                to="/products"
+                className="inline-flex items-center gap-2 text-gray-900/60 hover:text-gray-900 transition-colors group"
+              >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span className="relative">
+                  Continue Shopping
+                  <span className="absolute bottom-0 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-300" />
+                </span>
               </Link>
+            </motion.div>
+          </motion.div>
 
-              {/* Product Details */}
-              <div>
-                <Link
-                  to={`/products/${item.product?.slug}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
-                    {item.title}
-                  </h3>
-                </Link>
+          {/* Order Summary Sidebar */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="lg:col-span-1"
+          >
+            <div className="relative bg-white border border-gray-900/10 sticky top-8">
 
-                <p style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-                  {formatCurrency(item.price)}
-                </p>
+              {/* Header */}
+              <div className="p-6 border-b border-gray-900/10">
+                <h2 className="font-playfair text-xl font-bold text-gray-900">
+                  Order Summary
+                </h2>
+              </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: '4px' }}>
-                    <button
-                      onClick={() => handleQuantityChange(item._id, item.quantity - 1)}
-                      disabled={item.quantity <= 1 || loading}
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer',
-                        fontSize: '1.125rem',
-                      }}
-                    >
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (val > 0 && val <= item.product?.stockQuantity) {
-                          handleQuantityChange(item._id, val);
-                        }
-                      }}
-                      min="1"
-                      max={item.product?.stockQuantity}
-                      style={{
-                        width: '60px',
-                        textAlign: 'center',
-                        border: 'none',
-                        padding: '0.5rem',
-                      }}
-                    />
-                    <button
-                      onClick={() => handleQuantityChange(item._id, item.quantity + 1)}
-                      disabled={item.quantity >= (item.product?.stockQuantity || 999) || loading}
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        cursor: item.quantity >= (item.product?.stockQuantity || 999) ? 'not-allowed' : 'pointer',
-                        fontSize: '1.125rem',
-                      }}
-                    >
-                      +
-                    </button>
+              <div className="p-6">
+
+                {/* Price Breakdown */}
+                <div className="space-y-4 mb-6">
+                  <div className="flex justify-between text-gray-900/70">
+                    <span>Subtotal</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
                   </div>
 
-                  <button
-                    onClick={() => handleRemoveItem(item._id)}
-                    disabled={loading}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: 'transparent',
-                      color: '#dc3545',
-                      border: '1px solid #dc3545',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Remove
-                  </button>
+                  <div className="flex justify-between text-gray-900/50 text-sm">
+                    <span>Shipping</span>
+                    <span>Calculated at checkout</span>
+                  </div>
+
+                  <div className="flex justify-between text-gray-900/50 text-sm">
+                    <span>Tax</span>
+                    <span>Calculated at checkout</span>
+                  </div>
                 </div>
 
-                {item.product && !item.product.isActive && (
-                  <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                    This item is no longer available
+                {/* Total at Checkout */}
+                <div className="pt-4 border-t border-gray-900/10 mb-6">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-gray-900/70">Total at Checkout</span>
+                    <div className="text-right">
+                      <span className="text-sm text-gray-900/40 block">From</span>
+                      <span className="font-playfair text-2xl font-bold text-gray-900">
+                        {formatCurrency(subtotal)}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-900/40 mt-2">
+                    Final total will include shipping and applicable taxes
                   </p>
-                )}
+                </div>
 
-                {item.product && item.quantity > item.product.stockQuantity && (
-                  <p style={{ color: 'orange', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                    Only {item.product.stockQuantity} available
-                  </p>
-                )}
+                {/* Checkout Button */}
+                <motion.button
+                  onClick={handleCheckout}
+                  disabled={loading || cart.items.length === 0}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  <span>Proceed to Checkout</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </motion.button>
+
+                {/* Secondary Actions */}
+                <div className="mt-4 flex items-center justify-center gap-6">
+                  <Link
+                    to="/wishlist"
+                    className="inline-flex items-center gap-1.5 text-sm text-gray-900/50 hover:text-gray-900 transition-colors cursor-pointer"
+                  >
+                    <Heart className="w-4 h-4" />
+                    Wishlist
+                  </Link>
+                  <Link
+                    to="/products"
+                    className="inline-flex items-center gap-1.5 text-sm text-gray-900/50 hover:text-gray-900 transition-colors cursor-pointer"
+                  >
+                    <Package className="w-4 h-4" />
+                    Products
+                  </Link>
+                </div>
               </div>
 
-              {/* Item Total */}
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
-                  {formatCurrency(item.price * item.quantity)}
-                </p>
+              {/* Trust Badges */}
+              <div className="p-6 border-t border-gray-900/10 bg-gray-50/50">
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { icon: ShieldCheck, label: 'Secure' },
+                    { icon: Calculator, label: 'Shipping', sublabel: 'Calculated' },
+                    { icon: RotateCcw, label: '100%', sublabel: 'Original' },
+                  ].map((item, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1 }}
+                      className="text-center"
+                    >
+                      <item.icon className="w-4 h-4 mx-auto mb-1.5 text-gray-900/40" />
+                      <span className="text-[10px] text-gray-900/50 leading-tight block">
+                        {item.label}
+                        {item.sublabel && (
+                          <span className="block">{item.sublabel}</span>
+                        )}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Order Summary */}
-        <div>
-          <div style={{
-            position: 'sticky',
-            top: '100px',
-            padding: '1.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            backgroundColor: '#f9f9f9',
-          }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Order Summary</h3>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span>Subtotal:</span>
-                <span style={{ fontWeight: 'bold' }}>{formatCurrency(cart.subtotal)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#666' }}>
-                <span>Shipping:</span>
-                <span>Calculated at checkout</span>
-              </div>
-            </div>
-
-            <div style={{
-              borderTop: '1px solid #ddd',
-              paddingTop: '1rem',
-              marginBottom: '1.5rem',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold' }}>
-                <span>Total:</span>
-                <span>{formatCurrency(cart.subtotal)}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleCheckout}
-              disabled={loading || cart.items.length === 0}
-              style={{
-                width: '100%',
-                padding: '1rem',
-                backgroundColor: loading ? '#ccc' : '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '1.125rem',
-                fontWeight: 'bold',
-                marginBottom: '1rem',
-              }}
+            {/* Help Section */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="mt-6 text-center"
             >
-              Proceed to Checkout
-            </button>
-
-            <Link to="/products">
-              <button style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: 'transparent',
-                color: '#007bff',
-                border: '1px solid #007bff',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}>
-                Continue Shopping
-              </button>
-            </Link>
-          </div>
+              <p className="text-xs text-gray-900/40">
+                Need help? <Link to="/contact" className="text-gray-900 underline underline-offset-2 cursor-pointer">Contact us</Link>
+              </p>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
+
+      {/* Bottom Decoration */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 1.5 }}
+        className="w-32 h-px bg-gray-900/10 mx-auto my-16"
+      />
     </div>
   );
 };
