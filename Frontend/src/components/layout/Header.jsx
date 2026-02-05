@@ -37,7 +37,7 @@ const Header = () => {
   // Use `wishlistCount` from auth, but `cartItemsCount` from useCart
   const { isAuthenticated, user, logout, wishlistCount } = useAuth();
   const { cartItemsCount } = useCart(); // This is the source of truth for cart
-  
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -54,7 +54,7 @@ const Header = () => {
       setIsAvatarMenuOpen(false);
     }
   }, [navigate]);
-  
+
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -87,11 +87,11 @@ const Header = () => {
       <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-lg border-b border-neutral-200 shadow-sm font-playfair">
         <nav className="max-w-7xl !mx-auto !px-4 sm:!px-6 lg:!px-8">
           <div className="flex justify-between items-center h-20">
-            
+
             {/* Logo - Left */}
             <div className="flex-shrink-0">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="flex items-center !space-x-2 group"
                 title="ArtGallery Home"
               >
@@ -110,10 +110,9 @@ const Header = () => {
                   to={link.href}
                   end={link.end}
                   className={({ isActive }) =>
-                    `relative !py-2 text-base font-medium transition-all duration-200 ${
-                      isActive 
-                        ? 'text-gray-800' 
-                        : 'text-gray-600 hover:text-gray-900'
+                    `relative !py-2 text-base font-medium transition-all duration-200 ${isActive
+                      ? 'text-gray-800'
+                      : 'text-gray-600 hover:text-gray-900'
                     }`
                   }
                 >
@@ -135,27 +134,27 @@ const Header = () => {
 
             {/* Icons & Avatar - Right */}
             <div className="flex items-center !space-x-4">
-              
+
               {/* Wishlist Icon */}
               <Link
-  to="/wishlist"
-  className="relative !p-2 text-gray-600 hover:text-red-500 transition-all duration-200 hover:scale-110 group"
-  aria-label="Wishlist"
->
-  <Heart 
-    size={24} 
-    className="group-hover:fill-red-100 transition-all duration-200" 
-  />
-  {wishlistCount > 0 && (
-    <motion.span 
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg"
-    >
-      {wishlistCount > 99 ? '99+' : wishlistCount}
-    </motion.span>
-  )}
-</Link>
+                to="/wishlist"
+                className="relative !p-2 text-gray-600 hover:text-red-500 transition-all duration-200 hover:scale-110 group"
+                aria-label="Wishlist"
+              >
+                <Heart
+                  size={24}
+                  className="group-hover:fill-red-100 transition-all duration-200"
+                />
+                {wishlistCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg"
+                  >
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </motion.span>
+                )}
+              </Link>
 
               {/* Cart Icon */}
               <Link
@@ -163,13 +162,13 @@ const Header = () => {
                 className="relative !p-2 text-gray-600 hover:text-gray-700 transition-all duration-200 hover:scale-110 group"
                 aria-label="Cart"
               >
-                <ShoppingCart 
-                  size={24} 
-                  className="transition-all duration-200" 
+                <ShoppingCart
+                  size={24}
+                  className="transition-all duration-200"
                 />
                 {/* Use cartItemsCount from useCart */}
                 {cartItemsCount > 0 && (
-                  <motion.span 
+                  <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-gray-700 text-white text-xs font-bold rounded-full shadow-lg"
@@ -191,11 +190,10 @@ const Header = () => {
                       <div className="flex items-center justify-center w-10 h-10 bg-gray-700 text-white rounded-full font-semibold shadow-lg cursor-pointer text-lg !p-4">
                         {user?.name ? user.name[0].toUpperCase() : <User size={18} />}
                       </div>
-                      <ChevronDown 
-                        size={18} 
-                        className={`text-gray-500 transition-transform duration-200 ${
-                          isAvatarMenuOpen ? 'rotate-180' : ''
-                        }`} 
+                      <ChevronDown
+                        size={18}
+                        className={`text-gray-500 transition-transform duration-200 ${isAvatarMenuOpen ? 'rotate-180' : ''
+                          }`}
                       />
                     </button>
                     <AvatarDropdown
@@ -282,7 +280,7 @@ const AvatarDropdown = ({ isOpen, user, onLogout, onClose }) => (
             <User size={18} className="!mr-3 text-gray-400 group-hover:text-gray-700" />
             <span className="font-medium">My Profile</span>
           </Link>
-          
+
           <Link
             to="/orders"
             onClick={onClose}
@@ -307,15 +305,15 @@ const AvatarDropdown = ({ isOpen, user, onLogout, onClose }) => (
 );
 
 // Mobile Menu Component (Redesigned as a Slide-in Panel)
-const MobileMenu = ({ 
-  isOpen, 
-  navLinks, 
-  isAuthenticated, 
-  user, 
-  cartCount, 
-  wishlistCount, 
-  onLogout, 
-  onClose 
+const MobileMenu = ({
+  isOpen,
+  navLinks,
+  isAuthenticated,
+  user,
+  cartCount,
+  wishlistCount,
+  onLogout,
+  onClose
 }) => (
   <AnimatePresence>
     {isOpen && (
@@ -329,7 +327,7 @@ const MobileMenu = ({
           transition={{ duration: 0.3 }}
           onClick={onClose}
         />
-        
+
         {/* Panel */}
         <motion.div
           className="fixed inset-y-0 right-0 w-80 max-w-[calc(100%-4rem)] bg-white z-50 lg:hidden flex flex-col"
@@ -357,10 +355,9 @@ const MobileMenu = ({
                 end={link.end}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center !px-4 !py-3 text-lg font-medium rounded-xl transition-all duration-200 ${
-                    isActive 
-                      ? 'bg-gray-50 text-gray-700' 
-                      : 'text-gray-700 hover:bg-neutral-50'
+                  `flex items-center !px-4 !py-3 text-lg font-medium rounded-xl transition-all duration-200 ${isActive
+                    ? 'bg-gray-50 text-gray-700'
+                    : 'text-gray-700 hover:bg-neutral-50'
                   }`
                 }
               >
@@ -368,7 +365,7 @@ const MobileMenu = ({
               </NavLink>
             ))}
           </div>
-          
+
           {/* Auth & Actions Section */}
           <div className="!p-6 border-t border-neutral-200 !space-y-4">
             {isAuthenticated ? (
@@ -399,7 +396,7 @@ const MobileMenu = ({
                     <Package size={18} /> Orders
                   </Link>
                 </div>
-                
+
                 <button
                   onClick={() => {
                     onLogout();

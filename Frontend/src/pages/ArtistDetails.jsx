@@ -1,36 +1,113 @@
 // pages/ArtistDetails.jsx
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { 
   ArrowLeft, 
+  ArrowRight,
   Globe, 
   Calendar, 
   Award, 
   Palette,
   Star,
-  Sparkles,
   ExternalLink,
   MapPin,
   Instagram,
   Facebook,
   Twitter,
-  Link as LinkIcon,
-  Users,
-  ChevronRight
+  Mail
 } from 'lucide-react';
-import ArtistCard from '../components/artists/ArtistCard';
 import ProductCard from '../components/products/ProductCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { artistService, productService } from '../api/services';
 import { useSEO } from '../hooks/useSEO';
 
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&h=800&fit=crop&q=80';
+
+// Floating petal component
+const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0"
+    style={{ left: `${startX}%`, top: "-5%" }}
+    initial={{ opacity: 0, y: -20, rotate: 0 }}
+    animate={{
+      opacity: [0, 0.1, 0.1, 0],
+      y: [-20, 400, 800],
+      rotate: [0, 180, 360],
+      x: [0, 30, -20],
+    }}
+    transition={{
+      duration: duration,
+      delay: delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-900">
+      <path
+        d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z"
+        fill="currentColor"
+      />
+    </svg>
+  </motion.div>
+);
+
+// Flower decoration component
+const FlowerDecor = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+    <ellipse cx="12" cy="5" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="12" cy="19" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="5" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+    <ellipse cx="19" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+  </svg>
+);
+
+// Corner decoration
+const CornerDecor = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={className}>
+    <path d="M0 0 L24 0 L24 3 L3 3 L3 24 L0 24 Z" fill="currentColor" />
+  </svg>
+);
+
 const ArtistDetails = () => {
   const { slug } = useParams();
   const [artist, setArtist] = useState(null);
   const [artworks, setArtworks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('artworks');
+  const [loadingArtist, setLoadingArtist] = useState(true);
+  const [loadingArtworks, setLoadingArtworks] = useState(true);
+  const [error, setError] = useState('');
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const { scrollYProgress } = useScroll();
+  const headerY = useTransform(scrollYProgress, [0, 0.3], [0, -50]);
+  const headerOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
+
+  // Generate floating petals
+  const petals = Array.from({ length: 12 }).map((_, i) => ({
+    delay: i * 1.5,
+    startX: 5 + i * 8,
+    duration: 15 + Math.random() * 8,
+    size: 12 + Math.random() * 8,
+  }));
+
+  // Animation variants
+  const textReveal = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.1, duration: 0.6, ease: "easeOut" }
+    })
+  };
+
+  const lineAnimation = {
+    hidden: { scaleX: 0 },
+    visible: { 
+      scaleX: 1, 
+      transition: { duration: 1, ease: "easeInOut" } 
+    }
+  };
 
   useSEO({
     title: artist ? `${artist.name} | Artist Profile` : 'Artist Profile',
@@ -43,13 +120,14 @@ const ArtistDetails = () => {
 
   const fetchArtistDetails = async () => {
     try {
-      setLoading(true);
+      setLoadingArtist(true);
+      setError('');
       
-      // Fetch artist details
       const artistResponse = await artistService.getBySlug(slug);
       setArtist(artistResponse.data);
       
       // Fetch artist's artworks
+      setLoadingArtworks(true);
       const artworksResponse = await productService.getAll({
         artist: artistResponse.data._id,
         isActive: true,
@@ -59,380 +137,702 @@ const ArtistDetails = () => {
       
     } catch (error) {
       console.error('Error fetching artist details:', error);
+      setError('Failed to load artist details.');
     } finally {
-      setLoading(false);
+      setLoadingArtist(false);
+      setLoadingArtworks(false);
     }
   };
 
-  if (loading) {
+  // Loading State
+  if (loadingArtist) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div>
         <LoadingSpinner size="large" />
       </div>
     );
   }
 
-  if (!artist) {
+  // Error State
+  if (error || !artist) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Artist not found</h2>
-          <Link
-            to="/artists"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors"
+      <div className="min-h-screen bg-white flex justify-center items-center px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-md"
+        >
+          <div className="w-20 h-20 border border-gray-900/10 flex items-center justify-center mx-auto mb-8">
+            <FlowerDecor className="w-10 h-10 text-gray-900/20" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Artist Not Found
+          </h2>
+          <p className="text-gray-600 mb-8">
+            {error || 'The requested artist could not be found.'}
+          </p>
+          <Link 
+            to="/artists" 
+            className="inline-flex items-center gap-2 text-gray-900 font-medium group"
           >
-            <ArrowLeft size={20} />
-            Back to Artists
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="relative">
+              Back to Artists
+              <span className="absolute bottom-0 left-0 w-full h-px bg-gray-900" />
+            </span>
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
+  const imageUrl = artist.profileImage || PLACEHOLDER_IMAGE;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
-      {/* Animated Background Sketches */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-10 left-10 w-20 h-20 border-2 border-gray-300 rounded-full opacity-5"></div>
-        <div className="absolute top-40 right-20 w-32 h-32 border-4 border-gray-200 rounded-full opacity-10 rotate-45"></div>
-        <div className="absolute bottom-40 left-1/4 w-48 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent opacity-5"></div>
-        <div className="absolute top-1/2 right-1/3 w-16 h-16 border border-gray-300 rotate-12 opacity-5"></div>
-        <div className="absolute bottom-20 left-2/3 w-24 h-24 border-2 border-gray-400 rounded-full opacity-10"></div>
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Floating Petals */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {petals.map((petal, i) => (
+          <FloatingPetal key={i} {...petal} />
+        ))}
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <Link
-          to="/artists"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors group"
+      {/* Back Navigation */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+        className="relative z-20 max-w-7xl mx-auto px-6 lg:px-8 pt-8"
+      >
+        <Link 
+          to="/artists" 
+          className="inline-flex items-center gap-3 text-gray-600 hover:text-gray-900 transition-colors group"
         >
-          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-          Back to Artists
+          <div className="w-10 h-10 border border-gray-900/10 flex items-center justify-center group-hover:border-gray-900 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+          </div>
+          <span className="text-sm font-medium">Back to Artists</span>
         </Link>
+      </motion.div>
 
-        {/* Artist Hero Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-xl mb-12"
-        >
-          <div className="grid lg:grid-cols-3">
-            {/* Left: Artist Image */}
-            <div className="lg:col-span-1 relative h-96 lg:h-auto">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black">
-                {artist.profileImage ? (
-                  <img
-                    src={artist.profileImage}
-                    alt={artist.name}
-                    className="w-full h-full object-cover opacity-90"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Palette className="w-24 h-24 text-gray-300" />
+      {/* Hero Section */}
+      <motion.section 
+        style={{ y: headerY, opacity: headerOpacity }}
+        className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 pt-12 pb-10"
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+          
+          {/* Left - Image */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="lg:col-span-5 lg:sticky lg:top-24"
+          >
+            <div className="relative">
+              {/* Main Image */}
+              <div className="relative border border-gray-900/10 overflow-hidden">
+                {/* Loading skeleton */}
+                {!imageLoaded && (
+                  <div className="absolute inset-0 bg-gray-100">
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent"
+                      animate={{ x: ['-100%', '100%'] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
                   </div>
                 )}
-              </div>
-              
-              {/* Featured Badge */}
-              {artist.isFeatured && (
-                <div className="absolute top-6 left-6">
-                  <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black px-4 py-2 rounded-full font-bold flex items-center gap-2">
-                    <Star size={16} fill="currentColor" />
-                    Featured Artist
-                  </span>
-                </div>
-              )}
-            </div>
 
-            {/* Right: Artist Info */}
-            <div className="lg:col-span-2 p-8 lg:p-12">
-              <div className="mb-6">
-                <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-                  {artist.name}
-                </h1>
-                
-                <div className="flex flex-wrap items-center gap-4 mb-6">
-                  {artist.nationality && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Globe size={18} />
-                      <span className="font-medium">{artist.nationality}</span>
-                    </div>
-                  )}
-                  
-                  {artist.birthYear && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Calendar size={18} />
-                      <span className="font-medium">Born {artist.birthYear}</span>
-                    </div>
-                  )}
+                <motion.img
+                  src={imageUrl}
+                  alt={artist.name}
+                  onLoad={() => setImageLoaded(true)}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = PLACEHOLDER_IMAGE;
+                    setImageLoaded(true);
+                  }}
+                  className={`w-full aspect-[3/4] object-cover transition-opacity duration-700 ${
+                    imageLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 1.2 }}
+                />
+
+                {/* Corner decorations */}
+                <div className="absolute top-4 left-4">
+                  <CornerDecor className="w-6 h-6 text-gray-900/10" />
+                </div>
+                <div className="absolute top-4 right-4 rotate-90">
+                  <CornerDecor className="w-6 h-6 text-gray-900/10" />
+                </div>
+                <div className="absolute bottom-4 left-4 -rotate-90">
+                  <CornerDecor className="w-6 h-6 text-gray-900/10" />
+                </div>
+                <div className="absolute bottom-4 right-4 rotate-180">
+                  <CornerDecor className="w-6 h-6 text-gray-900/10" />
                 </div>
 
-                {/* Social Links */}
-                {artist.socialMedia && Object.values(artist.socialMedia).some(Boolean) && (
-                  <div className="flex items-center gap-4 mb-8">
-                    {artist.socialMedia.website && (
-                      <a
-                        href={artist.socialMedia.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                      >
-                        <LinkIcon size={20} className="text-gray-700" />
-                      </a>
-                    )}
-                    {artist.socialMedia.instagram && (
-                      <a
-                        href={`https://instagram.com/${artist.socialMedia.instagram}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                      >
-                        <Instagram size={20} className="text-gray-700" />
-                      </a>
-                    )}
-                    {artist.socialMedia.facebook && (
-                      <a
-                        href={`https://facebook.com/${artist.socialMedia.facebook}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                      >
-                        <Facebook size={20} className="text-gray-700" />
-                      </a>
-                    )}
-                    {artist.socialMedia.twitter && (
-                      <a
-                        href={`https://twitter.com/${artist.socialMedia.twitter}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                      >
-                        <Twitter size={20} className="text-gray-700" />
-                      </a>
-                    )}
+                {/* Flower decorations */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8, type: "spring" }}
+                  className="absolute top-8 left-8"
+                >
+                  <FlowerDecor className="w-8 h-8 text-gray-900/10" />
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1, type: "spring" }}
+                  className="absolute bottom-8 right-8"
+                >
+                  <FlowerDecor className="w-8 h-8 text-gray-900/10" />
+                </motion.div>
+
+                {/* Featured Badge */}
+                {artist.isFeatured && (
+                  <div className="absolute top-4 left-4 z-10">
+                    <span className="bg-gray-900 text-white px-3 py-1 text-xs font-bold tracking-wider flex items-center gap-1">
+                      <Star size={10} fill="currentColor" />
+                      FEATURED
+                    </span>
                   </div>
                 )}
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {artist.artworksCount || 0}
-                  </div>
-                  <div className="text-sm text-gray-600">Artworks</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {artist.awards?.length || 0}
-                  </div>
-                  <div className="text-sm text-gray-600">Awards</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {artist.exhibitions?.length || 0}
-                  </div>
-                  <div className="text-sm text-gray-600">Exhibitions</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {artist.artStyle?.length || 0}
-                  </div>
-                  <div className="text-sm text-gray-600">Styles</div>
-                </div>
-              </div>
-
-              {/* Biography */}
-              {artist.biography && (
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">About the Artist</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {artist.biography}
-                  </p>
-                </div>
-              )}
-
-              {/* Art Styles */}
-              {artist.artStyle && artist.artStyle.length > 0 && (
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Art Styles</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {artist.artStyle.map((style, index) => (
-                      <span
-                        key={index}
-                        className="px-4 py-2 bg-gradient-to-r from-gray-900 to-black text-white rounded-full font-medium"
-                      >
-                        {style}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Image caption */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="flex items-center gap-3 mt-4"
+              >
+                <motion.div 
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.8, duration: 0.6 }}
+                  className="w-8 h-px bg-gray-900/30 origin-left"
+                />
+                <span className="text-xs text-gray-500 tracking-wide uppercase">Portrait</span>
+              </motion.div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('artworks')}
-              className={`px-6 py-4 font-semibold text-lg border-b-2 transition-all ${
-                activeTab === 'artworks'
-                  ? 'border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+          {/* Right - Content */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            className="lg:col-span-7 space-y-10"
+          >
+            {/* Name & Title */}
+            <div>
+              <motion.div
+                variants={lineAnimation}
+                className="w-12 h-px bg-gray-900 mb-6 origin-left"
+              />
+
+              <motion.span
+                custom={0}
+                variants={textReveal}
+                className="text-sm tracking-[0.3em] text-gray-500 uppercase block mb-4"
+              >
+                Artist
+              </motion.span>
+
+              <motion.h1
+                custom={1}
+                variants={textReveal}
+                className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-4"
+              >
+                {artist.name}
+              </motion.h1>
+
+              {/* Location & Birth Year */}
+              <motion.div
+                custom={2}
+                variants={textReveal}
+                className="flex flex-wrap items-center gap-4 text-gray-500"
+              >
+                {artist.nationality && (
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4" strokeWidth={1.5} />
+                    <span>{artist.nationality}</span>
+                  </div>
+                )}
+                {artist.birthYear && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" strokeWidth={1.5} />
+                    <span>Born {artist.birthYear}</span>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+
+            {/* Stats */}
+            <motion.div
+              custom={3}
+              variants={textReveal}
+              className="flex flex-wrap gap-8 py-8 border-y border-gray-900/10"
             >
-              Artworks ({artworks.length})
-            </button>
-            {artist.awards && artist.awards.length > 0 && (
-              <button
-                onClick={() => setActiveTab('awards')}
-                className={`px-6 py-4 font-semibold text-lg border-b-2 transition-all ${
-                  activeTab === 'awards'
-                    ? 'border-gray-900 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Awards ({artist.awards.length})
-              </button>
-            )}
-            {artist.exhibitions && artist.exhibitions.length > 0 && (
-              <button
-                onClick={() => setActiveTab('exhibitions')}
-                className={`px-6 py-4 font-semibold text-lg border-b-2 transition-all ${
-                  activeTab === 'exhibitions'
-                    ? 'border-gray-900 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Exhibitions ({artist.exhibitions.length})
-              </button>
-            )}
-          </div>
-        </div>
+              {artworks.length > 0 && (
+                <div>
+                  <span className="text-3xl font-bold text-gray-900">
+                    {artworks.length}
+                  </span>
+                  <span className="text-sm text-gray-500 ml-2">Artworks</span>
+                </div>
+              )}
+              {artist.awards && artist.awards.length > 0 && (
+                <>
+                  <div className="w-px h-12 bg-gray-900/10" />
+                  <div>
+                    <span className="text-3xl font-bold text-gray-900">
+                      {artist.awards.length}
+                    </span>
+                    <span className="text-sm text-gray-500 ml-2">Awards</span>
+                  </div>
+                </>
+              )}
+              {artist.exhibitions && artist.exhibitions.length > 0 && (
+                <>
+                  <div className="w-px h-12 bg-gray-900/10" />
+                  <div>
+                    <span className="text-3xl font-bold text-gray-900">
+                      {artist.exhibitions.length}
+                    </span>
+                    <span className="text-sm text-gray-500 ml-2">Exhibitions</span>
+                  </div>
+                </>
+              )}
+            </motion.div>
 
-        {/* Tab Content */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {activeTab === 'artworks' && (
-            <>
-              {artworks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {artworks.map((artwork, index) => (
-                    <ProductCard key={artwork._id} product={artwork} index={index} />
+            {/* Biography */}
+            <motion.div custom={4} variants={textReveal}>
+              <h2 className="text-sm tracking-[0.2em] text-gray-500 uppercase mb-4">
+                Biography
+              </h2>
+              <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap">
+                {artist.biography || "No biography provided for this artist."}
+              </p>
+            </motion.div>
+
+            {/* Art Styles */}
+            {artist.artStyle && artist.artStyle.length > 0 && (
+              <motion.div custom={5} variants={textReveal}>
+                <div className="flex items-center gap-3 mb-4">
+                  <Palette className="w-5 h-5 text-gray-400" strokeWidth={1.5} />
+                  <span className="text-gray-600">Specializes in</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {artist.artStyle.map((style, index) => (
+                    <span
+                      key={index}
+                      className="px-4 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-full"
+                    >
+                      {style}
+                    </span>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                    <Palette className="w-12 h-12 text-gray-400" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                    No artworks available
-                  </h3>
-                  <p className="text-gray-600">
-                    This artist doesn't have any artworks listed yet.
-                  </p>
+              </motion.div>
+            )}
+
+            {/* Contact & Social */}
+            <motion.div
+              custom={6}
+              variants={textReveal}
+              className="space-y-4 pt-6 border-t border-gray-900/10"
+            >
+              <h2 className="text-sm tracking-[0.2em] text-gray-500 uppercase mb-4">
+                Connect
+              </h2>
+
+              <div className="flex flex-wrap gap-4">
+                {artist.email && (
+                  <motion.a
+                    href={`mailto:${artist.email}`}
+                    whileHover={{ y: -2 }}
+                    className="flex items-center gap-2 px-4 py-3 border border-gray-900/10 hover:border-gray-900 transition-colors group"
+                  >
+                    <Mail className="w-4 h-4 text-gray-500 group-hover:text-gray-900 transition-colors" strokeWidth={1.5} />
+                    <span className="text-sm text-gray-900">Email</span>
+                  </motion.a>
+                )}
+
+                {artist.socialMedia?.website && (
+                  <motion.a
+                    href={artist.socialMedia.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ y: -2 }}
+                    className="flex items-center gap-2 px-4 py-3 border border-gray-900/10 hover:border-gray-900 transition-colors group"
+                  >
+                    <ExternalLink className="w-4 h-4 text-gray-500 group-hover:text-gray-900 transition-colors" strokeWidth={1.5} />
+                    <span className="text-sm text-gray-900">Website</span>
+                  </motion.a>
+                )}
+              </div>
+
+              {/* Social Icons */}
+              {(artist.socialMedia?.instagram || artist.socialMedia?.facebook || artist.socialMedia?.twitter) && (
+                <div className="flex items-center gap-3 pt-4">
+                  {artist.socialMedia?.instagram && (
+                    <motion.a
+                      href={`https://instagram.com/${artist.socialMedia.instagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ y: -3, scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="w-12 h-12 border border-gray-900/10 flex items-center justify-center hover:border-gray-900 hover:bg-gray-900 group transition-all"
+                    >
+                      <Instagram className="w-5 h-5 text-gray-900 group-hover:text-white transition-colors" strokeWidth={1.5} />
+                    </motion.a>
+                  )}
+                  {artist.socialMedia?.facebook && (
+                    <motion.a
+                      href={`https://facebook.com/${artist.socialMedia.facebook}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ y: -3, scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="w-12 h-12 border border-gray-900/10 flex items-center justify-center hover:border-gray-900 hover:bg-gray-900 group transition-all"
+                    >
+                      <Facebook className="w-5 h-5 text-gray-900 group-hover:text-white transition-colors" strokeWidth={1.5} />
+                    </motion.a>
+                  )}
+                  {artist.socialMedia?.twitter && (
+                    <motion.a
+                      href={`https://twitter.com/${artist.socialMedia.twitter}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ y: -3, scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="w-12 h-12 border border-gray-900/10 flex items-center justify-center hover:border-gray-900 hover:bg-gray-900 group transition-all"
+                    >
+                      <Twitter className="w-5 h-5 text-gray-900 group-hover:text-white transition-colors" strokeWidth={1.5} />
+                    </motion.a>
+                  )}
                 </div>
               )}
-            </>
-          )}
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.section>
 
-          {activeTab === 'awards' && artist.awards && artist.awards.length > 0 && (
-            <div className="space-y-6">
+      {/* Awards Section */}
+      {artist.awards && artist.awards.length > 0 && (
+        <section className="relative z-10 border-t border-gray-900/10">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1 }}
+                className="w-16 h-px bg-gray-900 mx-auto mb-8"
+              />
+
+              <span className="text-sm tracking-[0.3em] text-gray-500 uppercase block mb-4">
+                Recognition
+              </span>
+
+              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+                Awards & Honors
+              </h2>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {artist.awards.map((award, index) => (
-                <div
+                <motion.div
                   key={index}
-                  className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white border border-gray-900/10 p-6 hover:border-gray-900/30 transition-colors"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl">
-                      <Award className="w-8 h-8 text-white" />
+                    <div className="w-12 h-12 border border-gray-900/10 flex items-center justify-center flex-shrink-0">
+                      <Award className="w-6 h-6 text-gray-900/60" strokeWidth={1.5} />
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">
+                    <div>
+                      <h4 className="text-lg font-bold text-gray-900 mb-1">
                         {award.title}
                       </h4>
-                      <div className="flex items-center gap-4 text-gray-600 mb-3">
-                        {award.year && (
-                          <span className="flex items-center gap-1">
-                            <Calendar size={16} />
-                            {award.year}
-                          </span>
-                        )}
-                      </div>
+                      {award.year && (
+                        <p className="text-sm text-gray-500 mb-2">{award.year}</p>
+                      )}
                       {award.description && (
-                        <p className="text-gray-600">{award.description}</p>
+                        <p className="text-gray-600 text-sm">{award.description}</p>
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          )}
+          </div>
+        </section>
+      )}
 
-          {activeTab === 'exhibitions' && artist.exhibitions && artist.exhibitions.length > 0 && (
-            <div className="space-y-6">
+      {/* Exhibitions Section */}
+      {artist.exhibitions && artist.exhibitions.length > 0 && (
+        <section className="relative z-10 border-t border-gray-900/10 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <span className="text-sm tracking-[0.3em] text-gray-500 uppercase block mb-4">
+                Showcases
+              </span>
+
+              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+                Exhibitions
+              </h2>
+            </motion.div>
+
+            <div className="space-y-4">
               {artist.exhibitions.map((exhibition, index) => (
-                <div
+                <motion.div
                   key={index}
-                  className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white border border-gray-900/10 p-6 hover:border-gray-900/30 transition-colors"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
-                      <MapPin className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-gray-900 mb-1">
                         {exhibition.title}
                       </h4>
-                      <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-3">
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                         {exhibition.location && (
                           <span className="flex items-center gap-1">
-                            <MapPin size={16} />
+                            <MapPin size={14} />
                             {exhibition.location}
                           </span>
                         )}
                         {exhibition.year && (
                           <span className="flex items-center gap-1">
-                            <Calendar size={16} />
+                            <Calendar size={14} />
                             {exhibition.year}
                           </span>
                         )}
                       </div>
-                      {exhibition.description && (
-                        <p className="text-gray-600">{exhibition.description}</p>
-                      )}
                     </div>
+                    {exhibition.description && (
+                      <p className="text-gray-600 text-sm sm:max-w-md">
+                        {exhibition.description}
+                      </p>
+                    )}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          )}
-        </motion.div>
+          </div>
+        </section>
+      )}
 
-        {/* View All Link */}
-        {artworks.length > 0 && activeTab === 'artworks' && (
-          <div className="mt-12 pt-8 border-t border-gray-200 text-center">
-            <Link
-              to={`/products?artist=${artist._id}`}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-gray-900 to-black text-white rounded-xl font-semibold hover:shadow-2xl transition-all duration-300 group"
+      {/* Artworks Section */}
+      <section className="relative z-10 border-t border-gray-900/10">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20">
+          {/* Section Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1 }}
+              className="w-16 h-px bg-gray-900 mx-auto mb-8"
+            />
+
+            <span className="text-sm tracking-[0.3em] text-gray-500 uppercase block mb-4">
+              Collection
+            </span>
+
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+              Artworks by {artist.name}
+            </h2>
+
+            {/* Decorative element */}
+            <div className="flex items-center justify-center gap-4 mt-6">
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="w-12 h-px bg-gray-900/20 origin-right"
+              />
+              <motion.div
+                initial={{ scale: 0, rotate: 45 }}
+                whileInView={{ scale: 1, rotate: 45 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="w-2 h-2 border border-gray-900/30"
+              />
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="w-12 h-px bg-gray-900/20 origin-left"
+              />
+            </div>
+          </motion.div>
+
+          {/* Products Grid */}
+          {loadingArtworks ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="aspect-[4/5] border border-gray-900/10 relative overflow-hidden"
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-100 to-transparent"
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          ) : artworks.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {artworks.map((product, index) => (
+                <motion.div
+                  key={product._id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <ProductCard product={product} index={index} />
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-20"
             >
-              View All Artworks by {artist.name}
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="inline-flex items-center justify-center w-20 h-20 border border-gray-900/10 mb-6"
+              >
+                <Palette className="w-8 h-8 text-gray-400" strokeWidth={1} />
+              </motion.div>
+              <p className="text-gray-600 text-lg">
+                No artworks available at the moment.
+              </p>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.5, duration: 0.8 }}
+                className="w-16 h-px bg-gray-900/10 mx-auto mt-6"
+              />
+            </motion.div>
+          )}
+
+          {/* View More Link */}
+          {artworks.length > 6 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mt-16"
+            >
+              <Link
+                to={`/products?artist=${artist._id}`}
+                className="group inline-flex items-center gap-3 text-gray-900"
+              >
+                <span className="relative font-medium">
+                  View All Artworks
+                  <motion.span
+                    className="absolute bottom-0 left-0 w-full h-px bg-gray-900 origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
+          )}
+        </div>
+      </section>
+
+      {/* Bottom Decorative Section */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="relative z-10 border-t border-gray-900/10 py-16"
+      >
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex items-center gap-4">
+              <FlowerDecor className="w-8 h-8 text-gray-900/10" />
+              <div>
+                <p className="text-gray-500 text-sm">Explore more artists</p>
+                <p className="text-gray-900 font-medium">Discover our curated collection</p>
+              </div>
+            </div>
+
+            <Link
+              to="/artists"
+              className="group flex items-center gap-3"
+            >
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 border border-gray-900 px-6 py-3 hover:bg-gray-900 group transition-colors"
+              >
+                <span className="font-medium text-gray-900 group-hover:text-white transition-colors">
+                  Browse All Artists
+                </span>
+                <ArrowRight className="w-4 h-4 text-gray-900 group-hover:text-white group-hover:translate-x-1 transition-all" />
+              </motion.div>
             </Link>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Decorative Elements */}
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 border-12 border-gray-100 rounded-full opacity-10"></div>
-      <div className="absolute -bottom-20 -left-20 w-64 h-64 border-8 border-gray-200 rounded-full opacity-5 rotate-45"></div>
+        {/* Final decorative line */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.5 }}
+          className="w-32 h-px bg-gray-900/10 mx-auto mt-12"
+        />
+      </motion.section>
     </div>
   );
 };

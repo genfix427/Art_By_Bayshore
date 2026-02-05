@@ -1,10 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useSEO } from '../../hooks/useSEO';
+import { 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  ArrowRight, 
+  Loader2,
+  Sparkles,
+  Check,
+  AlertCircle
+} from 'lucide-react';
+
+// Floating petal component
+const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0"
+    style={{ left: `${startX}%`, top: "-5%" }}
+    initial={{ opacity: 0, y: -20, rotate: 0 }}
+    animate={{
+      opacity: [0, 0.08, 0.08, 0],
+      y: [-20, 400, 800],
+      rotate: [0, 180, 360],
+      x: [0, 30, -20],
+    }}
+    transition={{
+      duration: duration,
+      delay: delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-900">
+      <path
+        d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z"
+        fill="currentColor"
+      />
+    </svg>
+  </motion.div>
+);
+
+// Flower decoration component
+const FlowerDecor = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+    <ellipse cx="12" cy="5" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="12" cy="19" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="5" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+    <ellipse cx="19" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+  </svg>
+);
+
+// Decorative corner
+const CornerDecor = ({ position }) => {
+  const positions = {
+    'top-left': 'top-0 left-0',
+    'top-right': 'top-0 right-0 rotate-90',
+    'bottom-left': 'bottom-0 left-0 -rotate-90',
+    'bottom-right': 'bottom-0 right-0 rotate-180',
+  };
+  
+  return (
+    <div className={`absolute w-8 h-8 ${positions[position]}`}>
+      <svg viewBox="0 0 32 32" className="w-full h-full text-gray-900/10">
+        <path d="M0 0 L32 0 L32 4 L4 4 L4 32 L0 32 Z" fill="currentColor" />
+      </svg>
+    </div>
+  );
+};
 
 const Login = () => {
-  useSEO({ title: 'Login' });
+  useSEO({ title: 'Login | Art Haven' });
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -12,8 +81,53 @@ const Login = () => {
 
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [focused, setFocused] = useState({ email: false, password: false });
+  const [feedback, setFeedback] = useState({ show: false, message: '', type: 'success' });
 
   const from = location.state?.from?.pathname || '/';
+
+  // Generate floating petals
+  const petals = Array.from({ length: 8 }).map((_, i) => ({
+    delay: i * 2,
+    startX: 10 + i * 12,
+    duration: 18 + Math.random() * 10,
+    size: 10 + Math.random() * 8,
+  }));
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" },
+    },
+  };
+
+  const lineVariants = {
+    hidden: { scaleX: 0 },
+    visible: {
+      scaleX: 1,
+      transition: { duration: 0.8, ease: "easeInOut" },
+    },
+  };
+
+  const showFeedback = (message, type = 'success') => {
+    setFeedback({ show: true, message, type });
+    setTimeout(() => setFeedback({ show: false, message: '', type: 'success' }), 4000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,70 +135,245 @@ const Login = () => {
 
     try {
       await login(formData);
-      navigate(from, { replace: true });
+      showFeedback('Welcome back!', 'success');
+      setTimeout(() => navigate(from, { replace: true }), 1000);
     } catch (error) {
-      // Error handled in context
+      showFeedback(error.message || 'Login failed', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '2rem' }}>Login</h1>
+    <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center px-4 py-12">
+      {/* Background Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
 
-      <form onSubmit={handleSubmit} style={{ padding: '2rem', border: '1px solid #ddd', borderRadius: '8px' }}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Email
-          </label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-            style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-          />
-        </div>
+      {/* Floating Petals */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {petals.map((petal, i) => (
+          <FloatingPetal key={i} {...petal} />
+        ))}
+      </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Password
-          </label>
-          <input
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-            style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-          />
-        </div>
+      {/* Decorative Elements */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 0.05, scale: 1 }}
+        transition={{ duration: 1, delay: 0.5 }}
+        className="absolute top-20 left-20 w-64 h-64 pointer-events-none hidden lg:block"
+      >
+        <FlowerDecor className="w-full h-full text-gray-900" />
+      </motion.div>
+      
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 0.05, scale: 1 }}
+        transition={{ duration: 1, delay: 0.7 }}
+        className="absolute bottom-20 right-20 w-48 h-48 pointer-events-none hidden lg:block"
+      >
+        <FlowerDecor className="w-full h-full text-gray-900" />
+      </motion.div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            backgroundColor: loading ? '#ccc' : '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-          }}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
+      {/* Feedback Toast */}
+      <AnimatePresence>
+        {feedback.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 ${
+              feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
+            } text-white`}
+          >
+            {feedback.type === 'error' ? (
+              <AlertCircle className="w-4 h-4" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
+            <span className="text-sm font-medium">{feedback.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <p style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          Don't have an account?{' '}
-          <Link to="/register" style={{ color: '#007bff', textDecoration: 'none' }}>
-            Register here
+      {/* Main Content */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative z-10 w-full max-w-md"
+      >
+        {/* Logo/Brand */}
+        <motion.div variants={itemVariants} className="text-center mb-12">
+          <Link to="/" className="inline-block group">
+            <motion.div
+              whileHover={{ rotate: 180 }}
+              transition={{ duration: 0.6 }}
+              className="w-16 h-16 mx-auto mb-6 border border-gray-900/20 flex items-center justify-center"
+            >
+              <FlowerDecor className="w-8 h-8 text-gray-900" />
+            </motion.div>
           </Link>
-        </p>
-      </form>
+          
+          <motion.div
+            variants={lineVariants}
+            className="w-12 h-px bg-gray-900 mx-auto mb-6 origin-center"
+          />
+          
+          <h1 className="font-playfair text-4xl font-bold text-gray-900 mb-2">
+            Welcome Back
+          </h1>
+          <p className="text-gray-900/50 text-sm tracking-wide">
+            Sign in to continue your journey
+          </p>
+        </motion.div>
+
+        {/* Form Card */}
+        <motion.div
+          variants={itemVariants}
+          className="relative bg-white border border-gray-900/10 p-8 sm:p-10"
+        >
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <motion.div variants={itemVariants}>
+              <label className="block text-xs tracking-[0.2em] text-gray-900/50 uppercase mb-3">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                  focused.email ? 'text-gray-900' : 'text-gray-900/30'
+                }`} />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onFocus={() => setFocused({ ...focused, email: true })}
+                  onBlur={() => setFocused({ ...focused, email: false })}
+                  required
+                  className="w-full pl-12 pr-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-all duration-300 bg-transparent text-gray-900"
+                  placeholder="Enter your email"
+                />
+                <motion.div
+                  className="absolute bottom-0 left-0 h-px bg-gray-900"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: focused.email ? 1 : 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ originX: 0 }}
+                />
+              </div>
+            </motion.div>
+
+            {/* Password Field */}
+            <motion.div variants={itemVariants}>
+              <label className="block text-xs tracking-[0.2em] text-gray-900/50 uppercase mb-3">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                  focused.password ? 'text-gray-900' : 'text-gray-900/30'
+                }`} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onFocus={() => setFocused({ ...focused, password: true })}
+                  onBlur={() => setFocused({ ...focused, password: false })}
+                  required
+                  className="w-full pl-12 pr-12 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-all duration-300 bg-transparent text-gray-900"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-900/30 hover:text-gray-900 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                <motion.div
+                  className="absolute bottom-0 left-0 h-px bg-gray-900"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: focused.password ? 1 : 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ originX: 0 }}
+                />
+              </div>
+            </motion.div>
+
+            {/* Forgot Password */}
+            <motion.div variants={itemVariants} className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-gray-900/50 hover:text-gray-900 transition-colors relative group"
+              >
+                Forgot password?
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-300" />
+              </Link>
+            </motion.div>
+
+            {/* Submit Button */}
+            <motion.div variants={itemVariants}>
+              <motion.button
+                type="submit"
+                disabled={loading}
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+                className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In</span>
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </motion.button>
+            </motion.div>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-900/10" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-900/40">or continue with</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Register Link */}
+        <motion.p
+          variants={itemVariants}
+          className="text-center mt-8 text-gray-900/60"
+        >
+          Don't have an account?{' '}
+          <Link
+            to="/register"
+            className="text-gray-900 font-medium relative group"
+          >
+            Create one
+            <span className="absolute bottom-0 left-0 w-full h-px bg-gray-900 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+          </Link>
+        </motion.p>
+
+        {/* Bottom Decoration */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 1, delay: 1 }}
+          className="w-24 h-px bg-gray-900/10 mx-auto mt-12"
+        />
+      </motion.div>
     </div>
   );
 };

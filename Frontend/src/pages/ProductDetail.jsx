@@ -1,34 +1,26 @@
 // pages/ProductDetails.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, useScroll } from 'framer-motion';
 import { 
-  ArrowLeft, 
-  Heart, 
-  ShoppingCart, 
-  Star,
-  Tag,
-  Share2,
-  ChevronLeft,
   ChevronRight,
-  ZoomIn,
+  Heart,
+  Minus,
+  Plus,
+  ShieldCheck,
+  Undo2,
+  Gift,
+  X,
+  ChevronLeft,
+  ShoppingCart,
   Check,
-  Truck,
-  Shield,
-  RotateCcw,
-  Package,
-  Calendar,
-  Ruler,
-  Palette,
-  Award,
-  Eye,
-  Facebook,
-  Twitter,
-  Instagram,
+  MessageCircle,
   Mail,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp
+  Phone,
+  User,
+  ArrowLeft,
+  ArrowRight,
+  Maximize2
 } from 'lucide-react';
 import ProductCard from '../components/products/ProductCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -40,26 +32,111 @@ import toast from 'react-hot-toast';
 import { useSEO } from '../hooks/useSEO';
 import { formatCurrency } from '../utils/formatters';
 
+// Floating petal component
+const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0"
+    style={{ left: `${startX}%`, top: "-5%" }}
+    initial={{ opacity: 0, y: -20, rotate: 0 }}
+    animate={{
+      opacity: [0, 0.1, 0.1, 0],
+      y: [-20, 400, 800],
+      rotate: [0, 180, 360],
+      x: [0, 30, -20],
+    }}
+    transition={{
+      duration: duration,
+      delay: delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-900">
+      <path
+        d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z"
+        fill="currentColor"
+      />
+    </svg>
+  </motion.div>
+);
+
+// Flower decoration component
+const FlowerDecor = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+    <ellipse cx="12" cy="5" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="12" cy="19" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="5" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+    <ellipse cx="19" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+  </svg>
+);
+
 const ProductDetails = () => {
   const { slug } = useParams();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
-  const { 
-    isWishlisted, 
-    addToWishlist, 
-    removeFromWishlist 
-  } = useWishlist();
+  const { isWishlisted, addToWishlist, removeFromWishlist } = useWishlist();
   
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
-  const [activeTab, setActiveTab] = useState('description');
-  const [expandedSections, setExpandedSections] = useState({});
-  const [imageLoaded, setImageLoaded] = useState({});
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  // Image gallery states
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [slideDirection, setSlideDirection] = useState(1);
+  
+  // Ask for Price states
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+  const [submittingInquiry, setSubmittingInquiry] = useState(false);
+  const [inquiryForm, setInquiryForm] = useState({
+    fullName: '',
+    email: '',
+    mobile: '',
+    message: '',
+    budget: '',
+    purpose: 'personal'
+  });
+
+  // Feedback state
+  const [feedback, setFeedback] = useState({ active: false, message: '', type: 'success' });
+
+  // Scroll animations
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+
+  // Generate floating petals
+  const petals = Array.from({ length: 10 }).map((_, i) => ({
+    delay: i * 1.5,
+    startX: 5 + i * 10,
+    duration: 15 + Math.random() * 8,
+    size: 12 + Math.random() * 8,
+  }));
+
+  // Animation variants
+  const textReveal = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.1, duration: 0.6, ease: "easeOut" }
+    })
+  };
+
+  const lineAnimation = {
+    hidden: { scaleX: 0 },
+    visible: { 
+      scaleX: 1, 
+      transition: { duration: 1, ease: "easeInOut" } 
+    }
+  };
 
   useSEO({
     title: product ? `${product.title} | Art Haven` : 'Product Details',
@@ -67,12 +144,16 @@ const ProductDetails = () => {
   });
 
   useEffect(() => {
+    setLoading(true);
+    setProduct(null);
+    setSelectedImageIndex(0);
+    setQuantity(1);
+    setImageLoaded(false);
     fetchProductDetails();
   }, [slug]);
 
   const fetchProductDetails = async () => {
     try {
-      setLoading(true);
       const productResponse = await productService.getBySlug(slug);
       setProduct(productResponse.data);
       
@@ -86,46 +167,36 @@ const ProductDetails = () => {
     }
   };
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const handleImageLoad = (index) => {
-    setImageLoaded(prev => ({ ...prev, [index]: true }));
+  // Feedback Helper
+  const showFeedback = (message, type = 'success') => {
+    setFeedback({ active: true, message, type });
+    setTimeout(() => {
+      setFeedback({ active: false, message: '', type: 'success' });
+    }, 3000);
   };
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      toast.error('Please login to add items to cart');
+      showFeedback('Please login first', 'error');
       return;
     }
 
     if (product.productType === 'ask-for-price') {
-      toast.success('We will contact you with pricing details');
+      showFeedback('Please request a price quote', 'error');
       return;
     }
 
     if (product.stockQuantity <= 0) {
-      toast.error('This item is out of stock');
+      showFeedback('This item is out of stock', 'error');
       return;
     }
 
     setAddingToCart(true);
     try {
       await addToCart(product._id, quantity);
-      toast.success('Added to cart successfully!', {
-        icon: '🛒',
-        style: {
-          borderRadius: '10px',
-          background: '#10b981',
-          color: '#fff',
-        },
-      });
+      showFeedback('Added to cart');
     } catch (error) {
-      toast.error('Failed to add to cart');
+      showFeedback('Failed to add to cart', 'error');
     } finally {
       setAddingToCart(false);
     }
@@ -133,7 +204,7 @@ const ProductDetails = () => {
 
   const handleWishlistToggle = async () => {
     if (!isAuthenticated) {
-      toast.error('Please login to manage wishlist');
+      showFeedback('Please login first', 'error');
       return;
     }
 
@@ -141,876 +212,953 @@ const ProductDetails = () => {
     try {
       if (isWishlisted(product._id)) {
         await removeFromWishlist(product._id);
-        toast.success('Removed from wishlist');
+        showFeedback('Removed from wishlist');
       } else {
         await addToWishlist(product._id);
-        toast.success('Added to wishlist!', {
-          icon: '❤️',
-          style: {
-            borderRadius: '10px',
-            background: '#ef4444',
-            color: '#fff',
-          },
-        });
+        showFeedback('Added to wishlist');
       }
     } catch (error) {
-      toast.error('Failed to update wishlist');
+      showFeedback('Failed to update wishlist', 'error');
     } finally {
       setAddingToWishlist(false);
     }
   };
 
-  const handleShare = (platform) => {
-    const url = window.location.href;
-    const title = product.title;
-    const text = `Check out "${title}" by ${product.artist?.name}`;
+  const handleAskForPrice = () => {
+    setIsInquiryModalOpen(true);
+  };
 
-    switch (platform) {
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-        break;
-      case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
-        break;
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank');
-        break;
-      case 'email':
-        window.open(`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`);
-        break;
-      default:
-        navigator.clipboard.writeText(url);
-        toast.success('Link copied to clipboard');
+  const handleInquiryFormChange = (e) => {
+    const { name, value } = e.target;
+    setInquiryForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmitInquiry = async (e) => {
+    e.preventDefault();
+    
+    if (!inquiryForm.fullName.trim() || !inquiryForm.email.trim() || !inquiryForm.mobile.trim()) {
+      showFeedback('Please fill required fields', 'error');
+      return;
+    }
+
+    setSubmittingInquiry(true);
+    try {
+      // You can add your API call here for price inquiry
+      // await productService.submitPriceInquiry(product._id, inquiryForm);
+      showFeedback('Inquiry submitted successfully');
+      setIsInquiryModalOpen(false);
+      setInquiryForm({
+        fullName: '', email: '', mobile: '', message: '', budget: '', purpose: 'personal'
+      });
+    } catch (err) {
+      showFeedback('Failed to submit', 'error');
+    } finally {
+      setSubmittingInquiry(false);
     }
   };
 
-  const handleQuantityChange = (change) => {
-    const newQuantity = quantity + change;
-    if (newQuantity >= 1 && newQuantity <= (product.stockQuantity || 10)) {
-      setQuantity(newQuantity);
+  // Image gallery functions
+  const openLightbox = (index) => {
+    setSelectedImageIndex(index);
+    setIsLightboxOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeLightbox = () => {
+    setIsLightboxOpen(false);
+    document.body.style.overflow = 'unset';
+  };
+
+  const navigateImage = (direction) => {
+    const images = product.images || [];
+    if (images.length === 0) return;
+    
+    setSlideDirection(direction === 'next' ? 1 : -1);
+    if (direction === 'prev') {
+      setSelectedImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    } else {
+      setSelectedImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isLightboxOpen) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navigateImage('prev');
+      if (e.key === 'ArrowRight') navigateImage('next');
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen]);
+
+  // Helper Functions
+  const getDiscountPercentage = () => {
+    if (product?.compareAtPrice && product?.price && product.price < product.compareAtPrice) {
+      return Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100);
+    }
+    return 0;
+  };
+
+  // Lightbox variants
+  const lightboxVariants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction) => ({
+      x: direction < 0 ? 300 : -300,
+      opacity: 0,
+    }),
+  };
+
+  // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="large" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border border-gray-900/20 flex items-center justify-center"
+        >
+          <div className="w-8 h-8 border-t border-gray-900" />
+        </motion.div>
       </div>
     );
   }
 
+  // Error State
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Product not found</h2>
-          <Link
-            to="/products"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors"
+      <div className="min-h-screen bg-white flex items-center justify-center px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-md"
+        >
+          <div className="w-20 h-20 border border-gray-900/10 flex items-center justify-center mx-auto mb-8">
+            <FlowerDecor className="w-10 h-10 text-gray-900/20" />
+          </div>
+          <h2 className="font-playfair text-3xl font-bold text-gray-900 mb-4">
+            Product Not Found
+          </h2>
+          <p className="text-gray-900/60 mb-8">
+            The artwork you're looking for doesn't exist.
+          </p>
+          <Link 
+            to="/products" 
+            className="inline-flex items-center gap-2 text-gray-900 font-medium group"
           >
-            <ArrowLeft size={20} />
-            Back to Products
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="relative">
+              Back to Collection
+              <span className="absolute bottom-0 left-0 w-full h-px bg-gray-900" />
+            </span>
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
-  const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
-  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
-  const discountPercentage = hasDiscount 
-    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
-    : 0;
-  const isOutOfStock = product.productType === 'price-based' && product.stockQuantity <= 0;
+  const images = product.images?.map(img => img.url) || [];
+  const discountPercentage = getDiscountPercentage();
+  const isSoldOut = product.productType === 'price-based' && product.stockQuantity <= 0;
   const isAskForPrice = product.productType === 'ask-for-price';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-8">
-          <nav className="flex items-center text-sm text-gray-600">
-            <Link to="/" className="hover:text-gray-900 transition-colors">
-              Home
-            </Link>
-            <ChevronRight size={16} className="mx-2" />
-            <Link to="/products" className="hover:text-gray-900 transition-colors">
-              Products
-            </Link>
-            <ChevronRight size={16} className="mx-2" />
-            {product.category?.name && (
+    <div ref={containerRef} className="min-h-screen bg-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Floating Petals */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {petals.map((petal, i) => (
+          <FloatingPetal key={i} {...petal} />
+        ))}
+      </div>
+
+      {/* Lightbox Modal */}
+      <AnimatePresence>
+        {isLightboxOpen && images.length > 0 && (
+          <motion.div
+            className="fixed inset-0 bg-white z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Close button */}
+            <motion.button
+              onClick={closeLightbox}
+              className="absolute top-6 right-6 w-12 h-12 border border-gray-900/20 flex items-center justify-center hover:border-gray-900 transition-colors z-20 cursor-pointer"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <X className="w-5 h-5" />
+            </motion.button>
+            
+            {/* Navigation */}
+            {images.length > 1 && (
               <>
-                <Link 
-                  to={`/categories/${product.category.slug}`}
-                  className="hover:text-gray-900 transition-colors"
+                <motion.button
+                  onClick={() => navigateImage('prev')}
+                  className="absolute left-6 w-12 h-12 border border-gray-900/20 flex items-center justify-center hover:border-gray-900 transition-colors z-20 cursor-pointer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  {product.category.name}
-                </Link>
-                <ChevronRight size={16} className="mx-2" />
+                  <ChevronLeft className="w-5 h-5" />
+                </motion.button>
+                
+                <motion.button
+                  onClick={() => navigateImage('next')}
+                  className="absolute right-6 w-12 h-12 border border-gray-900/20 flex items-center justify-center hover:border-gray-900 transition-colors z-20 cursor-pointer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </motion.button>
               </>
             )}
-            <span className="font-semibold text-gray-900 truncate">
-              {product.title}
-            </span>
-          </nav>
-        </div>
 
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Left Column - Images */}
-          <div>
-            {/* Main Image */}
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 mb-6">
-              {product.images && product.images.length > 0 && (
-                <>
-                  {!imageLoaded[selectedImage] && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
-                  )}
-                  <motion.img
-                    key={selectedImage}
-                    src={product.images[selectedImage]?.url}
-                    alt={product.title}
-                    className="w-full h-full object-contain p-8"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: imageLoaded[selectedImage] ? 1 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    onLoad={() => handleImageLoad(selectedImage)}
-                  />
-                  
-                  {/* Image Navigation */}
-                  {product.images.length > 1 && (
-                    <>
-                      <button
-                        onClick={() => setSelectedImage(prev => (prev === 0 ? product.images.length - 1 : prev - 1))}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white shadow-xl transition-colors"
-                      >
-                        <ChevronLeft size={24} className="text-gray-800" />
-                      </button>
-                      <button
-                        onClick={() => setSelectedImage(prev => (prev === product.images.length - 1 ? 0 : prev + 1))}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white shadow-xl transition-colors"
-                      >
-                        <ChevronRight size={24} className="text-gray-800" />
-                      </button>
-                    </>
-                  )}
-                  
-                  {/* Zoom Indicator */}
-                  <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm text-gray-800 px-3 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg">
-                    <ZoomIn size={18} />
-                    Click to zoom
-                  </div>
-                </>
-              )}
+            {/* Image */}
+            <AnimatePresence initial={false} custom={slideDirection} mode="wait">
+              <motion.div
+                key={selectedImageIndex}
+                className="max-w-[85vw] max-h-[85vh] relative"
+                variants={lightboxVariants}
+                custom={slideDirection}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                <img
+                  src={images[selectedImageIndex]}
+                  alt={`${product.title} - ${selectedImageIndex + 1}`}
+                  className="max-w-full max-h-[85vh] object-contain"
+                />
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Image counter */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
+              <span className="text-sm text-gray-900/60">
+                {selectedImageIndex + 1} / {images.length}
+              </span>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            {/* Thumbnail Gallery */}
-            {product.images && product.images.length > 1 && (
-              <div className="flex gap-4 overflow-x-auto py-4">
-                {product.images.map((img, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`relative w-24 h-24 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
-                      selectedImage === index 
-                        ? 'border-blue-500 ring-2 ring-blue-200 shadow-lg' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <img
-                      src={img.url}
-                      alt={`${product.title} view ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {selectedImage === index && (
-                      <div className="absolute inset-0 bg-blue-500/20" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Image Count */}
-            <div className="text-center text-sm text-gray-500 mt-2">
-              Image {selectedImage + 1} of {product.images?.length || 1}
-            </div>
-          </div>
-
-          {/* Right Column - Details */}
-          <div>
-            {/* Product Header */}
-            <div className="mb-6">
-              <div className="flex items-start justify-between mb-4">
+      {/* Ask for Price Modal */}
+      <AnimatePresence>
+        {isInquiryModalOpen && (
+          <motion.div
+            className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsInquiryModalOpen(false)}
+          >
+            <motion.div
+              className="bg-white max-w-lg w-full max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-900/10">
                 <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                    {product.title}
-                  </h1>
-                  <div className="flex items-center gap-4">
-                    {product.artist && (
-                      <Link
-                        to={`/artists/${product.artist.slug}`}
-                        className="text-lg text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
-                      >
-                        <Palette size={18} />
-                        by {product.artist.name}
-                      </Link>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Eye size={18} className="text-gray-400" />
-                      <span className="text-gray-500">{product.viewsCount || 0} views</span>
-                    </div>
+                  <h3 className="font-playfair text-2xl font-bold text-gray-900">
+                    Request Price
+                  </h3>
+                  <p className="text-sm text-gray-900/50 mt-1">
+                    We'll contact you with details
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsInquiryModalOpen(false)}
+                  className="w-10 h-10 border border-gray-900/10 flex items-center justify-center hover:border-gray-900 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSubmitInquiry} className="p-6 space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Full Name <span className="text-gray-900/40">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-900/30" />
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={inquiryForm.fullName}
+                      onChange={handleInquiryFormChange}
+                      required
+                      className="w-full pl-12 pr-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+                      placeholder="Enter your name"
+                    />
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleShare('copy')}
-                    className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-                    title="Share"
-                  >
-                    <Share2 size={20} />
-                  </button>
-                  <button
-                    onClick={handleWishlistToggle}
-                    disabled={addingToWishlist}
-                    className={`p-2 transition-colors ${
-                      isWishlisted(product._id)
-                        ? 'text-red-500 hover:text-red-600'
-                        : 'text-gray-600 hover:text-red-500'
-                    }`}
-                    title={isWishlisted(product._id) ? "Remove from Wishlist" : "Add to Wishlist"}
-                  >
-                    {addingToWishlist ? (
-                      <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
-                    ) : (
-                      <Heart size={20} className={isWishlisted(product._id) ? 'fill-current' : ''} />
-                    )}
-                  </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Email <span className="text-gray-900/40">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-900/30" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={inquiryForm.email}
+                      onChange={handleInquiryFormChange}
+                      required
+                      className="w-full pl-12 pr-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+                      placeholder="Enter your email"
+                    />
+                  </div>
                 </div>
-              </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Phone <span className="text-gray-900/40">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-900/30" />
+                    <input
+                      type="tel"
+                      name="mobile"
+                      value={inquiryForm.mobile}
+                      onChange={handleInquiryFormChange}
+                      required
+                      className="w-full pl-12 pr-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+                      placeholder="Enter your phone"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
+                      Budget Range
+                    </label>
+                    <input
+                      type="text"
+                      name="budget"
+                      value={inquiryForm.budget}
+                      onChange={handleInquiryFormChange}
+                      className="w-full px-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+                      placeholder="e.g., $500-$1000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
+                      Purpose
+                    </label>
+                    <select
+                      name="purpose"
+                      value={inquiryForm.purpose}
+                      onChange={handleInquiryFormChange}
+                      className="w-full px-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors bg-white"
+                    >
+                      <option value="personal">Personal</option>
+                      <option value="corporate">Corporate</option>
+                      <option value="gift">Gift</option>
+                      <option value="investment">Investment</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Message
+                  </label>
+                  <textarea
+                    name="message"
+                    rows="3"
+                    value={inquiryForm.message}
+                    onChange={handleInquiryFormChange}
+                    className="w-full px-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors resize-none"
+                    placeholder="Any additional details..."
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-gray-900/10">
+                  <button
+                    type="button"
+                    onClick={() => setIsInquiryModalOpen(false)}
+                    className="flex-1 py-3 border border-gray-900/10 text-gray-900 font-medium hover:border-gray-900 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <motion.button
+                    type="submit"
+                    disabled={submittingInquiry}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 py-3 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {submittingInquiry ? (
+                      <LoadingSpinner size="small" />
+                    ) : (
+                      <>
+                        <MessageCircle className="w-4 h-4" />
+                        Submit
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Feedback Toast */}
+      <AnimatePresence>
+        {feedback.active && (
+          <motion.div
+            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 ${
+              feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
+            } text-white`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+          >
+            <Check className="w-4 h-4" />
+            <span className="text-sm font-medium">{feedback.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8">
+        
+        {/* Breadcrumb */}
+        <motion.nav
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 text-sm text-gray-900/50 mb-8"
+        >
+          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
+          <ChevronRight className="w-4 h-4" />
+          <Link to="/products" className="hover:text-gray-900 transition-colors">Collection</Link>
+          {product.category?.name && (
+            <>
+              <ChevronRight className="w-4 h-4" />
+              <Link 
+                to={`/categories/${product.category.slug}`} 
+                className="hover:text-gray-900 transition-colors"
+              >
+                {product.category.name}
+              </Link>
+            </>
+          )}
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-gray-900 truncate max-w-[200px]">{product.title}</span>
+        </motion.nav>
+
+        {/* Product Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+          
+          {/* Images */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            {/* Main Image */}
+            <div 
+              className="relative aspect-[4/5] border border-gray-900/10 bg-white cursor-zoom-in group overflow-hidden"
+              onClick={() => images.length > 0 && openLightbox(selectedImageIndex)}
+            >
+              {/* Loading skeleton */}
+              {!imageLoaded && (
+                <div className="absolute inset-0 bg-white">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-100 to-transparent"
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  />
+                </div>
+              )}
+
+              {images.length > 0 && (
+                <motion.img
+                  src={images[selectedImageIndex]}
+                  alt={product.title}
+                  onLoad={() => setImageLoaded(true)}
+                  className={`w-full h-full object-contain transition-all duration-500 group-hover:scale-105 ${
+                    imageLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              )}
+
+              {/* Zoom icon */}
+              <motion.div
+                className="absolute inset-0 flex items-center justify-center bg-gray-900/0 group-hover:bg-gray-900/10 transition-colors"
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 1 }}
+              >
+                <div className="w-14 h-14 bg-white border border-gray-900/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Maximize2 className="w-5 h-5 text-gray-900" />
+                </div>
+              </motion.div>
 
               {/* Badges */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {isAskForPrice && (
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2">
-                    <Tag size={16} />
-                    Price on Request
-                  </span>
-                )}
-                {hasDiscount && !isAskForPrice && (
-                  <span className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2">
-                    <Tag size={16} />
+              <div className="absolute top-6 left-6 flex flex-col gap-2">
+                {discountPercentage > 0 && !isAskForPrice && (
+                  <span className="bg-gray-900 text-white px-3 py-1 text-xs font-medium">
                     {discountPercentage}% OFF
                   </span>
                 )}
+                {isAskForPrice && (
+                  <span className="bg-gray-900 text-white px-3 py-1 text-xs font-medium">
+                    Price Upon Request
+                  </span>
+                )}
+                {isSoldOut && (
+                  <span className="bg-white text-gray-900 px-3 py-1 text-xs font-medium border border-gray-900">
+                    Sold Out
+                  </span>
+                )}
                 {product.isFeatured && (
-                  <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2">
-                    <Star size={16} fill="white" />
+                  <span className="bg-gray-900 text-white px-3 py-1 text-xs font-medium">
                     Featured
                   </span>
                 )}
                 {product.isOriginal && (
-                  <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full font-bold">
-                    Original Artwork
-                  </span>
-                )}
-                {product.isFramed && (
-                  <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 rounded-full font-bold">
-                    Framed
+                  <span className="bg-gray-900 text-white px-3 py-1 text-xs font-medium">
+                    Original
                   </span>
                 )}
               </div>
+            </div>
+            
+            {/* Thumbnails */}
+            {images.length > 1 && (
+              <div className="grid grid-cols-5 gap-3 mt-4">
+                {images.map((image, index) => (
+                  <motion.div
+                    key={index}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`aspect-square border cursor-pointer overflow-hidden transition-all ${
+                      selectedImageIndex === index 
+                        ? 'border-gray-900' 
+                        : 'border-gray-900/10 opacity-60 hover:opacity-100'
+                    }`}
+                    onClick={() => setSelectedImageIndex(index)}
+                  >
+                    <img
+                      src={image}
+                      alt={`Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
 
-              {/* Rating */}
-              {product.averageRating > 0 && (
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={20}
-                        className={`${
-                          i < Math.floor(product.averageRating)
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'fill-gray-300 text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-lg font-semibold">
-                    {product.averageRating.toFixed(1)}
-                  </span>
-                  <span className="text-gray-500">
-                    ({product.reviewsCount || 0} reviews)
-                  </span>
-                </div>
+          {/* Product Info */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            className="space-y-8"
+          >
+            {/* Category & Title */}
+            <div>
+              <motion.div
+                variants={lineAnimation}
+                className="w-12 h-px bg-gray-900 mb-6 origin-left"
+              />
+
+              <motion.span
+                custom={0}
+                variants={textReveal}
+                className="text-xs tracking-[0.3em] text-gray-900/50 uppercase block mb-3"
+              >
+                {product.category?.name || 'Artwork'}
+              </motion.span>
+
+              <motion.h1
+                custom={1}
+                variants={textReveal}
+                className="font-playfair text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4"
+              >
+                {product.title}
+              </motion.h1>
+
+              {/* Artist */}
+              {product.artist && (
+                <motion.div custom={2} variants={textReveal}>
+                  <Link
+                    to={`/artists/${product.artist.slug}`}
+                    className="text-lg text-gray-900/60 hover:text-gray-900 transition-colors group"
+                  >
+                    by{' '}
+                    <span className="relative">
+                      {product.artist.name}
+                      <span className="absolute bottom-0 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-300" />
+                    </span>
+                  </Link>
+                </motion.div>
               )}
             </div>
 
-            {/* Price Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-sm">
+            {/* Price */}
+            <motion.div 
+              custom={3}
+              variants={textReveal}
+              className="py-6 border-y border-gray-900/10"
+            >
               {isAskForPrice ? (
                 <div>
-                  <div className="text-5xl font-bold text-purple-700 mb-3">
+                  <span className="font-playfair text-3xl font-bold text-gray-900">
                     Price on Request
-                  </div>
-                  <p className="text-gray-600 mb-4">
-                    Contact us for pricing information and availability. We'll get back to you within 24 hours.
+                  </span>
+                  <p className="text-sm text-gray-900/50 mt-2">
+                    Contact us for pricing and availability
                   </p>
-                  <button
-                    onClick={() => {
-                      // Implement contact form modal
-                      toast.success('Contact form will appear here');
-                    }}
-                    className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200"
-                  >
-                    Request Price Quote
-                  </button>
                 </div>
               ) : (
-                <div>
-                  <div className="flex items-baseline gap-4 mb-4">
-                    <span className="text-5xl font-bold text-gray-900">
-                      {formatCurrency(product.price)}
+                <div className="flex items-baseline gap-4">
+                  <span className="font-playfair text-3xl font-bold text-gray-900">
+                    {formatCurrency(product.price)}
+                  </span>
+                  {discountPercentage > 0 && (
+                    <>
+                      <span className="text-xl text-gray-900/40 line-through">
+                        {formatCurrency(product.compareAtPrice)}
+                      </span>
+                      <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1">
+                        Save {discountPercentage}%
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Stock status */}
+              {!isAskForPrice && (
+                <div className="mt-4">
+                  <span className={`text-sm ${isSoldOut ? 'text-gray-900/50' : 'text-gray-900/70'}`}>
+                    {isSoldOut 
+                      ? 'Currently unavailable' 
+                      : product.stockQuantity > 10 
+                        ? 'In stock' 
+                        : `Only ${product.stockQuantity} left`
+                    }
+                  </span>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Details */}
+            <motion.div custom={4} variants={textReveal} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {product.medium && (
+                  <div>
+                    <span className="text-xs tracking-wide text-gray-900/40 uppercase">Medium</span>
+                    <p className="text-gray-900 font-medium mt-1">{product.medium}</p>
+                  </div>
+                )}
+                {product.dimensions?.artwork && (
+                  <div>
+                    <span className="text-xs tracking-wide text-gray-900/40 uppercase">Dimensions</span>
+                    <p className="text-gray-900 font-medium mt-1">
+                      {product.dimensions.artwork.length}" × {product.dimensions.artwork.width}"
+                      {product.dimensions.artwork.height > 0 && ` × ${product.dimensions.artwork.height}"`}
+                    </p>
+                  </div>
+                )}
+                {product.yearCreated && (
+                  <div>
+                    <span className="text-xs tracking-wide text-gray-900/40 uppercase">Year</span>
+                    <p className="text-gray-900 font-medium mt-1">{product.yearCreated}</p>
+                  </div>
+                )}
+                {product.isFramed !== undefined && (
+                  <div>
+                    <span className="text-xs tracking-wide text-gray-900/40 uppercase">Framing</span>
+                    <p className="text-gray-900 font-medium mt-1">
+                      {product.isFramed ? 'Framed' : 'Unframed'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Description */}
+            <motion.div custom={5} variants={textReveal}>
+              <h3 className="text-xs tracking-wide text-gray-900/40 uppercase mb-3">Description</h3>
+              <p className="text-gray-900/70 leading-relaxed whitespace-pre-wrap">
+                {product.description}
+              </p>
+            </motion.div>
+
+            {/* Tags */}
+            {product.tags && product.tags.length > 0 && (
+              <motion.div custom={6} variants={textReveal}>
+                <h3 className="text-xs tracking-wide text-gray-900/40 uppercase mb-3">Tags</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 border border-gray-900/10 text-sm text-gray-900/70"
+                    >
+                      {tag}
                     </span>
-                    {hasDiscount && (
-                      <>
-                        <span className="text-3xl text-gray-500 line-through">
-                          {formatCurrency(product.compareAtPrice)}
-                        </span>
-                        <span className="text-xl font-bold text-red-600">
-                          Save {formatCurrency(product.compareAtPrice - product.price)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Stock Status */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className={`flex items-center gap-2 ${
-                      product.stockQuantity > 10 ? 'text-emerald-600' : 
-                      product.stockQuantity > 0 ? 'text-amber-600' : 'text-red-600'
-                    }`}>
-                      <div className={`w-4 h-4 rounded-full ${
-                        product.stockQuantity > 10 ? 'bg-emerald-500' : 
-                        product.stockQuantity > 0 ? 'bg-amber-500' : 'bg-red-500'
-                      }`} />
-                      <span className="font-medium text-lg">
-                        {product.stockQuantity > 10 
-                          ? 'In Stock' 
-                          : product.stockQuantity > 0 
-                          ? `Only ${product.stockQuantity} left` 
-                          : 'Out of Stock'}
-                      </span>
-                    </div>
-                    {product.salesCount > 0 && (
-                      <span className="text-gray-500">
-                        {product.salesCount} sold
-                      </span>
-                    )}
-                  </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
-                  {/* Quantity & Add to Cart */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Quantity
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => handleQuantityChange(-1)}
-                            disabled={quantity <= 1}
-                            className="w-12 h-12 bg-gray-100 rounded-xl hover:bg-gray-200 disabled:opacity-50 flex items-center justify-center text-xl"
-                          >
-                            -
-                          </button>
-                          <span className="w-20 text-center text-2xl font-bold">
-                            {quantity}
-                          </span>
-                          <button
-                            onClick={() => handleQuantityChange(1)}
-                            disabled={quantity >= (product.stockQuantity || 10)}
-                            className="w-12 h-12 bg-gray-100 rounded-xl hover:bg-gray-200 disabled:opacity-50 flex items-center justify-center text-xl"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div className="text-sm text-gray-500 mb-1">Total</div>
-                        <div className="text-3xl font-bold text-gray-900">
-                          {formatCurrency(product.price * quantity)}
-                        </div>
+            {/* Actions */}
+            <motion.div 
+              custom={7} 
+              variants={textReveal}
+              className="pt-6 border-t border-gray-900/10 space-y-4"
+            >
+              {!isSoldOut && (
+                <>
+                  {/* Quantity - Only for regular products */}
+                  {!isAskForPrice && (
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-900/60">Quantity</span>
+                      <div className="flex items-center border border-gray-900/10">
+                        <button
+                          onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                          className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-12 text-center font-medium">{quantity}</span>
+                        <button
+                          onClick={() => setQuantity(prev => Math.min(product.stockQuantity || 10, prev + 1))}
+                          className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
+                  )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
+                  {/* Buttons */}
+                  <div className="flex gap-3">
+                    {isAskForPrice ? (
+                      <motion.button
+                        onClick={handleAskForPrice}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex-1 bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        Request Price
+                      </motion.button>
+                    ) : (
+                      <motion.button
                         onClick={handleAddToCart}
-                        disabled={isOutOfStock || addingToCart}
-                        className="py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-lg"
+                        disabled={addingToCart}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex-1 bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {addingToCart ? (
-                          <>
-                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Adding...
-                          </>
-                        ) : isOutOfStock ? (
-                          'Out of Stock'
+                          <LoadingSpinner size="small" />
                         ) : (
                           <>
-                            <ShoppingCart size={24} />
+                            <ShoppingCart className="w-5 h-5" />
                             Add to Cart
                           </>
                         )}
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          handleAddToCart();
-                          // Redirect to checkout or show checkout modal
-                        }}
-                        disabled={isOutOfStock || addingToCart}
-                        className="py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-lg"
-                      >
-                        <Check size={24} />
-                        Buy Now
-                      </button>
-                    </div>
+                      </motion.button>
+                    )}
+
+                    <motion.button
+                      onClick={handleWishlistToggle}
+                      disabled={addingToWishlist}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`w-14 h-14 border flex items-center justify-center transition-all cursor-pointer ${
+                        isWishlisted(product._id) 
+                          ? 'border-gray-900 bg-gray-900 text-white' 
+                          : 'border-gray-900/20 hover:border-gray-900'
+                      }`}
+                    >
+                      {addingToWishlist ? (
+                        <LoadingSpinner size="small" />
+                      ) : (
+                        <Heart className={`w-5 h-5 ${isWishlisted(product._id) ? 'fill-white' : ''}`} />
+                      )}
+                    </motion.button>
+                  </div>
+                </>
+              )}
+
+              {isSoldOut && (
+                <div className="text-center py-8 border border-gray-900/10">
+                  <p className="text-gray-900/60">This artwork is currently sold out</p>
+                  <button
+                    onClick={handleWishlistToggle}
+                    className="mt-4 text-sm font-medium text-gray-900 underline underline-offset-4 cursor-pointer"
+                  >
+                    Add to wishlist for updates
+                  </button>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Benefits */}
+            <motion.div 
+              custom={8} 
+              variants={textReveal}
+              className="space-y-3 pt-6 border-t border-gray-900/10"
+            >
+              <div className="flex items-center gap-3 text-sm text-gray-900/60">
+                <ShieldCheck className="w-4 h-4" strokeWidth={1.5} />
+                <span>Free worldwide shipping</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-900/60">
+                <Undo2 className="w-4 h-4" strokeWidth={1.5} />
+                <span>30-day return policy</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-900/60">
+                <Gift className="w-4 h-4" strokeWidth={1.5} />
+                <span>Certificate of authenticity included</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+
+        {/* Artist Section */}
+        {product.artist && (
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-24 pt-16 border-t border-gray-900/10"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <FlowerDecor className="w-6 h-6 text-gray-900/20" />
+              <span className="text-xs tracking-[0.3em] text-gray-900/50 uppercase">The Artist</span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+              {product.artist.profileImage && (
+                <div className="lg:col-span-3">
+                  <div className="aspect-square border border-gray-900/10 overflow-hidden">
+                    <img
+                      src={product.artist.profileImage}
+                      alt={product.artist.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Shipping & Guarantee */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
-                <Truck className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                <div className="font-semibold">Free Shipping</div>
-                <div className="text-sm text-gray-600">Over $100</div>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
-                <RotateCcw className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                <div className="font-semibold">30-Day Returns</div>
-                <div className="text-sm text-gray-600">Easy returns</div>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
-                <Shield className="w-8 h-8 text-amber-600 mx-auto mb-2" />
-                <div className="font-semibold">Secure Payment</div>
-                <div className="text-sm text-gray-600">100% secure</div>
-              </div>
-            </div>
-
-            {/* Share Buttons */}
-            <div className="mb-8">
-              <div className="text-sm font-semibold text-gray-700 mb-3">Share this artwork:</div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleShare('facebook')}
-                  className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-colors"
-                  title="Share on Facebook"
-                >
-                  <Facebook size={20} />
-                </button>
-                <button
-                  onClick={() => handleShare('twitter')}
-                  className="p-3 bg-blue-50 text-blue-400 rounded-xl hover:bg-blue-100 transition-colors"
-                  title="Share on Twitter"
-                >
-                  <Twitter size={20} />
-                </button>
-                <button
-                  onClick={() => handleShare('whatsapp')}
-                  className="p-3 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors"
-                  title="Share on WhatsApp"
-                >
-                  <span className="text-lg font-semibold">WA</span>
-                </button>
-                <button
-                  onClick={() => handleShare('email')}
-                  className="p-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors"
-                  title="Share via Email"
-                >
-                  <Mail size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs Section */}
-        <div className="mt-16">
-          <div className="border-b border-gray-200">
-            <div className="flex gap-8 overflow-x-auto">
-              {['description', 'details', 'artist', 'shipping', 'reviews'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-4 font-semibold text-lg border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === tab
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="py-8">
-            {/* Description Tab */}
-            {activeTab === 'description' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="prose prose-lg max-w-none"
-              >
-                <p className="text-gray-700 leading-relaxed text-lg">
-                  {product.description}
-                </p>
-                
-                {product.tags && product.tags.length > 0 && (
-                  <div className="mt-8">
-                    <div className="text-sm font-semibold text-gray-700 mb-3">Tags:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {product.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors cursor-pointer"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+              
+              <div className={`${product.artist.profileImage ? 'lg:col-span-9' : 'lg:col-span-12'}`}>
+                <h3 className="font-playfair text-3xl font-bold text-gray-900 mb-4">
+                  {product.artist.name}
+                </h3>
+                {product.artist.nationality && (
+                  <p className="text-gray-900/50 mb-4">{product.artist.nationality}</p>
                 )}
-              </motion.div>
-            )}
-
-            {/* Details Tab */}
-            {activeTab === 'details' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                {/* Accordion Sections */}
-                {[
-                  {
-                    title: 'Artwork Details',
-                    icon: <Palette size={20} />,
-                    content: (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-sm text-gray-500">Medium</div>
-                          <div className="font-medium">{product.medium || 'Mixed Media'}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500">Year Created</div>
-                          <div className="font-medium">{product.yearCreated || 'N/A'}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500">Originality</div>
-                          <div className="font-medium">
-                            {product.isOriginal ? 'Original Artwork' : 'Reproduction'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500">Edition</div>
-                          <div className="font-medium">
-                            {product.edition?.total 
-                              ? `${product.edition.available || 0} of ${product.edition.total} available`
-                              : 'Unique'
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  },
-                  {
-                    title: 'Dimensions & Weight',
-                    icon: <Ruler size={20} />,
-                    content: (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-sm text-gray-500">Artwork Dimensions</div>
-                          <div className="font-medium">
-                            {product.dimensions?.artwork?.length || 0}" × {product.dimensions?.artwork?.width || 0}" × {product.dimensions?.artwork?.height || 0}"
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500">Frame Dimensions</div>
-                          <div className="font-medium">
-                            {product.isFramed && product.dimensions?.frame
-                              ? `${product.dimensions.frame.length}" × ${product.dimensions.frame.width}" × ${product.dimensions.frame.height}"`
-                              : 'Not framed'
-                            }
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500">Weight</div>
-                          <div className="font-medium">
-                            {product.weight?.value || 0} {product.weight?.unit || 'lbs'}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  },
-                  {
-                    title: 'Condition & Care',
-                    icon: <Award size={20} />,
-                    content: (
-                      <div className="space-y-3">
-                        <p className="text-gray-700">
-                          This artwork is in excellent condition and has been professionally prepared for display.
-                        </p>
-                        <ul className="space-y-2 text-gray-700">
-                          <li className="flex items-start gap-2">
-                            <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>Keep away from direct sunlight and moisture</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>Clean with dry, soft cloth only</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>Professional framing recommended</span>
-                          </li>
-                        </ul>
-                      </div>
-                    )
-                  }
-                ].map((section, index) => (
-                  <div
-                    key={index}
-                    className="border border-gray-200 rounded-2xl overflow-hidden"
-                  >
-                    <button
-                      onClick={() => toggleSection(`details-${index}`)}
-                      className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        {section.icon}
-                        <span className="text-lg font-semibold text-gray-900">
-                          {section.title}
-                        </span>
-                      </div>
-                      {expandedSections[`details-${index}`] ? (
-                        <ChevronUp size={20} className="text-gray-500" />
-                      ) : (
-                        <ChevronDown size={20} className="text-gray-500" />
-                      )}
-                    </button>
-                    {expandedSections[`details-${index}`] && (
-                      <div className="p-6 pt-0 border-t border-gray-200">
-                        {section.content}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </motion.div>
-            )}
-
-            {/* Artist Tab */}
-            {activeTab === 'artist' && product.artist && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
-              >
-                <div className="p-8">
-                  <div className="flex items-start gap-6">
-                    <div className="w-32 h-32 rounded-xl overflow-hidden bg-gradient-to-br from-gray-900 to-black flex-shrink-0">
-                      {product.artist.profileImage ? (
-                        <img
-                          src={product.artist.profileImage}
-                          alt={product.artist.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Palette className="w-12 h-12 text-gray-300" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                        {product.artist.name}
-                      </h3>
-                      {product.artist.nationality && (
-                        <div className="text-gray-600 mb-3">
-                          {product.artist.nationality}
-                        </div>
-                      )}
-                      {product.artist.biography && (
-                        <p className="text-gray-700 leading-relaxed">
-                          {product.artist.biography}
-                        </p>
-                      )}
-                      <Link
-                        to={`/artists/${product.artist.slug}`}
-                        className="inline-flex items-center gap-2 mt-4 text-blue-600 hover:text-blue-800 font-semibold"
-                      >
-                        View artist profile
-                        <ChevronRight size={16} />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Shipping Tab */}
-            {activeTab === 'shipping' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                {[
-                  {
-                    title: 'Shipping Information',
-                    icon: <Truck size={24} />,
-                    content: (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <div className="text-sm text-gray-500">Shipping Method</div>
-                            <div className="font-medium">Professional Art Shipping</div>
-                          </div>
-                          <div>
-                            <div className="text-sm text-gray-500">Delivery Time</div>
-                            <div className="font-medium">7-14 business days</div>
-                          </div>
-                          <div>
-                            <div className="text-sm text-gray-500">Shipping Cost</div>
-                            <div className="font-medium">
-                              {product.price > 100 ? 'FREE' : formatCurrency(25)}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-sm text-gray-500">Package Type</div>
-                            <div className="font-medium">Professional Art Crate</div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  },
-                  {
-                    title: 'Returns & Warranty',
-                    icon: <RotateCcw size={24} />,
-                    content: (
-                      <div className="space-y-3">
-                        <p className="text-gray-700">
-                          We offer a 30-day return policy for all artworks. If you're not completely satisfied with your purchase, you can return it for a full refund.
-                        </p>
-                        <ul className="space-y-2 text-gray-700">
-                          <li className="flex items-start gap-2">
-                            <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>30-day return policy</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>Free return shipping for damaged items</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>Lifetime authenticity guarantee</span>
-                          </li>
-                        </ul>
-                      </div>
-                    )
-                  }
-                ].map((section, index) => (
-                  <div
-                    key={index}
-                    className="border border-gray-200 rounded-2xl overflow-hidden"
-                  >
-                    <button
-                      onClick={() => toggleSection(`shipping-${index}`)}
-                      className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        {section.icon}
-                        <span className="text-lg font-semibold text-gray-900">
-                          {section.title}
-                        </span>
-                      </div>
-                      {expandedSections[`shipping-${index}`] ? (
-                        <ChevronUp size={20} className="text-gray-500" />
-                      ) : (
-                        <ChevronDown size={20} className="text-gray-500" />
-                      )}
-                    </button>
-                    {expandedSections[`shipping-${index}`] && (
-                      <div className="p-6 pt-0 border-t border-gray-200">
-                        {section.content}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </motion.div>
-            )}
-
-            {/* Reviews Tab */}
-            {activeTab === 'reviews' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6">
-                    <Star className="w-12 h-12 text-gray-400" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                    {product.reviewsCount || 0} Reviews
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    {product.reviewsCount > 0 
-                      ? `Average rating: ${product.averageRating.toFixed(1)}/5` 
-                      : 'No reviews yet. Be the first to review this artwork!'}
-                  </p>
-                  <button
-                    onClick={() => {
-                      if (!isAuthenticated) {
-                        toast.error('Please login to write a review');
-                      } else {
-                        // Implement review modal
-                        toast.success('Review form will appear here');
-                      }
-                    }}
-                    className="px-6 py-3 bg-gradient-to-r from-gray-900 to-black text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
-                  >
-                    Write a Review
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </div>
+                <p className="text-gray-900/60 leading-relaxed mb-6 line-clamp-3">
+                  {product.artist.biography || 'No biography available for this artist.'}
+                </p>
+                <Link
+                  to={`/artists/${product.artist.slug}`}
+                  className="inline-flex items-center gap-2 text-gray-900 font-medium group"
+                >
+                  <span className="relative">
+                    View all works by {product.artist.name}
+                    <span className="absolute bottom-0 left-0 w-full h-px bg-gray-900" />
+                  </span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
+          </motion.section>
+        )}
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">
-              Related Artworks
-            </h2>
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-24 pt-16 border-t border-gray-900/10"
+          >
+            <div className="text-center mb-12">
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1 }}
+                className="w-16 h-px bg-gray-900 mx-auto mb-6"
+              />
+              <span className="text-xs tracking-[0.3em] text-gray-900/50 uppercase block mb-3">
+                You May Also Like
+              </span>
+              <h2 className="font-playfair text-3xl font-bold text-gray-900">
+                Related Artworks
+              </h2>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct, index) => (
-                <ProductCard
+                <motion.div
                   key={relatedProduct._id}
-                  product={relatedProduct}
-                  index={index}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <ProductCard product={relatedProduct} index={index} />
+                </motion.div>
               ))}
             </div>
-          </div>
+
+            <div className="text-center mt-12">
+              <Link
+                to="/products"
+                className="inline-flex items-center gap-2 text-gray-900 font-medium group"
+              >
+                <span className="relative">
+                  Browse Full Collection
+                  <span className="absolute bottom-0 left-0 w-full h-px bg-gray-900" />
+                </span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          </motion.section>
         )}
       </div>
+
+      {/* Bottom decorative line */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.5 }}
+        className="w-32 h-px bg-gray-900/10 mx-auto my-16"
+      />
     </div>
   );
 };
