@@ -121,9 +121,15 @@ const userSchema = new mongoose.Schema({
   stripeCustomerId: {
     type: String,
   },
-  wishlist: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
+   wishlist: [{
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+    },
+    addedAt: {
+      type: Date,
+      default: Date.now,
+    },
   }],
   orderHistory: [{
     type: mongoose.Schema.Types.ObjectId,

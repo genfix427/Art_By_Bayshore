@@ -81,3 +81,13 @@ export const newsletterService = {
   subscribe: (data) => api.post('/newsletter/subscribe', data),
   unsubscribe: (token) => api.get(`/newsletter/unsubscribe/${token}`),
 };
+
+export const wishlistService = {
+  getWishlist: () => api.get('/wishlist'),
+  addToWishlist: (productId) => api.post('/wishlist', { productId }),
+  removeFromWishlist: (productId) => api.delete(`/wishlist/${productId}`),
+  checkWishlist: (productId) => api.get(`/wishlist/check/${productId}`),
+  clearWishlist: () => api.delete('/wishlist'),
+  getWishlistCount: () => api.get('/wishlist/count'),
+  syncWishlist: (productIds) => api.post('/wishlist/sync', { productIds }),
+};

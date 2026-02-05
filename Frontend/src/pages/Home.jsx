@@ -4,6 +4,8 @@ import { productService } from '../api/services';
 import { useSEO } from '../hooks/useSEO';
 import ProductCard from '../components/products/ProductCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import ArtistSlider from '../components/artists/ArtistSlider';
+import CategorySlider from '../components/categories/CategorySlider';
 
 const Home = () => {
   useSEO({
@@ -45,16 +47,23 @@ const Home = () => {
             Explore our curated collection of original paintings and artworks from talented artists around the world
           </p>
           <Link to="/products">
-            <button className='text-red-900 p-6 cursor-pointer'>
+            <button style={{
+              padding: '1rem 2rem',
+              fontSize: '1.125rem',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}>
               Browse Collection
             </button>
           </Link>
         </div>
-        <div className="bg-red-500 text-white p-10">
-  Tailwind is working
-</div>
-
       </section>
+
+      <ArtistSlider />
+      <CategorySlider />
 
       {/* Featured Products */}
       <section style={{ padding: '4rem 2rem' }}>

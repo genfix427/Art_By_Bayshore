@@ -76,7 +76,7 @@ const Header = () => {
   const navLinks = [
     { name: 'Home', href: '/', end: true },
     { name: 'Store', href: '/products', end: false },
-    { name: 'Virtual Gallery', href: '/virtual-gallery', end: false },
+    { name: 'Categories', href: '/categories', end: false },
     { name: 'Artists', href: '/artists', end: false },
     { name: 'About', href: '/about', end: false },
     { name: 'Contact', href: '/contact', end: false },
@@ -138,24 +138,24 @@ const Header = () => {
               
               {/* Wishlist Icon */}
               <Link
-                to="/wishlist"
-                className="relative !p-2 text-gray-600 hover:text-red-500 transition-all duration-200 hover:scale-110 group"
-                aria-label="Wishlist"
-              >
-                <Heart 
-                  size={24} 
-                  className="group-hover:fill-red-100 transition-all duration-200" 
-                />
-                {wishlistCount > 0 && (
-                  <motion.span 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg"
-                  >
-                    {wishlistCount > 99 ? '99+' : wishlistCount}
-                  </motion.span>
-                )}
-              </Link>
+  to="/wishlist"
+  className="relative !p-2 text-gray-600 hover:text-red-500 transition-all duration-200 hover:scale-110 group"
+  aria-label="Wishlist"
+>
+  <Heart 
+    size={24} 
+    className="group-hover:fill-red-100 transition-all duration-200" 
+  />
+  {wishlistCount > 0 && (
+    <motion.span 
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg"
+    >
+      {wishlistCount > 99 ? '99+' : wishlistCount}
+    </motion.span>
+  )}
+</Link>
 
               {/* Cart Icon */}
               <Link

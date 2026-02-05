@@ -172,9 +172,6 @@ export const getRelatedProducts = asyncHandler(async (req, res, next) => {
     data: relatedProducts,
   });
 });
- // Add this import
-
-// controllers/productController.js - FIXED createProduct and updateProduct
 
 // @desc    Create product
 // @route   POST /api/v1/products
