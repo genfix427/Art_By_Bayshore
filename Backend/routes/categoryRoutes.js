@@ -18,23 +18,23 @@ router.get('/', getCategories);
 router.get('/slug/:slug', getCategoryBySlug);
 router.get('/:id', getCategory);
 
+// ✅ FIXED: Call validate as a function with validators
 router.post(
   '/',
   protect,
   authorize('admin', 'superadmin'),
   upload.single('image'),
-  createCategoryValidator,
-  validate,
+  validate(createCategoryValidator),  // ← Pass validators here
   createCategory
 );
 
+// ✅ FIXED
 router.put(
   '/:id',
   protect,
   authorize('admin', 'superadmin'),
   upload.single('image'),
-  updateCategoryValidator,
-  validate,
+  validate(updateCategoryValidator),  // ← Pass validators here
   updateCategory
 );
 

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll } from 'framer-motion';
-import { 
+import {
   ChevronRight,
   Heart,
   Minus,
@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '../components/products/ProductCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { productService } from '../api/services';
+import { inquiryService, productService } from '../api/services';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -76,7 +76,7 @@ const ProductDetails = () => {
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
   const { isWishlisted, addToWishlist, removeFromWishlist } = useWishlist();
-  
+
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,12 +84,12 @@ const ProductDetails = () => {
   const [addingToCart, setAddingToCart] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  
+
   // Image gallery states
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [slideDirection, setSlideDirection] = useState(1);
-  
+
   // Ask for Price states
   const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
   const [submittingInquiry, setSubmittingInquiry] = useState(false);
@@ -132,9 +132,9 @@ const ProductDetails = () => {
 
   const lineAnimation = {
     hidden: { scaleX: 0 },
-    visible: { 
-      scaleX: 1, 
-      transition: { duration: 1, ease: "easeInOut" } 
+    visible: {
+      scaleX: 1,
+      transition: { duration: 1, ease: "easeInOut" }
     }
   };
 
@@ -156,7 +156,7 @@ const ProductDetails = () => {
     try {
       const productResponse = await productService.getBySlug(slug);
       setProduct(productResponse.data);
-      
+
       const relatedResponse = await productService.getRelated(productResponse.data._id);
       setRelatedProducts(relatedResponse.data);
     } catch (error) {
@@ -233,29 +233,70 @@ const ProductDetails = () => {
     setInquiryForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmitInquiry = async (e) => {
-    e.preventDefault();
-    
-    if (!inquiryForm.fullName.trim() || !inquiryForm.email.trim() || !inquiryForm.mobile.trim()) {
-      showFeedback('Please fill required fields', 'error');
-      return;
-    }
+ const handleSubmitInquiry = async (e) => {
+  e.preventDefault();
 
-    setSubmittingInquiry(true);
-    try {
-      // You can add your API call here for price inquiry
-      // await productService.submitPriceInquiry(product._id, inquiryForm);
-      showFeedback('Inquiry submitted successfully');
+  // Validate required fields
+  if (!inquiryForm.fullName.trim() || !inquiryForm.email.trim() || !inquiryForm.mobile.trim()) {
+    showFeedback('Please fill required fields', 'error');
+    return;
+  }
+
+  setSubmittingInquiry(true);
+  try {
+    console.log('=== SUBMITTING INQUIRY ===');
+    console.log('Product ID:', product._id);
+    console.log('Form Data:', inquiryForm);
+
+    // Split full name into first and last name
+    const nameParts = inquiryForm.fullName.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+
+    // Prepare the inquiry data according to your backend API
+    const inquiryData = {
+      productId: product._id,
+      firstName: firstName,
+      lastName: lastName,
+      email: inquiryForm.email,
+      phoneNumber: inquiryForm.mobile,
+      message: inquiryForm.message || `Interested in ${product.title}. Budget: ${inquiryForm.budget || 'Not specified'}. Purpose: ${inquiryForm.purpose}`
+    };
+
+    console.log('Inquiry payload:', inquiryData);
+
+    // Call the actual API
+    const response = await inquiryService.create(inquiryData);
+    
+    console.log('API Response:', response);
+    
+    if (response.success) {
+      showFeedback('Inquiry submitted successfully! We will contact you soon.');
       setIsInquiryModalOpen(false);
+      // Reset form
       setInquiryForm({
-        fullName: '', email: '', mobile: '', message: '', budget: '', purpose: 'personal'
+        fullName: '', 
+        email: '', 
+        mobile: '', 
+        message: '', 
+        budget: '', 
+        purpose: 'personal'
       });
-    } catch (err) {
-      showFeedback('Failed to submit', 'error');
-    } finally {
-      setSubmittingInquiry(false);
+    } else {
+      showFeedback(response.message || 'Failed to submit inquiry', 'error');
     }
-  };
+  } catch (error) {
+    console.error('❌ Inquiry submission error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+    });
+    
+    showFeedback(error.message || 'Failed to submit inquiry. Please try again.', 'error');
+  } finally {
+    setSubmittingInquiry(false);
+  }
+};
 
   // Image gallery functions
   const openLightbox = (index) => {
@@ -272,7 +313,7 @@ const ProductDetails = () => {
   const navigateImage = (direction) => {
     const images = product.images || [];
     if (images.length === 0) return;
-    
+
     setSlideDirection(direction === 'next' ? 1 : -1);
     if (direction === 'prev') {
       setSelectedImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -349,8 +390,8 @@ const ProductDetails = () => {
           <p className="text-gray-900/60 mb-8">
             The artwork you're looking for doesn't exist.
           </p>
-          <Link 
-            to="/products" 
+          <Link
+            to="/products"
             className="inline-flex items-center gap-2 text-gray-900 font-medium group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -372,7 +413,7 @@ const ProductDetails = () => {
   return (
     <div ref={containerRef} className="min-h-screen bg-white relative overflow-hidden">
       {/* Background Pattern */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.02] pointer-events-none"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
@@ -404,7 +445,7 @@ const ProductDetails = () => {
             >
               <X className="w-5 h-5" />
             </motion.button>
-            
+
             {/* Navigation */}
             {images.length > 1 && (
               <>
@@ -416,7 +457,7 @@ const ProductDetails = () => {
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </motion.button>
-                
+
                 <motion.button
                   onClick={() => navigateImage('next')}
                   className="absolute right-6 w-12 h-12 border border-gray-900/20 flex items-center justify-center hover:border-gray-900 transition-colors z-20 cursor-pointer"
@@ -627,14 +668,13 @@ const ProductDetails = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Feedback Toast */}
       <AnimatePresence>
         {feedback.active && (
           <motion.div
-            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 ${
-              feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
-            } text-white`}
+            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 ${feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
+              } text-white`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
@@ -647,7 +687,7 @@ const ProductDetails = () => {
 
       {/* Main Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8">
-        
+
         {/* Breadcrumb */}
         <motion.nav
           initial={{ opacity: 0, y: -10 }}
@@ -660,8 +700,8 @@ const ProductDetails = () => {
           {product.category?.name && (
             <>
               <ChevronRight className="w-4 h-4" />
-              <Link 
-                to={`/categories/${product.category.slug}`} 
+              <Link
+                to={`/categories/${product.category.slug}`}
                 className="hover:text-gray-900 transition-colors"
               >
                 {product.category.name}
@@ -674,7 +714,7 @@ const ProductDetails = () => {
 
         {/* Product Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-          
+
           {/* Images */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -682,7 +722,7 @@ const ProductDetails = () => {
             transition={{ duration: 0.6 }}
           >
             {/* Main Image */}
-            <div 
+            <div
               className="relative aspect-[4/5] border border-gray-900/10 bg-white cursor-zoom-in group overflow-hidden"
               onClick={() => images.length > 0 && openLightbox(selectedImageIndex)}
             >
@@ -702,9 +742,8 @@ const ProductDetails = () => {
                   src={images[selectedImageIndex]}
                   alt={product.title}
                   onLoad={() => setImageLoaded(true)}
-                  className={`w-full h-full object-contain transition-all duration-500 group-hover:scale-105 ${
-                    imageLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className={`w-full h-full object-contain transition-all duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
                 />
               )}
 
@@ -748,7 +787,7 @@ const ProductDetails = () => {
                 )}
               </div>
             </div>
-            
+
             {/* Thumbnails */}
             {images.length > 1 && (
               <div className="grid grid-cols-5 gap-3 mt-4">
@@ -757,11 +796,10 @@ const ProductDetails = () => {
                     key={index}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`aspect-square border cursor-pointer overflow-hidden transition-all ${
-                      selectedImageIndex === index 
-                        ? 'border-gray-900' 
+                    className={`aspect-square border cursor-pointer overflow-hidden transition-all ${selectedImageIndex === index
+                        ? 'border-gray-900'
                         : 'border-gray-900/10 opacity-60 hover:opacity-100'
-                    }`}
+                      }`}
                     onClick={() => setSelectedImageIndex(index)}
                   >
                     <img
@@ -822,7 +860,7 @@ const ProductDetails = () => {
             </div>
 
             {/* Price */}
-            <motion.div 
+            <motion.div
               custom={3}
               variants={textReveal}
               className="py-6 border-y border-gray-900/10"
@@ -858,10 +896,10 @@ const ProductDetails = () => {
               {!isAskForPrice && (
                 <div className="mt-4">
                   <span className={`text-sm ${isSoldOut ? 'text-gray-900/50' : 'text-gray-900/70'}`}>
-                    {isSoldOut 
-                      ? 'Currently unavailable' 
-                      : product.stockQuantity > 10 
-                        ? 'In stock' 
+                    {isSoldOut
+                      ? 'Currently unavailable'
+                      : product.stockQuantity > 10
+                        ? 'In stock'
                         : `Only ${product.stockQuantity} left`
                     }
                   </span>
@@ -930,8 +968,8 @@ const ProductDetails = () => {
             )}
 
             {/* Actions */}
-            <motion.div 
-              custom={7} 
+            <motion.div
+              custom={7}
               variants={textReveal}
               className="pt-6 border-t border-gray-900/10 space-y-4"
             >
@@ -980,7 +1018,15 @@ const ProductDetails = () => {
                         className="flex-1 bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {addingToCart ? (
-                          <LoadingSpinner size="small" />
+                          <div className="flex justify-center items-center">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                              className="w-16 h-16 border border-white flex items-center justify-center"
+                            >
+                              <div className="w-8 h-8 border-t border-white" />
+                            </motion.div>
+                          </div>
                         ) : (
                           <>
                             <ShoppingCart className="w-5 h-5" />
@@ -995,11 +1041,10 @@ const ProductDetails = () => {
                       disabled={addingToWishlist}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className={`w-14 h-14 border flex items-center justify-center transition-all cursor-pointer ${
-                        isWishlisted(product._id) 
-                          ? 'border-gray-900 bg-gray-900 text-white' 
+                      className={`w-14 h-14 border flex items-center justify-center transition-all cursor-pointer ${isWishlisted(product._id)
+                          ? 'border-gray-900 bg-gray-900 text-white'
                           : 'border-gray-900/20 hover:border-gray-900'
-                      }`}
+                        }`}
                     >
                       {addingToWishlist ? (
                         <LoadingSpinner size="small" />
@@ -1025,8 +1070,8 @@ const ProductDetails = () => {
             </motion.div>
 
             {/* Benefits */}
-            <motion.div 
-              custom={8} 
+            <motion.div
+              custom={8}
               variants={textReveal}
               className="space-y-3 pt-6 border-t border-gray-900/10"
             >
@@ -1071,7 +1116,7 @@ const ProductDetails = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className={`${product.artist.profileImage ? 'lg:col-span-9' : 'lg:col-span-12'}`}>
                 <h3 className="font-playfair text-3xl font-bold text-gray-900 mb-4">
                   {product.artist.name}

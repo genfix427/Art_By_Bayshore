@@ -20,26 +20,26 @@ const router = express.Router();
 router.get('/', getProducts);
 router.get('/featured/list', getFeaturedProducts);
 router.get('/slug/:slug', getProductBySlug);
+router.get('/:id/related', getRelatedProducts); // ⚠️ Move before /:id
 router.get('/:id', getProduct);
-router.get('/:id/related', getRelatedProducts);
 
+// ✅ FIXED
 router.post(
   '/',
   protect,
   authorize('admin', 'superadmin'),
   upload.array('images', 10),
-  createProductValidator,
-  validate,
+  validate(createProductValidator),
   createProduct
 );
 
+// ✅ FIXED
 router.put(
   '/:id',
   protect,
   authorize('admin', 'superadmin'),
   upload.array('images', 10),
-  updateProductValidator,
-  validate,
+  validate(updateProductValidator),
   updateProduct
 );
 

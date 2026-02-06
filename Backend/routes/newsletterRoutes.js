@@ -23,8 +23,17 @@ import {
 const router = express.Router();
 
 // Public routes
-router.post('/subscribe', subscribeValidator, validate, subscribe);
+// ✅ FIXED
+router.post('/subscribe', validate(subscribeValidator), subscribe);
 router.get('/unsubscribe/:token', unsubscribe);
+
+// Admin routes - Statistics (move before other routes)
+router.get(
+  '/stats',
+  protect,
+  authorize('admin', 'superadmin'),
+  getNewsletterStats
+);
 
 // Admin routes - Subscribers
 router.get(
@@ -63,12 +72,12 @@ router.get(
   getCampaign
 );
 
+// ✅ FIXED
 router.post(
   '/campaigns',
   protect,
   authorize('admin', 'superadmin'),
-  createCampaignValidator,
-  validate,
+  validate(createCampaignValidator),
   createCampaign
 );
 
@@ -91,14 +100,6 @@ router.delete(
   protect,
   authorize('admin', 'superadmin'),
   deleteCampaign
-);
-
-// Statistics
-router.get(
-  '/stats',
-  protect,
-  authorize('admin', 'superadmin'),
-  getNewsletterStats
 );
 
 export default router;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productService, categoryService, artistService } from '../../api/services';
 import PageHeader from '../../components/common/PageHeader';
@@ -9,6 +9,7 @@ const ProductForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = !!id;
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -51,11 +52,19 @@ const ProductForm = () => {
     metaKeywords: '',
   });
 
-  const [images, setImages] = useState([]);
+  // Enhanced image state management
+  const [selectedImages, setSelectedImages] = useState([]); // Array of { file, preview, id }
   const [existingImages, setExistingImages] = useState([]);
   const [categories, setCategories] = useState([]);
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Check if form can be submitted
+  const canSubmit = isEdit 
+    ? (existingImages.length > 0 || selectedImages.length > 0) 
+    : selectedImages.length > 0;
 
   useEffect(() => {
     fetchCategoriesAndArtists();
@@ -63,6 +72,17 @@ const ProductForm = () => {
       fetchProduct();
     }
   }, [id]);
+
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      selectedImages.forEach(img => {
+        if (img.preview) {
+          URL.revokeObjectURL(img.preview);
+        }
+      });
+    };
+  }, []);
 
   const fetchCategoriesAndArtists = async () => {
     try {
@@ -117,7 +137,62 @@ const ProductForm = () => {
     }
   };
 
-  const handleDeleteImage = async (imageId) => {
+  // Handle file selection with preview
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
+
+    // Check max limit (10 images)
+    const totalImages = selectedImages.length + existingImages.length + files.length;
+    if (totalImages > 10) {
+      toast.error(`Maximum 10 images allowed. You can add ${10 - selectedImages.length - existingImages.length} more.`);
+      return;
+    }
+
+    // Validate file types and sizes
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not a valid image file`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error(`${file.name} is too large. Max size is 5MB`);
+        return false;
+      }
+      return true;
+    });
+
+    // Create preview URLs
+    const newImages = validFiles.map(file => ({
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name,
+      size: file.size,
+    }));
+
+    setSelectedImages(prev => [...prev, ...newImages]);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Remove selected image before upload
+  const handleRemoveSelectedImage = (imageId) => {
+    setSelectedImages(prev => {
+      const imageToRemove = prev.find(img => img.id === imageId);
+      if (imageToRemove?.preview) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      return prev.filter(img => img.id !== imageId);
+    });
+  };
+
+  // Delete existing image from server
+  const handleDeleteExistingImage = async (imageId) => {
     if (!window.confirm('Are you sure you want to delete this image?')) {
       return;
     }
@@ -131,119 +206,183 @@ const ProductForm = () => {
     }
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-
-  try {
-    const data = new FormData();
-    
-    // Basic fields
-    data.append('title', formData.title);
-    data.append('description', formData.description);
-    data.append('category', formData.category);
-    data.append('artist', formData.artist);
-    data.append('productType', formData.productType);
-    
-    // Price fields (only for price-based products)
-    if (formData.productType === 'price-based') {
-      if (formData.price) data.append('price', parseFloat(formData.price).toString());
-      if (formData.compareAtPrice) data.append('compareAtPrice', parseFloat(formData.compareAtPrice).toString());
-      if (formData.stockQuantity) data.append('stockQuantity', parseInt(formData.stockQuantity).toString());
-    }
-
-    // Additional fields
-    if (formData.sku) data.append('sku', formData.sku);
-    if (formData.medium) data.append('medium', formData.medium);
-    if (formData.yearCreated) data.append('yearCreated', parseInt(formData.yearCreated).toString());
-    
-    // Boolean fields
-    data.append('isFramed', formData.isFramed.toString());
-    data.append('isOriginal', formData.isOriginal.toString());
-    data.append('isActive', formData.isActive.toString());
-    data.append('isFeatured', formData.isFeatured.toString());
-    
-    if (formData.lowStockThreshold) {
-      data.append('lowStockThreshold', parseInt(formData.lowStockThreshold).toString());
-    }
-    
-    // Arrays
-    if (formData.tags) {
-      const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
-      if (tagsArray.length > 0) {
-        data.append('tags', JSON.stringify(tagsArray));
-      }
-    }
-    
-    // Dimensions - ensure all values are numbers, not strings
-    const dimensionsData = {
-      artwork: {
-        length: parseFloat(formData.dimensions.artwork.length) || 0,
-        width: parseFloat(formData.dimensions.artwork.width) || 0,
-        height: parseFloat(formData.dimensions.artwork.height) || 0,
-        unit: formData.dimensions.artwork.unit
-      },
-      frame: {
-        length: parseFloat(formData.dimensions.frame.length) || 0,
-        width: parseFloat(formData.dimensions.frame.width) || 0,
-        height: parseFloat(formData.dimensions.frame.height) || 0,
-        unit: formData.dimensions.frame.unit
-      }
-    };
-    data.append('dimensions', JSON.stringify(dimensionsData));
-    
-    // Weight - ensure value is a number
-    const weightData = {
-      value: parseFloat(formData.weight.value) || 0,
-      unit: formData.weight.unit
-    };
-    data.append('weight', JSON.stringify(weightData));
-    
-    // SEO fields
-    if (formData.metaTitle) data.append('metaTitle', formData.metaTitle);
-    if (formData.metaDescription) data.append('metaDescription', formData.metaDescription);
-    if (formData.metaKeywords) {
-      const keywordsArray = formData.metaKeywords.split(',').map(k => k.trim()).filter(Boolean);
-      if (keywordsArray.length > 0) {
-        data.append('metaKeywords', JSON.stringify(keywordsArray));
-      }
-    }
-
-    // Images
-    Array.from(images).forEach((image) => {
-      data.append('images', image);
+  // Set image as primary
+  const handleSetPrimary = (index) => {
+    setSelectedImages(prev => {
+      const newImages = [...prev];
+      const [primaryImage] = newImages.splice(index, 1);
+      return [primaryImage, ...newImages];
     });
+    toast.success('Image set as primary');
+  };
 
-    // Debug
-    console.log('FormData contents:');
-    for (let [key, value] of data.entries()) {
-      console.log(`${key}:`, value);
-    }
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
-    if (isEdit) {
-      await productService.update(id, data);
-      toast.success('Product updated successfully');
-    } else {
-      await productService.create(data);
-      toast.success('Product created successfully');
-    }
+  // Drag and drop handlers
+  const [isDragging, setIsDragging] = useState(false);
 
-    navigate('/products');
-  } catch (error) {
-    console.error('Full error:', error);
-    console.error('Error response:', error.response?.data);
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
     
-    if (error.response?.data?.errors) {
-      console.error('Validation errors:', error.response.data.errors);
-      const firstError = error.response.data.errors[0];
-      toast.error(`${firstError.field}: ${firstError.message}`);
-    } else {
-      toast.error(error.response?.data?.error || error.message || 'An error occurred');
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length > 0) {
+      const event = { target: { files: imageFiles } };
+      handleFileSelect(event);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!canSubmit) {
+      toast.error('Please upload at least one image');
+      return;
+    }
+
+    setLoading(true);
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const data = new FormData();
+      
+      // Basic fields
+      data.append('title', formData.title);
+      data.append('description', formData.description);
+      data.append('category', formData.category);
+      data.append('artist', formData.artist);
+      data.append('productType', formData.productType);
+      
+      // Price fields (only for price-based products)
+      if (formData.productType === 'price-based') {
+        if (formData.price) data.append('price', parseFloat(formData.price).toString());
+        if (formData.compareAtPrice) data.append('compareAtPrice', parseFloat(formData.compareAtPrice).toString());
+        if (formData.stockQuantity) data.append('stockQuantity', parseInt(formData.stockQuantity).toString());
+      }
+
+      // Additional fields
+      if (formData.sku) data.append('sku', formData.sku);
+      if (formData.medium) data.append('medium', formData.medium);
+      if (formData.yearCreated) data.append('yearCreated', parseInt(formData.yearCreated).toString());
+      
+      // Boolean fields
+      data.append('isFramed', formData.isFramed.toString());
+      data.append('isOriginal', formData.isOriginal.toString());
+      data.append('isActive', formData.isActive.toString());
+      data.append('isFeatured', formData.isFeatured.toString());
+      
+      if (formData.lowStockThreshold) {
+        data.append('lowStockThreshold', parseInt(formData.lowStockThreshold).toString());
+      }
+      
+      // Arrays
+      if (formData.tags) {
+        const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
+        if (tagsArray.length > 0) {
+          data.append('tags', JSON.stringify(tagsArray));
+        }
+      }
+      
+      // Dimensions
+      const dimensionsData = {
+        artwork: {
+          length: parseFloat(formData.dimensions.artwork.length) || 0,
+          width: parseFloat(formData.dimensions.artwork.width) || 0,
+          height: parseFloat(formData.dimensions.artwork.height) || 0,
+          unit: formData.dimensions.artwork.unit
+        },
+        frame: {
+          length: parseFloat(formData.dimensions.frame.length) || 0,
+          width: parseFloat(formData.dimensions.frame.width) || 0,
+          height: parseFloat(formData.dimensions.frame.height) || 0,
+          unit: formData.dimensions.frame.unit
+        }
+      };
+      data.append('dimensions', JSON.stringify(dimensionsData));
+      
+      // Weight
+      const weightData = {
+        value: parseFloat(formData.weight.value) || 0,
+        unit: formData.weight.unit
+      };
+      data.append('weight', JSON.stringify(weightData));
+      
+      // SEO fields
+      if (formData.metaTitle) data.append('metaTitle', formData.metaTitle);
+      if (formData.metaDescription) data.append('metaDescription', formData.metaDescription);
+      if (formData.metaKeywords) {
+        const keywordsArray = formData.metaKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        if (keywordsArray.length > 0) {
+          data.append('metaKeywords', JSON.stringify(keywordsArray));
+        }
+      }
+
+      // Append images
+      selectedImages.forEach((image) => {
+        data.append('images', image.file);
+      });
+
+      // Create config for upload progress
+      const config = {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        },
+      };
+
+      if (isEdit) {
+        await productService.update(id, data, config);
+        toast.success('Product updated successfully');
+      } else {
+        await productService.create(data, config);
+        toast.success('Product created successfully');
+      }
+
+      // Cleanup preview URLs
+      selectedImages.forEach(img => {
+        if (img.preview) {
+          URL.revokeObjectURL(img.preview);
+        }
+      });
+
+      navigate('/products');
+    } catch (error) {
+      console.error('Full error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      if (error.response?.data?.errors) {
+        console.error('Validation errors:', error.response.data.errors);
+        const firstError = error.response.data.errors[0];
+        toast.error(`${firstError.field}: ${firstError.message}`);
+      } else {
+        toast.error(error.response?.data?.error || error.message || 'An error occurred');
+      }
+    } finally {
+      setLoading(false);
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
 
   return (
     <div>
@@ -786,24 +925,47 @@ const handleSubmit = async (e) => {
             </div>
           </div>
 
-          {/* Images */}
+          {/* Images Section - Enhanced */}
           <div style={{
             borderTop: '1px solid #ddd',
             paddingTop: '1.5rem',
             marginTop: '1.5rem',
             marginBottom: '1.5rem',
           }}>
-            <h3 style={{ marginBottom: '1rem' }}>Product Images</h3>
+            <h3 style={{ marginBottom: '1rem' }}>
+              Product Images 
+              <span style={{ 
+                color: canSubmit ? '#28a745' : '#dc3545', 
+                fontSize: '0.875rem',
+                marginLeft: '0.5rem',
+                fontWeight: 'normal'
+              }}>
+                {canSubmit ? '✓ Images ready' : '* At least one image required'}
+              </span>
+            </h3>
 
-            {/* Existing Images */}
+            {/* Existing Images (Edit Mode) */}
             {isEdit && existingImages.length > 0 && (
-              <div style={{ marginBottom: '1rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                  Current Images
+                  Current Images ({existingImages.length})
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
+                  gap: '1rem' 
+                }}>
                   {existingImages.map((img) => (
-                    <div key={img._id} style={{ position: 'relative' }}>
+                    <div 
+                      key={img._id} 
+                      style={{ 
+                        position: 'relative',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: img.isPrimary ? '3px solid #007bff' : '1px solid #ddd',
+                        backgroundColor: '#f8f9fa',
+                      }}
+                    >
                       <img
                         src={getImageUrl(img.url)}
                         alt="Product"
@@ -811,8 +973,6 @@ const handleSubmit = async (e) => {
                           width: '100%',
                           height: '150px',
                           objectFit: 'cover',
-                          borderRadius: '4px',
-                          border: img.isPrimary ? '3px solid #007bff' : '1px solid #ddd',
                         }}
                       />
                       {img.isPrimary && (
@@ -831,7 +991,7 @@ const handleSubmit = async (e) => {
                       )}
                       <button
                         type="button"
-                        onClick={() => handleDeleteImage(img._id)}
+                        onClick={() => handleDeleteExistingImage(img._id)}
                         style={{
                           position: 'absolute',
                           top: '5px',
@@ -839,13 +999,18 @@ const handleSubmit = async (e) => {
                           backgroundColor: '#dc3545',
                           color: 'white',
                           border: 'none',
-                          borderRadius: '4px',
-                          padding: '4px 8px',
+                          borderRadius: '50%',
+                          width: '28px',
+                          height: '28px',
                           cursor: 'pointer',
-                          fontSize: '0.75rem',
+                          fontSize: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
+                        title="Delete image"
                       >
-                        Delete
+                        ×
                       </button>
                     </div>
                   ))}
@@ -853,27 +1018,219 @@ const handleSubmit = async (e) => {
               </div>
             )}
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                {isEdit ? 'Add More Images' : 'Upload Images *'}
-              </label>
+            {/* Drop Zone */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${isDragging ? '#007bff' : '#ddd'}`,
+                borderRadius: '8px',
+                padding: '2rem',
+                textAlign: 'center',
+                cursor: 'pointer',
+                backgroundColor: isDragging ? '#e7f3ff' : '#f8f9fa',
+                transition: 'all 0.3s ease',
+                marginBottom: '1rem',
+              }}
+            >
+              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📷</div>
+              <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold', color: '#333' }}>
+                {isDragging ? 'Drop images here' : 'Click or drag images to upload'}
+              </p>
+              <p style={{ margin: 0, color: '#666', fontSize: '0.875rem' }}>
+                PNG, JPG, JPEG up to 5MB each. Maximum 10 images.
+              </p>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 multiple
-                onChange={(e) => setImages(e.target.files)}
-                required={!isEdit && existingImages.length === 0}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                }}
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
               />
-              <small style={{ color: '#666' }}>
-                Upload multiple images. First image will be primary. Max 10 images.
-              </small>
             </div>
+
+            {/* Image Count Info */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '1rem',
+              padding: '0.5rem',
+              backgroundColor: '#f0f0f0',
+              borderRadius: '4px',
+            }}>
+              <span>
+                Total: {existingImages.length + selectedImages.length}/10 images
+              </span>
+              {selectedImages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    selectedImages.forEach(img => {
+                      if (img.preview) URL.revokeObjectURL(img.preview);
+                    });
+                    setSelectedImages([]);
+                  }}
+                  style={{
+                    padding: '0.25rem 0.75rem',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Clear All New Images
+                </button>
+              )}
+            </div>
+
+            {/* Selected Images Preview */}
+            {selectedImages.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  New Images to Upload ({selectedImages.length})
+                </label>
+                <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
+                  First image will be set as primary. Drag to reorder or click "Set as Primary" button.
+                </p>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+                  gap: '1rem' 
+                }}>
+                  {selectedImages.map((img, index) => (
+                    <div 
+                      key={img.id} 
+                      style={{ 
+                        position: 'relative',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: index === 0 ? '3px solid #28a745' : '1px solid #ddd',
+                        backgroundColor: '#f8f9fa',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      <img
+                        src={img.preview}
+                        alt={`Preview ${index + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '150px',
+                          objectFit: 'cover',
+                        }}
+                      />
+                      
+                      {/* Primary Badge */}
+                      {index === 0 && (
+                        <span style={{
+                          position: 'absolute',
+                          top: '5px',
+                          left: '5px',
+                          backgroundColor: '#28a745',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold',
+                        }}>
+                          Primary
+                        </span>
+                      )}
+
+                      {/* Delete Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSelectedImage(img.id)}
+                        style={{
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px',
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '28px',
+                          height: '28px',
+                          cursor: 'pointer',
+                          fontSize: '1.2rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1,
+                        }}
+                        title="Remove image"
+                      >
+                        ×
+                      </button>
+
+                      {/* Image Info */}
+                      <div style={{
+                        padding: '0.5rem',
+                        backgroundColor: 'rgba(255,255,255,0.95)',
+                      }}>
+                        <p style={{ 
+                          margin: 0, 
+                          fontSize: '0.75rem', 
+                          color: '#333',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {img.name}
+                        </p>
+                        <p style={{ 
+                          margin: '0.25rem 0 0 0', 
+                          fontSize: '0.7rem', 
+                          color: '#666' 
+                        }}>
+                          {formatFileSize(img.size)}
+                        </p>
+                        
+                        {/* Set as Primary Button */}
+                        {index !== 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimary(index)}
+                            style={{
+                              marginTop: '0.5rem',
+                              padding: '0.25rem 0.5rem',
+                              backgroundColor: '#007bff',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.7rem',
+                              width: '100%',
+                            }}
+                          >
+                            Set as Primary
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No Images Warning */}
+            {!canSubmit && (
+              <div style={{
+                padding: '1rem',
+                backgroundColor: '#fff3cd',
+                border: '1px solid #ffc107',
+                borderRadius: '4px',
+                color: '#856404',
+                marginTop: '1rem',
+              }}>
+                ⚠️ Please upload at least one image to create the product.
+              </div>
+            )}
           </div>
 
           {/* SEO & Settings */}
@@ -968,38 +1325,122 @@ const handleSubmit = async (e) => {
             </div>
           </div>
 
+          {/* Upload Progress */}
+          {isUploading && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              backgroundColor: '#e7f3ff',
+              borderRadius: '8px',
+              border: '1px solid #007bff',
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                marginBottom: '0.5rem',
+                fontWeight: 'bold',
+                color: '#007bff',
+              }}>
+                <span>Uploading...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div style={{
+                width: '100%',
+                height: '12px',
+                backgroundColor: '#cce4ff',
+                borderRadius: '6px',
+                overflow: 'hidden',
+              }}>
+                <div
+                  style={{
+                    width: `${uploadProgress}%`,
+                    height: '100%',
+                    backgroundColor: '#007bff',
+                    borderRadius: '6px',
+                    transition: 'width 0.3s ease',
+                    background: 'linear-gradient(90deg, #007bff, #0056b3)',
+                  }}
+                />
+              </div>
+              <p style={{ 
+                margin: '0.5rem 0 0 0', 
+                fontSize: '0.875rem', 
+                color: '#0056b3',
+                textAlign: 'center',
+              }}>
+                {uploadProgress < 100 
+                  ? 'Please wait while your images are being uploaded...' 
+                  : 'Processing complete!'}
+              </p>
+            </div>
+          )}
+
+          {/* Form Actions */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
               type="button"
               onClick={() => navigate('/products')}
+              disabled={loading}
               style={{
                 flex: 1,
                 padding: '0.75rem',
-                backgroundColor: '#6c757d',
+                backgroundColor: loading ? '#ccc' : '#6c757d',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: 'pointer',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: '1rem',
+                fontWeight: 'bold',
               }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !canSubmit}
               style={{
                 flex: 1,
                 padding: '0.75rem',
-                backgroundColor: loading ? '#ccc' : '#28a745',
+                backgroundColor: loading || !canSubmit ? '#ccc' : '#28a745',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: loading || !canSubmit ? 'not-allowed' : 'pointer',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
               }}
+              title={!canSubmit ? 'Please upload at least one image' : ''}
             >
-              {loading ? 'Saving...' : isEdit ? 'Update Product' : 'Create Product'}
+              {loading ? (
+                <>
+                  <span style={{
+                    display: 'inline-block',
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #fff',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                  }} />
+                  {isUploading ? `Uploading ${uploadProgress}%...` : 'Saving...'}
+                </>
+              ) : isEdit ? 'Update Product' : 'Create Product'}
             </button>
           </div>
+
+          {/* Spinner animation */}
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
         </form>
       </div>
     </div>

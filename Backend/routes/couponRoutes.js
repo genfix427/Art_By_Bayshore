@@ -18,27 +18,28 @@ import {
 
 const router = express.Router();
 
-router.post('/validate', validateCouponValidator, validate, validateCoupon);
+// ✅ FIXED: Wrap validators in validate()
+router.post('/validate', validate(validateCouponValidator), validateCoupon);
 
 router.get('/', protect, authorize('admin', 'superadmin'), getCoupons);
+router.get('/:id/stats', protect, authorize('admin', 'superadmin'), getCouponStats); // ⚠️ Move before /:id
 router.get('/:id', protect, authorize('admin', 'superadmin'), getCoupon);
-router.get('/:id/stats', protect, authorize('admin', 'superadmin'), getCouponStats);
 
+// ✅ FIXED
 router.post(
   '/',
   protect,
   authorize('admin', 'superadmin'),
-  createCouponValidator,
-  validate,
+  validate(createCouponValidator),
   createCoupon
 );
 
+// ✅ FIXED
 router.put(
   '/:id',
   protect,
   authorize('admin', 'superadmin'),
-  updateCouponValidator,
-  validate,
+  validate(updateCouponValidator),
   updateCoupon
 );
 

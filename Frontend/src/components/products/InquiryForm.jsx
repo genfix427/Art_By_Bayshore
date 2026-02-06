@@ -25,18 +25,52 @@ const InquiryForm = ({ product, onClose, onSuccess }) => {
     e.preventDefault();
     setLoading(true);
 
+    // Log the data being sent
+    console.log('=== FRONTEND SUBMISSION ===');
+    console.log('Product ID:', product._id);
+    console.log('Form Data:', formData);
+    console.log('Full payload:', {
+      productId: product._id,
+      ...formData,
+    });
+
     try {
-      await inquiryService.create({
+      // Test the API endpoint first
+      console.log('Testing API connection...');
+      const testResponse = await fetch('http://localhost:5000/api/v1/inquiries/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ test: 'data' }),
+      });
+      console.log('Test response status:', testResponse.status);
+      const testData = await testResponse.json();
+      console.log('Test response data:', testData);
+
+      // Now submit the actual inquiry
+      console.log('Submitting inquiry...');
+      const response = await inquiryService.create({
         productId: product._id,
         ...formData,
       });
+      
+      console.log('✅ Inquiry submission response:', response);
       
       toast.success('Inquiry submitted successfully! We will contact you soon.');
       
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     } catch (error) {
-      toast.error(error.message);
+      console.error('❌ Inquiry submission error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        stack: error.stack,
+      });
+      
+      // Check network tab for more details
+      toast.error(error.message || 'Failed to submit inquiry. Please check console for details.');
     } finally {
       setLoading(false);
     }

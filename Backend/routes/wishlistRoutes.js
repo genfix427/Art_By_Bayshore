@@ -20,7 +20,7 @@ router.use(protect);
 router.get('/', getWishlist);
 router.get('/count', getWishlistCount);
 router.get('/check/:productId', checkWishlist);
-router.post('/', addToWishlist);
+router.post('/', validate(addToWishlistValidator), addToWishlist);
 router.delete('/:productId', removeFromWishlist);
 router.delete('/', clearWishlist);
 

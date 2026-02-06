@@ -18,15 +18,17 @@ import {
 
 const router = express.Router();
 
-router.post('/', createInquiryValidator, validate, createInquiry);
+// ✅ Public route for creating inquiries
+router.post('/', validate(createInquiryValidator), createInquiry);
 
-router.get(
-  '/',
-  protect,
-  authorize('admin', 'superadmin'),
-  getInquiries
-);
+// ✅ Add a debug route to test
+router.post('/test', (req, res) => {
+  console.log('Test route hit');
+  console.log('Body:', req.body);
+  res.json({ message: 'Test route working', body: req.body });
+});
 
+// ✅ Stats route
 router.get(
   '/stats/overview',
   protect,
@@ -34,6 +36,15 @@ router.get(
   getInquiryStats
 );
 
+// ✅ Protected admin routes
+router.get(
+  '/',
+  protect,
+  authorize('admin', 'superadmin'),
+  getInquiries
+);
+
+// This route should be LAST to avoid conflicts
 router.get('/:id', protect, getInquiry);
 
 router.put(
@@ -47,8 +58,7 @@ router.post(
   '/:id/respond',
   protect,
   authorize('admin', 'superadmin'),
-  respondToInquiryValidator,
-  validate,
+  validate(respondToInquiryValidator),
   respondToInquiry
 );
 

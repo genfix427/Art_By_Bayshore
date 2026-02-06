@@ -7,6 +7,125 @@ import { getPagination, getPaginationMeta } from '../utils/pagination.js';
 import emailService from '../config/sendgrid.js';
 import logger from '../utils/logger.js';
 
+// @desc    Create inquiry (Ask for Price)
+// @route   POST /api/v1/inquiries
+// @access  Public
+export const createInquiry = asyncHandler(async (req, res, next) => {
+  console.log('=== CREATE INQUIRY REQUEST ===');
+  console.log('Request Body:', req.body);
+
+  const { productId, firstName, lastName, email, phoneNumber, message } = req.body;
+
+  // Verify product exists
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new ErrorResponse('Product not found', 404));
+  }
+
+  // Check if product supports inquiries
+  if (product.productType !== 'ask-for-price') {
+    return next(new ErrorResponse('This product does not support price inquiries', 400));
+  }
+
+  const inquiryData = {
+    product: productId,
+    customerInfo: {
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+    },
+    message,
+  };
+
+  // Link to user if authenticated
+  if (req.user) {
+    inquiryData.user = req.user.id;
+  }
+
+  try {
+    console.log('Creating inquiry with data:', inquiryData);
+    
+    // Create inquiry
+    const inquiry = await Inquiry.create(inquiryData);
+    
+    // Force save to ensure inquiry number is generated
+    await inquiry.save();
+    
+    console.log('Inquiry created successfully:', {
+      id: inquiry._id,
+      inquiryNumber: inquiry.inquiryNumber,
+      product: inquiry.product
+    });
+
+    // Send emails
+    try {
+      await emailService.inquiryConfirmationEmail(inquiry, product);
+      await emailService.adminInquiryNotification(inquiry, product);
+    } catch (emailError) {
+      console.error('Email error:', emailError);
+      // Don't fail the inquiry creation if emails fail
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Your inquiry has been submitted successfully. We will respond soon.',
+      data: inquiry,
+    });
+  } catch (error) {
+    console.error('Error creating inquiry:', {
+      name: error.name,
+      message: error.message,
+      errors: error.errors,
+      stack: error.stack,
+    });
+    
+    // Handle specific MongoDB errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return next(new ErrorResponse(messages.join(', '), 400));
+    }
+    
+    if (error.code === 11000) { // Duplicate key error
+      return next(new ErrorResponse('Duplicate inquiry number generated. Please try again.', 500));
+    }
+    
+    return next(new ErrorResponse('Failed to create inquiry', 500));
+  }
+});
+
+// @desc    Update inquiry status
+// @route   PUT /api/v1/inquiries/:id/status
+// @access  Private/Admin
+export const updateInquiryStatus = asyncHandler(async (req, res, next) => {
+  const { status, priority, quotedPrice } = req.body;
+
+  let inquiry = await Inquiry.findById(req.params.id);
+
+  if (!inquiry) {
+    return next(new ErrorResponse('Inquiry not found', 404));
+  }
+
+  const updateData = {};
+  if (status) updateData.status = status;
+  if (priority) updateData.priority = priority;
+  if (quotedPrice !== undefined) updateData.quotedPrice = quotedPrice;
+
+  inquiry = await Inquiry.findByIdAndUpdate(
+    req.params.id,
+    updateData,
+    { new: true, runValidators: true }
+  );
+
+  logger.info(`Inquiry ${inquiry.inquiryNumber} status updated by ${req.user.email}`);
+
+  res.status(200).json({
+    success: true,
+    message: 'Inquiry updated successfully',
+    data: inquiry,
+  });
+});
+
 // @desc    Get all inquiries
 // @route   GET /api/v1/inquiries
 // @access  Private/Admin
@@ -72,87 +191,6 @@ export const getInquiry = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    data: inquiry,
-  });
-});
-
-// @desc    Create inquiry (Ask for Price)
-// @route   POST /api/v1/inquiries
-// @access  Public
-export const createInquiry = asyncHandler(async (req, res, next) => {
-  const { productId, firstName, lastName, email, phoneNumber, message } = req.body;
-
-  // Verify product exists and is ask-for-price type
-  const product = await Product.findById(productId);
-  if (!product) {
-    return next(new ErrorResponse('Product not found', 404));
-  }
-
-  if (product.productType !== 'ask-for-price') {
-    return next(new ErrorResponse('This product does not support price inquiries', 400));
-  }
-
-  const inquiryData = {
-    product: productId,
-    customerInfo: {
-      firstName,
-      lastName,
-      email,
-      phoneNumber,
-    },
-    message,
-  };
-
-  // Link to user if authenticated
-  if (req.user) {
-    inquiryData.user = req.user.id;
-  }
-
-  const inquiry = await Inquiry.create(inquiryData);
-
-  // Send confirmation email to customer
-  await emailService.inquiryConfirmationEmail(inquiry, product);
-
-  // Send notification email to admin
-  await emailService.adminInquiryNotification(inquiry, product);
-
-  logger.info(`New inquiry created: ${inquiry.inquiryNumber} for product: ${product.title}`);
-
-  res.status(201).json({
-    success: true,
-    message: 'Your inquiry has been submitted successfully. We will respond soon.',
-    data: inquiry,
-  });
-});
-
-// @desc    Update inquiry status
-// @route   PUT /api/v1/inquiries/:id/status
-// @access  Private/Admin
-export const updateInquiryStatus = asyncHandler(async (req, res, next) => {
-  const { status, priority, quotedPrice } = req.body;
-
-  let inquiry = await Inquiry.findById(req.params.id);
-
-  if (!inquiry) {
-    return next(new ErrorResponse('Inquiry not found', 404));
-  }
-
-  const updateData = {};
-  if (status) updateData.status = status;
-  if (priority) updateData.priority = priority;
-  if (quotedPrice !== undefined) updateData.quotedPrice = quotedPrice;
-
-  inquiry = await Inquiry.findByIdAndUpdate(
-    req.params.id,
-    updateData,
-    { new: true, runValidators: true }
-  );
-
-  logger.info(`Inquiry ${inquiry.inquiryNumber} status updated by ${req.user.email}`);
-
-  res.status(200).json({
-    success: true,
-    message: 'Inquiry updated successfully',
     data: inquiry,
   });
 });

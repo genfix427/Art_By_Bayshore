@@ -19,8 +19,8 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/', getCart);
-router.post('/items', addToCartValidator, validate, addToCart);
-router.put('/items/:itemId', updateCartItemValidator, validate, updateCartItem);
+router.post('/items', validate(addToCartValidator), addToCart);
+router.put('/items/:itemId', validate(updateCartItemValidator), updateCartItem);
 router.delete('/items/:itemId', removeFromCart);
 router.delete('/', clearCart);
 router.post('/sync', syncCart);

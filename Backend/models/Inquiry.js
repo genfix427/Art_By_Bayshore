@@ -4,7 +4,7 @@ const inquirySchema = new mongoose.Schema({
   inquiryNumber: {
     type: String,
     unique: true,
-    required: true,
+    // REMOVE required: true - We'll generate it automatically
   },
   product: {
     type: mongoose.Schema.Types.ObjectId,
@@ -106,20 +106,52 @@ inquirySchema.index({ status: 1, createdAt: -1 });
 inquirySchema.index({ 'customerInfo.email': 1 });
 inquirySchema.index({ product: 1 });
 
-// Generate inquiry number
-inquirySchema.pre('validate', async function(next) {
+// FIXED: Use pre('save') instead of pre('validate')
+// FIXED: Add async function to avoid race conditions
+inquirySchema.pre('save', async function(next) {
+  // Only generate inquiry number for new documents
   if (this.isNew && !this.inquiryNumber) {
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    
-    const count = await mongoose.model('Inquiry').countDocuments();
-    const inquiryNum = String(count + 1).padStart(6, '0');
-    
-    this.inquiryNumber = `INQ${year}${month}${inquiryNum}`;
+    try {
+      const date = new Date();
+      const year = date.getFullYear().toString().slice(-2);
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      
+      // Get the last inquiry number to increment
+      const lastInquiry = await mongoose.model('Inquiry')
+        .findOne({}, {}, { sort: { 'createdAt': -1 } })
+        .select('inquiryNumber');
+      
+      let nextNumber = 1;
+      
+      if (lastInquiry && lastInquiry.inquiryNumber) {
+        const lastNum = parseInt(lastInquiry.inquiryNumber.slice(-6), 10);
+        if (!isNaN(lastNum)) {
+          nextNumber = lastNum + 1;
+        }
+      }
+      
+      const inquiryNum = String(nextNumber).padStart(6, '0');
+      this.inquiryNumber = `INQ${year}${month}${inquiryNum}`;
+      
+      console.log(`Generated inquiry number: ${this.inquiryNumber}`);
+    } catch (error) {
+      console.error('Error generating inquiry number:', error);
+      // Fallback: Use timestamp-based number
+      const timestamp = Date.now().toString().slice(-8);
+      this.inquiryNumber = `INQ${timestamp}`;
+    }
   }
   next();
 });
+
+// Alternative: Simple timestamp-based approach (more reliable)
+// inquirySchema.pre('save', function(next) {
+//   if (this.isNew && !this.inquiryNumber) {
+//     const timestamp = Date.now().toString().slice(-8);
+//     this.inquiryNumber = `INQ${timestamp}`;
+//   }
+//   next();
+// });
 
 const Inquiry = mongoose.model('Inquiry', inquirySchema);
 
