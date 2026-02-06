@@ -3,6 +3,9 @@ import {
   subscribe,
   unsubscribe,
   getSubscribers,
+  addSubscriber,
+  bulkAddSubscribers,
+  exportSubscribers,
   updateSubscriber,
   deleteSubscriber,
   getCampaigns,
@@ -17,17 +20,18 @@ import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
 import {
   subscribeValidator,
+  addSubscriberValidator,
+  bulkAddSubscribersValidator,
   createCampaignValidator,
 } from '../validators/newsletterValidator.js';
 
 const router = express.Router();
 
 // Public routes
-// ✅ FIXED
 router.post('/subscribe', validate(subscribeValidator), subscribe);
 router.get('/unsubscribe/:token', unsubscribe);
 
-// Admin routes - Statistics (move before other routes)
+// Admin routes - Statistics
 router.get(
   '/stats',
   protect,
@@ -41,6 +45,29 @@ router.get(
   protect,
   authorize('admin', 'superadmin'),
   getSubscribers
+);
+
+router.post(
+  '/subscribers',
+  protect,
+  authorize('admin', 'superadmin'),
+  validate(addSubscriberValidator),
+  addSubscriber
+);
+
+router.post(
+  '/subscribers/bulk',
+  protect,
+  authorize('admin', 'superadmin'),
+  validate(bulkAddSubscribersValidator),
+  bulkAddSubscribers
+);
+
+router.get(
+  '/subscribers/export',
+  protect,
+  authorize('admin', 'superadmin'),
+  exportSubscribers
 );
 
 router.put(
@@ -72,7 +99,6 @@ router.get(
   getCampaign
 );
 
-// ✅ FIXED
 router.post(
   '/campaigns',
   protect,
