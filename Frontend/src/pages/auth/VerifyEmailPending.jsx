@@ -191,9 +191,9 @@ const VerifyEmailPending = () => {
                 damping: 15,
                 delay: 0.2 
               }}
-              className="w-20 h-20 mx-auto mb-6 border border-blue-500/20 bg-blue-50 flex items-center justify-center"
+              className="w-20 h-20 mx-auto mb-6 border border-gray-900/20 bg-gray-50 flex items-center justify-center"
             >
-              <Mail className="w-10 h-10 text-blue-600" />
+              <Mail className="w-10 h-10 text-gray-900" />
             </motion.div>
 
             <h1 className="font-playfair text-3xl font-bold text-gray-900 mb-3">
@@ -209,21 +209,21 @@ const VerifyEmailPending = () => {
               </p>
             )}
 
-            <div className="bg-blue-50 border border-blue-200 p-4 mb-6 text-left">
-              <p className="text-sm text-blue-900 font-medium mb-2">
+            <div className="bg-gray-50 border border-gray-200 p-4 mb-6 text-left">
+              <p className="text-sm text-gray-900 font-medium mb-2">
                 What's next?
               </p>
-              <ul className="text-sm text-blue-800 space-y-1">
+              <ul className="text-sm text-gray-800 space-y-1">
                 <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
+                  <span className="text-gray-800 mt-0.5">•</span>
                   <span>Check your inbox and spam folder</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
+                  <span className="text-gray-800 mt-0.5">•</span>
                   <span>Click the verification link in the email</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
+                  <span className="text-gray-800 mt-0.5">•</span>
                   <span>Sign in to your account</span>
                 </li>
               </ul>
@@ -254,7 +254,7 @@ const VerifyEmailPending = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300"
+                  className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 cursor-pointer"
                 >
                   Go to Login
                 </motion.button>

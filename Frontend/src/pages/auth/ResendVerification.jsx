@@ -209,13 +209,13 @@ const handleSubmit = async (e) => {
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-200 p-4 flex gap-3">
-              <Mail className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="bg-gray-50 border border-gray-200 p-4 flex gap-3">
+              <Mail className="w-5 h-5 text-gray-900 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-blue-900 font-medium mb-1">
+                <p className="text-sm text-gray-900 font-medium mb-1">
                   Verification Email
                 </p>
-                <p className="text-sm text-blue-800">
+                <p className="text-sm text-gray-800">
                   We'll send a verification link to your email address. The link will be valid for 24 hours.
                 </p>
               </div>

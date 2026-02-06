@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -59,7 +59,6 @@ const VerifyEmail = () => {
 
   const [status, setStatus] = useState('verifying');
   const [message, setMessage] = useState('');
-  const [countdown, setCountdown] = useState(5);
   const [alreadyVerified, setAlreadyVerified] = useState(false);
 
   const petals = Array.from({ length: 8 }).map((_, i) => ({
@@ -69,20 +68,14 @@ const VerifyEmail = () => {
     size: 10 + Math.random() * 8,
   }));
 
-  useEffect(() => {
-    if (token) {
-      handleVerifyEmail();
-    }
-  }, [token]);
+const hasCalled = useRef(false);
 
-  useEffect(() => {
-    if (status === 'success' && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (status === 'success' && countdown === 0) {
-      navigate('/login');
-    }
-  }, [status, countdown, navigate]);
+useEffect(() => {
+  if (token && !hasCalled.current) {
+    hasCalled.current = true;
+    handleVerifyEmail();
+  }
+}, [token]);
 
   const handleVerifyEmail = async () => {
     try {
@@ -105,10 +98,7 @@ const VerifyEmail = () => {
           position: 'top-right',
         });
       } else {
-        toast.success('🎉 Email verified successfully! Redirecting to login...', {
-          duration: 5000,
-          position: 'top-right',
-        });
+        toast.success('🎉 Email verified successfully!');
       }
       
     } catch (error) {
@@ -272,14 +262,14 @@ const VerifyEmail = () => {
                   }}
                   className={`w-20 h-20 mx-auto mb-6 border flex items-center justify-center ${
                     alreadyVerified 
-                      ? 'border-blue-500/20 bg-blue-50' 
+                      ? 'border-gray-500/20 bg-gray-50' 
                       : 'border-green-500/20 bg-green-50'
                   }`}
                 >
                   {alreadyVerified ? (
-                    <Info className="w-10 h-10 text-blue-600" />
+                    <Info className="w-10 h-10 text-gray-700" />
                   ) : (
-                    <CheckCircle2 className="w-10 h-10 text-green-600" />
+                    <CheckCircle2 className="w-10 h-10 text-gray-700" />
                   )}
                 </motion.div>
 
@@ -292,25 +282,18 @@ const VerifyEmail = () => {
                 </p>
 
                 {alreadyVerified && (
-                  <div className="bg-blue-50 border border-blue-200 p-4 mb-6">
-                    <p className="text-sm text-blue-900">
+                  <div className="bg-gray-50 border border-gray-200 p-4 mb-6">
+                    <p className="text-sm text-gray-900">
                       Your email was already verified. You can proceed to login.
                     </p>
                   </div>
                 )}
 
-                <div className="bg-gray-50 border border-gray-900/10 p-4 mb-6">
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-900/60">
-                    <Clock className="w-4 h-4" />
-                    <span>Redirecting to login in {countdown} seconds...</span>
-                  </div>
-                </div>
-
                 <Link to="/login">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 flex items-center justify-center gap-3 group"
+                    className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 flex items-center justify-center gap-3 group cursor-pointer"
                   >
                     <span>Continue to Login</span>
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -364,7 +347,7 @@ const VerifyEmail = () => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 flex items-center justify-center gap-3 group"
+                      className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 flex items-center justify-center gap-3 group cursor-pointer"
                     >
                       <RefreshCw className="w-5 h-5" />
                       <span>Request New Verification Email</span>
@@ -375,7 +358,7 @@ const VerifyEmail = () => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full border border-gray-900/20 text-gray-900 py-4 font-medium hover:bg-gray-50 transition-all duration-300"
+                      className="w-full border border-gray-900/20 text-gray-900 py-4 font-medium hover:bg-gray-50 transition-all duration- cursor-pointer"
                     >
                       Back to Login
                     </motion.button>

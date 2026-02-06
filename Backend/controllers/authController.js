@@ -32,7 +32,9 @@ export const register = asyncHandler(async (req, res, next) => {
   // Save user with the HASHED token in the database
   await user.save({ validateBeforeSave: false });
 
-  // IMPORTANT: Use the PLAIN TOKEN in the URL (not user.emailVerificationToken which is hashed!)
+  // IMPORTANT: Build a backend verification URL so that clicking the email
+  // verifies immediately (avoids front-end token translation issues).
+  const backendBase = process.env.BACKEND_URL || process.env.API_URL || `http://localhost:${process.env.PORT || 5000}`;
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
   
   // Debug logs
@@ -72,51 +74,47 @@ export const register = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/auth/verify-email/:token
 // @access  Public
 export const verifyEmail = asyncHandler(async (req, res, next) => {
-  // Get the token from URL
-  const plainToken = req.params.token;
-  
-  // Hash the token to match what's in the database
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(plainToken)
-    .digest('hex');
+  // Get the token from URL and decode it (handles encoded links)
+  const rawToken = (req.params.token || '').toString();
+  const plainToken = decodeURIComponent(rawToken);
+
+  // Compute hash for lookup
+  const hashedToken = crypto.createHash('sha256').update(plainToken).digest('hex');
 
   console.log('🔍 Verification Attempt:');
-  console.log('Plain Token from URL:', plainToken);
+  console.log('Raw Token from URL:', rawToken);
+  console.log('Decoded Plain Token:', plainToken);
   console.log('Hashed Token for Query:', hashedToken);
   console.log('Current Time:', new Date());
 
-  // Find user with matching hashed token and not expired
-  const user = await User.findOne({
+  // Try to find user by hashing the provided token (normal case)
+  let user = await User.findOne({
     emailVerificationToken: hashedToken,
     emailVerificationExpire: { $gt: Date.now() },
   });
 
-  if (!user) {
-    console.log('❌ No user found with valid token');
-    
-    // Check if token exists but expired
-    const expiredUser = await User.findOne({
-      emailVerificationToken: hashedToken,
+  // Fallback: if not found, maybe the token in the URL was already the hashed token
+  if (!user && plainToken && plainToken.length === 64) {
+    console.log('ℹ️ Fallback: trying token as already-hashed value');
+    user = await User.findOne({
+      emailVerificationToken: plainToken,
+      emailVerificationExpire: { $gt: Date.now() },
     });
-    
-    if (expiredUser) {
-      console.log('⏰ Token found but expired');
-      console.log('Token Expiry was:', new Date(expiredUser.emailVerificationExpire));
-      return next(new ErrorResponse('Verification token has expired. Please request a new one.', 400));
-    }
-    
-    // Check if user already verified
-    const verifiedUser = await User.findOne({
-      email: { $exists: true },
-      isEmailVerified: true,
-      emailVerificationToken: { $exists: false },
-    });
-    
-    console.log('🔍 Checking for already verified users...');
-    
-    return next(new ErrorResponse('Invalid or expired verification token', 400));
   }
+
+  if (!user) {
+
+  if (alreadyVerifiedUser) {
+    return res.status(200).json({
+      success: true,
+      message: 'Email already verified.',
+      alreadyVerified: true,
+    });
+  }
+
+  return next(new ErrorResponse('Invalid or expired verification token', 400));
+}
+
 
   console.log('✅ User found:', user.email);
   console.log('Is already verified?', user.isEmailVerified);
