@@ -1,228 +1,646 @@
 // components/categories/CategorySlider.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, 
   ChevronRight, 
-  Layers, 
-  Sparkles, 
+  ArrowRight,
   FolderTree,
-  TrendingUp,
-  Hash
+  Pause,
+  Play,
+  Layers
 } from 'lucide-react';
-import CategoryCard from './CategoryCard';
-import LoadingSpinner from '../common/LoadingSpinner';
 import { categoryService } from '../../api/services';
+import CategoryCard from './CategoryCard';
 
-const CategorySlider = () => {
+// ============== DECORATIVE COMPONENTS ==============
+
+const FlowerPetal = ({ delay, duration, startX, startY, size, rotation }) => (
+  <motion.div
+    className="absolute pointer-events-none"
+    style={{ left: `${startX}%`, top: `${startY}%` }}
+    initial={{ opacity: 0, scale: 0, rotate: 0 }}
+    animate={{
+      opacity: [0, 0.6, 0.6, 0],
+      scale: [0, 1, 1, 0.5],
+      rotate: [0, rotation, rotation + 180, rotation + 360],
+      y: [0, 100, 200, 300],
+      x: [0, 30, -20, 40],
+    }}
+    transition={{
+      duration: duration,
+      delay: delay,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  >
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      className="text-gray-900/10"
+    >
+      <path d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z" fill="currentColor" />
+      <path d="M12 12C12 12 16 10 18 10C20 10 22 12 22 12C22 12 20 14 18 14C16 14 12 12 12 12Z" fill="currentColor" />
+      <path d="M12 12C12 12 14 16 14 18C14 20 12 22 12 22C12 22 10 20 10 18C10 16 12 12 12 12Z" fill="currentColor" />
+      <path d="M12 12C12 12 8 10 6 10C4 10 2 12 2 12C2 12 4 14 6 14C8 14 12 12 12 12Z" fill="currentColor" />
+    </svg>
+  </motion.div>
+);
+
+const FloatingLeaf = ({ delay, startX }) => (
+  <motion.div
+    className="absolute pointer-events-none"
+    style={{ left: `${startX}%`, top: "-5%" }}
+    initial={{ opacity: 0, y: -20 }}
+    animate={{
+      opacity: [0, 0.3, 0.3, 0],
+      y: [-20, 400, 800],
+      x: [0, 50, -30, 80],
+      rotate: [0, 45, -45, 90],
+    }}
+    transition={{
+      duration: 15,
+      delay: delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" className="text-gray-900/10">
+      <path d="M17 8C17 8 12 2 6 2C6 8 12 14 12 14C12 14 18 8 17 8Z" fill="currentColor" />
+      <path d="M12 14L12 22" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  </motion.div>
+);
+
+// ============== LOADING SKELETON ==============
+
+const CategoryCardSkeleton = ({ index }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.5, delay: index * 0.1 }}
+    className="w-full"
+  >
+    <div className="relative overflow-hidden border border-gray-900/10 bg-white mb-6">
+      <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
+          animate={{ x: ['-100%', '100%'] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: index * 0.2 }}
+        />
+      </div>
+      <div className="absolute top-3 left-3 w-4 h-4 bg-gray-100" />
+      <div className="absolute top-3 right-3 w-4 h-4 bg-gray-100" />
+      <div className="absolute bottom-3 left-3 w-4 h-4 bg-gray-100" />
+      <div className="absolute bottom-3 right-3 w-4 h-4 bg-gray-100" />
+    </div>
+    <div className="text-center space-y-3">
+      <div className="w-8 h-px bg-gray-200 mx-auto" />
+      <div className="h-6 bg-gray-100 w-32 mx-auto rounded" />
+      <div className="h-4 bg-gray-100 w-48 mx-auto rounded" />
+      <div className="flex justify-center gap-2">
+        <div className="h-5 bg-gray-100 w-20 rounded" />
+        <div className="h-5 bg-gray-100 w-24 rounded" />
+      </div>
+    </div>
+  </motion.div>
+);
+
+// ============== EMPTY STATE ==============
+
+const EmptyState = () => (
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="w-full py-16 sm:py-20 text-center col-span-full"
+  >
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+      className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 border border-gray-900/10 mb-6"
+    >
+      <FolderTree className="text-gray-900/40 w-6 h-6 sm:w-8 sm:h-8" strokeWidth={1} />
+    </motion.div>
+    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No Categories Yet</h3>
+    <p className="text-gray-900/50 text-sm sm:text-base">Categories are coming soon.</p>
+    <motion.div
+      initial={{ scaleX: 0 }}
+      animate={{ scaleX: 1 }}
+      transition={{ duration: 1, delay: 0.5 }}
+      className="w-16 h-px bg-gray-900/20 mx-auto mt-6"
+    />
+  </motion.div>
+);
+
+// ============== MAIN COMPONENT ==============
+
+const CategorySlider = ({ 
+  title = "Browse by Category",
+  subtitle = "Explore our curated collection organized by artistic styles and themes.",
+  viewAllHref = "/categories",
+  autoPlay = true,
+  autoPlayInterval = 6000
+}) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [autoSlide, setAutoSlide] = useState(true);
-  const sliderRef = useRef(null);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(autoPlay);
+  const [slidesPerView, setSlidesPerView] = useState(3);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef(null);
+  const autoPlayRef = useRef(null);
+
+  // Calculate slides per view based on screen size
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) {
+        setSlidesPerView(1);
+      } else if (width < 1024) {
+        setSlidesPerView(2);
+      } else {
+        setSlidesPerView(3);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchCategories();
   }, []);
 
-  useEffect(() => {
-    if (autoSlide && categories.length > 0) {
-      const interval = setInterval(() => {
-        handleNext();
-      }, 6000);
-      return () => clearInterval(interval);
-    }
-  }, [autoSlide, categories.length]);
-
   const fetchCategories = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await categoryService.getAll({
         isActive: true,
         parentCategory: null, // Get only parent categories
         limit: 12,
       });
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+      setCategories(response.data || []);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      setError('Failed to load categories');
+      setCategories([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePrev = () => {
-    setCurrentSlide(prev => (prev === 0 ? Math.ceil(categories.length / 3) - 1 : prev - 1));
-    setAutoSlide(false);
-    setTimeout(() => setAutoSlide(true), 10000);
-  };
+  const totalSlides = Math.max(0, Math.ceil(categories.length / slidesPerView));
 
-  const handleNext = () => {
-    setCurrentSlide(prev => (prev === Math.ceil(categories.length / 3) - 1 ? 0 : prev + 1));
-  };
+  const nextSlide = useCallback(() => {
+    if (totalSlides > 1) {
+      setCurrentSlide((prev) => (prev + 1) % totalSlides);
+    }
+  }, [totalSlides]);
+
+  const prevSlide = useCallback(() => {
+    if (totalSlides > 1) {
+      setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+    }
+  }, [totalSlides]);
 
   const goToSlide = (index) => {
     setCurrentSlide(index);
-    setAutoSlide(false);
-    setTimeout(() => setAutoSlide(true), 10000);
   };
 
-  if (loading) {
-    return (
-      <div className="py-20 flex justify-center">
-        <LoadingSpinner size="large" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (isAutoPlaying && totalSlides > 1 && !isDragging) {
+      autoPlayRef.current = setInterval(nextSlide, autoPlayInterval);
+    }
+    return () => {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current);
+      }
+    };
+  }, [isAutoPlaying, totalSlides, nextSlide, autoPlayInterval, isDragging]);
 
-  if (categories.length === 0) {
+  const handleMouseEnter = () => {
+    if (autoPlayRef.current) {
+      clearInterval(autoPlayRef.current);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (isAutoPlaying && totalSlides > 1) {
+      autoPlayRef.current = setInterval(nextSlide, autoPlayInterval);
+    }
+  };
+
+  const getVisibleCategories = () => {
+    const startIndex = currentSlide * slidesPerView;
+    return categories.slice(startIndex, startIndex + slidesPerView);
+  };
+
+  // Calculate total artworks count
+  const totalArtworks = categories.reduce((sum, cat) => sum + (cat.productsCount || 0), 0);
+  const totalSubcategories = categories.reduce((sum, cat) => sum + (cat.subcategories?.length || 0), 0);
+
+  // Decorative elements
+  const petals = Array.from({ length: 8 }).map((_, i) => ({
+    delay: i * 2,
+    duration: 12 + Math.random() * 5,
+    startX: Math.random() * 100,
+    startY: Math.random() * 30,
+    size: 16 + Math.random() * 16,
+    rotation: Math.random() * 360,
+  }));
+
+  const leaves = Array.from({ length: 6 }).map((_, i) => ({
+    delay: i * 3,
+    startX: 10 + i * 15,
+  }));
+
+  const textReveal = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.1, duration: 0.6, ease: "easeOut" }
+    })
+  };
+
+  const lineAnimation = {
+    hidden: { scaleX: 0 },
+    visible: { scaleX: 1, transition: { duration: 1.2, ease: "easeInOut" } }
+  };
+
+  if (error && categories.length === 0 && !loading) {
     return null;
   }
 
-  // Group categories into slides of 3
-  const slides = [];
-  for (let i = 0; i < categories.length; i += 3) {
-    slides.push(categories.slice(i, i + 3));
-  }
-
   return (
-    <div className="relative py-16 overflow-hidden bg-gradient-to-b from-gray-50 to-white">
-      {/* Animated Background Sketches */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-16 -left-16 w-64 h-64 border-4 border-gray-200 rounded-full opacity-10"></div>
-        <div className="absolute -bottom-24 -right-24 w-80 h-80 border-2 border-gray-300 rounded-full opacity-5"></div>
-        <div className="absolute top-1/3 left-1/4 w-48 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent opacity-10"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-24 h-0.5 bg-gray-400 rotate-45 opacity-5"></div>
+    <motion.section 
+      ref={containerRef}
+      className="relative overflow-hidden bg-gradient-to-b from-gray-50 to-white py-12 sm:py-16 md:py-20 lg:py-24"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Background Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Floating Decorations - Hidden on mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
+        {petals.map((petal, i) => (
+          <FlowerPetal key={i} {...petal} />
+        ))}
+        {leaves.map((leaf, i) => (
+          <FloatingLeaf key={`leaf-${i}`} {...leaf} />
+        ))}
       </div>
 
-      {/* Content Container */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Background Circles */}
+      <div className="absolute -top-16 -left-16 w-64 h-64 border-4 border-gray-200 rounded-full opacity-10 pointer-events-none" />
+      <div className="absolute -bottom-24 -right-24 w-80 h-80 border-2 border-gray-300 rounded-full opacity-5 pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <span className="w-8 h-px bg-gray-900"></span>
-            <FolderTree className="w-6 h-6 text-gray-700" />
-            <span className="w-8 h-px bg-gray-900"></span>
-          </div>
-          
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Browse by <span className="relative">
-              Category
-              <Sparkles className="absolute -top-2 -right-6 w-5 h-5 text-gray-600" />
-            </span>
-          </h2>
-          
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Explore our curated collection organized by artistic styles and themes
-          </p>
-
-          {/* Stats */}
-          <div className="flex justify-center items-center gap-8 mb-8">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-2">
-                <FolderTree className="w-6 h-6 text-gray-600" />
-                {categories.length}+
-              </div>
-              <div className="text-sm text-gray-600 mt-1">Categories</div>
-            </div>
-            <div className="w-px h-12 bg-gray-300"></div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-2">
-                <Layers className="w-6 h-6 text-gray-600" />
-                500+
-              </div>
-              <div className="text-sm text-gray-600 mt-1">Artworks</div>
-            </div>
-            <div className="w-px h-12 bg-gray-300"></div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-2">
-                <Hash className="w-6 h-6 text-gray-600" />
-                50+
-              </div>
-              <div className="text-sm text-gray-600 mt-1">Subcategories</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Slider Container */}
-        <div className="relative">
-          {/* Navigation Buttons */}
-          <button
-            onClick={handlePrev}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 p-3 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-full hover:bg-white hover:shadow-lg transition-all duration-200"
+        <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6 sm:gap-8 mb-10 sm:mb-12 lg:mb-16">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="flex-1 w-full"
           >
-            <ChevronLeft className="w-6 h-6 text-gray-700" />
-          </button>
-          
-          <button
-            onClick={handleNext}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 p-3 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-full hover:bg-white hover:shadow-lg transition-all duration-200"
-          >
-            <ChevronRight className="w-6 h-6 text-gray-700" />
-          </button>
-
-          {/* Main Slider */}
-          <div className="overflow-hidden px-12">
             <motion.div
-              ref={sliderRef}
-              animate={{ x: `-${currentSlide * 100}%` }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="flex"
-            >
-              {slides.map((slideCategories, slideIndex) => (
-                <div
-                  key={slideIndex}
-                  className="w-full flex-shrink-0 px-2"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {slideCategories.map((category, index) => (
-                      <CategoryCard 
-                        key={category._id} 
-                        category={category} 
-                        index={index} 
-                        variant="slider" 
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          </div>
+              variants={lineAnimation}
+              className="w-12 sm:w-16 h-px bg-gray-900 mb-6 sm:mb-8 origin-left"
+            />
 
-          {/* Dots Indicator */}
-          {slides.length > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
-              {slides.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToSlide(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    currentSlide === index
-                      ? 'w-8 bg-gray-900'
-                      : 'bg-gray-300 hover:bg-gray-400'
-                  }`}
-                />
-              ))}
+            <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                whileInView={{ scale: 1, rotate: 0 }}
+                viewport={{ once: true }}
+                transition={{ type: "spring", duration: 1 }}
+                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/10 flex items-center justify-center flex-shrink-0"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                >
+                  <FolderTree className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-900" strokeWidth={1.5} />
+                </motion.div>
+              </motion.div>
+
+              <motion.h2 
+                custom={0}
+                variants={textReveal}
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900"
+              >
+                {title}
+              </motion.h2>
             </div>
+
+            <motion.p 
+              custom={1}
+              variants={textReveal}
+              className="text-gray-900/60 text-sm sm:text-base lg:text-lg ml-14 sm:ml-16 lg:ml-20"
+            >
+              {subtitle}
+            </motion.p>
+
+            {!loading && categories.length > 0 && (
+              <motion.div 
+                custom={2}
+                variants={textReveal}
+                className="flex flex-wrap items-center gap-4 sm:gap-6 lg:gap-8 mt-4 sm:mt-6 ml-14 sm:ml-16 lg:ml-20"
+              >
+                <div className="flex items-center gap-2">
+                  <FolderTree className="w-4 h-4 text-gray-900/50" />
+                  <span className="text-xl sm:text-2xl font-bold text-gray-900">
+                    {categories.length}
+                  </span>
+                  <span className="text-xs sm:text-sm text-gray-900/50">
+                    {categories.length === 1 ? 'Category' : 'Categories'}
+                  </span>
+                </div>
+                
+                {totalArtworks > 0 && (
+                  <>
+                    <div className="w-px h-4 sm:h-6 bg-gray-900/10" />
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-gray-900/50" />
+                      <span className="text-xl sm:text-2xl font-bold text-gray-900">
+                        {totalArtworks}+
+                      </span>
+                      <span className="text-xs sm:text-sm text-gray-900/50">Artworks</span>
+                    </div>
+                  </>
+                )}
+
+                {totalSubcategories > 0 && (
+                  <>
+                    <div className="w-px h-4 sm:h-6 bg-gray-900/10 hidden sm:block" />
+                    <div className="hidden sm:flex items-center gap-2">
+                      <span className="text-xl sm:text-2xl font-bold text-gray-900">
+                        {totalSubcategories}
+                      </span>
+                      <span className="text-xs sm:text-sm text-gray-900/50">Subcategories</span>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </motion.div>
+
+          {/* Desktop Controls */}
+          {!loading && categories.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="hidden lg:flex items-center gap-6 flex-shrink-0"
+            >
+              {totalSlides > 1 && (
+                <button
+                  onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+                  className="p-2 border border-gray-900/20 hover:border-gray-900 transition-colors"
+                  title={isAutoPlaying ? 'Pause' : 'Play'}
+                >
+                  {isAutoPlaying ? (
+                    <Pause className="w-4 h-4 text-gray-900" />
+                  ) : (
+                    <Play className="w-4 h-4 text-gray-900" />
+                  )}
+                </button>
+              )}
+
+              <Link to={viewAllHref} className="group">
+                <motion.div
+                  className="flex items-center gap-3 text-gray-900"
+                  whileHover={{ x: 5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <span className="relative text-base lg:text-lg font-medium">
+                    Browse All Categories
+                    <motion.span
+                      className="absolute bottom-0 left-0 w-full h-px bg-gray-900 origin-left"
+                      initial={{ scaleX: 0 }}
+                      whileHover={{ scaleX: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </span>
+                  <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
+                </motion.div>
+              </Link>
+            </motion.div>
           )}
         </div>
 
-        {/* View All Button */}
-        <div className="text-center mt-12">
-          <Link
-            to="/categories"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-gray-900 to-black text-white rounded-xl font-semibold hover:shadow-2xl transition-all duration-300 group"
-          >
-            <span>Browse All Categories</span>
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-      </div>
+        {/* Carousel */}
+        <div className="relative">
+          {/* Navigation Arrows */}
+          {!loading && categories.length > slidesPerView && (
+            <>
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={prevSlide}
+                className="absolute -left-2 sm:-left-4 lg:-left-8 top-[35%] -translate-y-1/2 z-30 group"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/20 bg-white flex items-center justify-center shadow-lg hover:border-gray-900 hover:bg-gray-900 transition-all duration-300 group-hover:shadow-xl">
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 group-hover:text-white transition-colors" />
+                </div>
+              </motion.button>
 
-      {/* Decorative Elements */}
-      <div className="absolute -bottom-20 -left-20 w-64 h-64 border-8 border-gray-100 rounded-full opacity-10"></div>
-      <div className="absolute -top-10 -right-10 w-40 h-40 border-4 border-gray-200 rounded-full opacity-5 rotate-45"></div>
-    </div>
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={nextSlide}
+                className="absolute -right-2 sm:-right-4 lg:-right-8 top-[35%] -translate-y-1/2 z-30 group"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/20 bg-white flex items-center justify-center shadow-lg hover:border-gray-900 hover:bg-gray-900 transition-all duration-300 group-hover:shadow-xl">
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 group-hover:text-white transition-colors" />
+                </div>
+              </motion.button>
+            </>
+          )}
+
+          {/* Carousel Content */}
+          <div className="overflow-hidden px-2">
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
+                {Array.from({ length: slidesPerView }).map((_, i) => (
+                  <CategoryCardSkeleton key={i} index={i} />
+                ))}
+              </div>
+            ) : categories?.length > 0 ? (
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={currentSlide}
+                  initial={{ opacity: 0, x: 100 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10"
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.1}
+                  onDragStart={() => setIsDragging(true)}
+                  onDragEnd={(e, { offset, velocity }) => {
+                    setIsDragging(false);
+                    const swipe = Math.abs(offset.x) * velocity.x;
+                    if (swipe < -10000) {
+                      nextSlide();
+                    } else if (swipe > 10000) {
+                      prevSlide();
+                    }
+                  }}
+                >
+                  {getVisibleCategories().map((category, idx) => (
+                    <motion.div
+                      key={category?._id || idx}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: idx * 0.1 }}
+                    >
+                      <CategoryCard category={category} index={idx} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            ) : (
+              <EmptyState />
+            )}
+          </div>
+
+          {/* Dots Indicator */}
+          {!loading && totalSlides > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-10 sm:mt-12">
+              {/* Desktop Progress Bars */}
+              <div className="hidden sm:flex items-center gap-2">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToSlide(index)}
+                    className="group relative"
+                    aria-label={`Go to slide ${index + 1}`}
+                  >
+                    <motion.div
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        currentSlide === index 
+                          ? 'w-10 bg-gray-900' 
+                          : 'w-5 bg-gray-300 hover:bg-gray-400'
+                      }`}
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.9 }}
+                    />
+                    {currentSlide === index && isAutoPlaying && (
+                      <motion.div
+                        className="absolute top-0 left-0 h-1.5 bg-gray-600 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: '100%' }}
+                        transition={{ 
+                          duration: autoPlayInterval / 1000, 
+                          ease: 'linear',
+                          repeat: Infinity
+                        }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Mobile Dots */}
+              <div className="flex sm:hidden items-center gap-2">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToSlide(index)}
+                    aria-label={`Go to slide ${index + 1}`}
+                  >
+                    <motion.div
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        currentSlide === index 
+                          ? 'bg-gray-900 scale-125' 
+                          : 'bg-gray-300'
+                      }`}
+                      whileTap={{ scale: 0.9 }}
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {/* Slide Counter */}
+              <div className="hidden sm:flex items-center gap-2 ml-4 text-sm text-gray-500">
+                <span className="font-bold text-gray-900">{currentSlide + 1}</span>
+                <span>/</span>
+                <span>{totalSlides}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Swipe Hint */}
+          {!loading && categories.length > slidesPerView && (
+            <motion.div 
+              className="flex justify-center mt-4 sm:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              <motion.div
+                className="flex items-center gap-1 text-gray-400 text-xs"
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <ChevronLeft className="w-3 h-3" />
+                <span>Swipe to navigate</span>
+                <ChevronRight className="w-3 h-3" />
+              </motion.div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Mobile View All Button */}
+        {!loading && categories.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-10 sm:mt-12 lg:hidden text-center"
+          >
+            <Link 
+              to={viewAllHref} 
+              className="group inline-flex items-center gap-3 text-gray-900 px-6 py-3 border border-gray-900/20 hover:border-gray-900 hover:bg-gray-900 hover:text-white transition-all duration-300"
+            >
+              <span className="font-medium text-sm sm:text-base">Browse All Categories</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </motion.div>
+        )}
+
+        {/* Bottom Line */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.5, delay: 0.5 }}
+          className="w-full h-px bg-gray-900/5 mt-12 sm:mt-16 lg:mt-20 origin-center"
+        />
+      </div>
+    </motion.section>
   );
 };
 
