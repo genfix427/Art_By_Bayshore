@@ -21,7 +21,7 @@ import {
   Tag,
   ArrowUpDown
 } from 'lucide-react';
-import { productService, categoryService, artistService } from '../api/services';
+import { productService, artistService } from '../api/services';
 import { useSEO } from '../hooks/useSEO';
 import { useDebounce } from '../hooks/useDebounce';
 import ProductCard from '../components/products/ProductCard';
@@ -95,22 +95,18 @@ const Products = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [gridView, setGridView] = useState('grid'); // 'grid' or 'large'
 
   // Dropdown states for searchable selects
-  const [categorySearch, setCategorySearch] = useState('');
   const [artistSearch, setArtistSearch] = useState('');
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showArtistDropdown, setShowArtistDropdown] = useState(false);
 
   const [pagination, setPagination] = useState({});
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
-    category: searchParams.get('category') || '',
     artist: searchParams.get('artist') || '',
     minPrice: searchParams.get('minPrice') || '',
     maxPrice: searchParams.get('maxPrice') || '',
@@ -120,9 +116,6 @@ const Products = () => {
   });
 
   // For multi-select
-  const [selectedCategories, setSelectedCategories] = useState(
-    searchParams.get('categories') ? searchParams.get('categories').split(',') : []
-  );
   const [selectedArtists, setSelectedArtists] = useState(
     searchParams.get('artists') ? searchParams.get('artists').split(',') : []
   );
@@ -139,7 +132,6 @@ const Products = () => {
 
   // Fetch initial data
   useEffect(() => {
-    fetchCategories();
     fetchArtists();
   }, []);
 
@@ -150,7 +142,6 @@ const Products = () => {
   }, [
     filters.page, 
     debouncedSearch, 
-    selectedCategories,
     selectedArtists,
     filters.minPrice, 
     filters.maxPrice, 
@@ -182,9 +173,6 @@ const Products = () => {
   // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.category-dropdown')) {
-        setShowCategoryDropdown(false);
-      }
       if (!event.target.closest('.artist-dropdown')) {
         setShowArtistDropdown(false);
       }
@@ -201,7 +189,6 @@ const Products = () => {
         limit: 12,
         isActive: true,
         ...(debouncedSearch && { search: debouncedSearch }),
-        ...(selectedCategories.length > 0 && { category: selectedCategories.join(',') }),
         ...(selectedArtists.length > 0 && { artist: selectedArtists.join(',') }),
         ...(filters.minPrice && { minPrice: filters.minPrice }),
         ...(filters.maxPrice && { maxPrice: filters.maxPrice }),
@@ -220,15 +207,6 @@ const Products = () => {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await categoryService.getAll({ isActive: true });
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    }
-  };
-
   const fetchArtists = async () => {
     try {
       const response = await artistService.getAll({ isActive: true });
@@ -241,7 +219,6 @@ const Products = () => {
   const updateURL = () => {
     const params = {};
     if (filters.search) params.search = filters.search;
-    if (selectedCategories.length > 0) params.categories = selectedCategories.join(',');
     if (selectedArtists.length > 0) params.artists = selectedArtists.join(',');
     if (filters.minPrice) params.minPrice = filters.minPrice;
     if (filters.maxPrice) params.maxPrice = filters.maxPrice;
@@ -250,15 +227,6 @@ const Products = () => {
     if (filters.page > 1) params.page = filters.page.toString();
     
     setSearchParams(params, { replace: true });
-  };
-
-  const handleCategoryChange = (categoryId) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
-    setFilters(prev => ({ ...prev, page: 1 }));
   };
 
   const handleArtistChange = (artistId) => {
@@ -286,7 +254,6 @@ const Products = () => {
   const clearFilters = () => {
     setFilters({
       search: '',
-      category: '',
       artist: '',
       minPrice: '',
       maxPrice: '',
@@ -294,15 +261,12 @@ const Products = () => {
       productType: '',
       page: 1,
     });
-    setSelectedCategories([]);
     setSelectedArtists([]);
-    setCategorySearch('');
     setArtistSearch('');
   };
 
   const hasActiveFilters = 
     filters.search || 
-    selectedCategories.length > 0 || 
     selectedArtists.length > 0 || 
     filters.minPrice || 
     filters.maxPrice || 
@@ -310,15 +274,10 @@ const Products = () => {
 
   const activeFilterCount = 
     (filters.search ? 1 : 0) + 
-    selectedCategories.length + 
     selectedArtists.length + 
     (filters.minPrice ? 1 : 0) + 
     (filters.maxPrice ? 1 : 0) + 
     (filters.productType ? 1 : 0);
-
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(categorySearch.toLowerCase())
-  );
 
   const filteredArtists = artists.filter(artist =>
     artist.name.toLowerCase().includes(artistSearch.toLowerCase())
@@ -415,93 +374,6 @@ const Products = () => {
           <option value="print">Print</option>
           <option value="digital">Digital</option>
         </select>
-      </div>
-
-      {/* Categories with Search */}
-      <div className="mb-8 category-dropdown">
-        <label className="flex items-center gap-2 text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3">
-          <Palette className="w-4 h-4" />
-          Categories
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search categories..."
-            value={categorySearch}
-            onChange={(e) => setCategorySearch(e.target.value)}
-            onFocus={() => setShowCategoryDropdown(true)}
-            className="w-full px-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
-          />
-          {showCategoryDropdown ? (
-            <ChevronUp className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          ) : (
-            <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          )}
-          
-          <AnimatePresence>
-            {showCategoryDropdown && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-1 bg-white border border-gray-900/10 shadow-lg max-h-48 overflow-y-auto"
-              >
-                <div className="p-2 space-y-1">
-                  {filteredCategories.map(category => (
-                    <label 
-                      key={category._id} 
-                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category._id)}
-                        onChange={() => handleCategoryChange(category._id)}
-                        className="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
-                      />
-                      <span className="ml-3 text-sm text-gray-900">{category.name}</span>
-                    </label>
-                  ))}
-                  {filteredCategories.length === 0 && (
-                    <div className="p-3 text-sm text-gray-500 text-center">No categories found</div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        
-        {/* Selected Categories */}
-        <AnimatePresence>
-          {selectedCategories.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="flex flex-wrap gap-2 mt-3"
-            >
-              {selectedCategories.map(catId => {
-                const category = categories.find(c => c._id === catId);
-                return category ? (
-                  <motion.span 
-                    key={catId} 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="bg-gray-900 text-white px-3 py-1 text-xs flex items-center gap-2"
-                  >
-                    {category.name}
-                    <button
-                      onClick={() => handleCategoryChange(catId)}
-                      className="hover:text-gray-300 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </motion.span>
-                ) : null;
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Artists with Search */}
@@ -883,39 +755,6 @@ const Products = () => {
           </div>
         </motion.div>
         
-        {/* Quick Filters: Categories */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mb-6"
-        >
-          <h3 className="text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3 flex items-center gap-2">
-            <Palette className="w-4 h-4" />
-            Categories
-          </h3>
-          <div className="flex overflow-x-auto pb-2 gap-2 scrollbar-hide">
-            {categories.map((category, index) => (
-              <motion.button
-                key={category._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + index * 0.05 }}
-                onClick={() => handleCategoryChange(category._id)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`px-5 py-2.5 font-medium text-sm transition-all whitespace-nowrap cursor-pointer ${
-                  selectedCategories.includes(category._id)
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-white text-gray-900 border border-gray-900/10 hover:border-gray-900'
-                }`}
-              >
-                {category.name}
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-        
         {/* Quick Filters: Artists */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -975,25 +814,6 @@ const Products = () => {
                     </button>
                   </motion.span>
                 )}
-                
-                {selectedCategories.map(catId => {
-                  const category = categories.find(c => c._id === catId);
-                  return category ? (
-                    <motion.span 
-                      key={catId} 
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="bg-gray-900 text-white px-4 py-2 text-sm flex items-center gap-2"
-                    >
-                      <Palette className="w-3 h-3" />
-                      {category.name}
-                      <button onClick={() => handleCategoryChange(catId)} className="hover:text-gray-300 cursor-pointer">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </motion.span>
-                  ) : null;
-                })}
                 
                 {selectedArtists.map(artistId => {
                   const artist = artists.find(a => a._id === artistId);

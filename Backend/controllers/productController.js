@@ -1,5 +1,4 @@
 import Product from '../models/Product.js';
-import Category from '../models/Category.js';
 import Artist from '../models/Artist.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import ErrorResponse from '../utils/errorResponse.js';
@@ -20,7 +19,6 @@ export const getProducts = asyncHandler(async (req, res, next) => {
   const {
     page,
     limit,
-    category,
     artist,
     productType,
     isActive,
@@ -36,7 +34,6 @@ export const getProducts = asyncHandler(async (req, res, next) => {
   const query = {};
 
   // Filters
-  if (category) query.category = category;
   if (artist) query.artist = artist;
   if (productType) query.productType = productType;
   if (isActive !== undefined) query.isActive = isActive === 'true';
@@ -84,7 +81,6 @@ export const getProducts = asyncHandler(async (req, res, next) => {
 
   const total = await Product.countDocuments(query);
   const products = await Product.find(query)
-    .populate('category', 'name slug')
     .populate('artist', 'name slug profileImage')
     .populate('createdBy', 'firstName lastName')
     .sort(sort)
@@ -103,7 +99,6 @@ export const getProducts = asyncHandler(async (req, res, next) => {
 // @access  Public
 export const getProduct = asyncHandler(async (req, res, next) => {
   const product = await Product.findById(req.params.id)
-    .populate('category', 'name slug')
     .populate('artist', 'name slug profileImage biography')
     .populate('createdBy', 'firstName lastName');
 
@@ -126,7 +121,6 @@ export const getProduct = asyncHandler(async (req, res, next) => {
 // @access  Public
 export const getProductBySlug = asyncHandler(async (req, res, next) => {
   const product = await Product.findOne({ slug: req.params.slug })
-    .populate('category', 'name slug')
     .populate('artist', 'name slug profileImage biography')
     .populate('createdBy', 'firstName lastName');
 
@@ -157,12 +151,10 @@ export const getRelatedProducts = asyncHandler(async (req, res, next) => {
   const relatedProducts = await Product.find({
     _id: { $ne: product._id },
     $or: [
-      { category: product.category },
       { artist: product.artist },
     ],
     isActive: true,
   })
-    .populate('category', 'name slug')
     .populate('artist', 'name slug profileImage')
     .limit(8)
     .sort({ viewsCount: -1 });
@@ -180,12 +172,6 @@ export const createProduct = asyncHandler(async (req, res, next) => {
   console.log('=== CREATE PRODUCT CONTROLLER ===');
   console.log('Request body keys:', Object.keys(req.body));
   console.log('Files count:', req.files?.length || 0);
-
-  // Verify category exists
-  const category = await Category.findById(req.body.category);
-  if (!category) {
-    return next(new ErrorResponse('Category not found', 404));
-  }
 
   // Verify artist exists
   const artist = await Artist.findById(req.body.artist);
@@ -298,14 +284,6 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
 
   if (!product) {
     return next(new ErrorResponse('Product not found', 404));
-  }
-
-  // Verify category if being updated
-  if (req.body.category) {
-    const category = await Category.findById(req.body.category);
-    if (!category) {
-      return next(new ErrorResponse('Category not found', 404));
-    }
   }
 
   // Verify artist if being updated
@@ -461,7 +439,6 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
 // @access  Public
 export const getFeaturedProducts = asyncHandler(async (req, res, next) => {
   const products = await Product.find({ isFeatured: true, isActive: true })
-    .populate('category', 'name slug')
     .populate('artist', 'name slug profileImage')
     .limit(12)
     .sort({ createdAt: -1 });

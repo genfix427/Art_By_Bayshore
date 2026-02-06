@@ -7,15 +7,6 @@ export const authService = {
   getProfile: () => api.get('/auth/me'),
 };
 
-// Category Services
-export const categoryService = {
-  getAll: (params) => api.get('/categories', { params }),
-  getById: (id) => api.get(`/categories/${id}`),
-  create: (data) => api.post('/categories', data),
-  update: (id, data) => api.put(`/categories/${id}`, data),
-  delete: (id) => api.delete(`/categories/${id}`),
-};
-
 // Artist Services
 export const artistService = {
   getAll: (params) => api.get('/artists', { params }),

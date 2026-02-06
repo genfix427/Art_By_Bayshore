@@ -223,18 +223,11 @@ userSchema.methods.generateEmailVerificationToken = function() {
   // Step 1: Generate random bytes and convert to hex string (this is the PLAIN token)
   const verificationToken = crypto.randomBytes(32).toString('hex');
   
-  console.log('🔐 Token Generation:');
-  console.log('Plain token generated:', verificationToken);
-  console.log('Plain token length:', verificationToken.length); // Should be 64
-  
   // Step 2: Hash the plain token (this goes to the database)
   this.emailVerificationToken = crypto
     .createHash('sha256')
     .update(verificationToken)
     .digest('hex');
-  
-  console.log('Hashed token for DB:', this.emailVerificationToken);
-  console.log('Hashed token length:', this.emailVerificationToken.length); // Should be 64
   
   // Step 3: Set expiration
   this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { couponService, categoryService, productService } from '../../api/services';
+import { couponService, productService } from '../../api/services';
 import PageHeader from '../../components/common/PageHeader';
 import toast from 'react-hot-toast';
 

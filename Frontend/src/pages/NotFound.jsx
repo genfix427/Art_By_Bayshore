@@ -178,7 +178,7 @@ const NotFound = () => {
   const quickLinks = [
     { icon: Home, label: 'Home', path: '/', description: 'Back to homepage' },
     { icon: ShoppingBag, label: 'Products', path: '/products', description: 'Browse our collection' },
-    { icon: Compass, label: 'Categories', path: '/categories', description: 'Explore categories' },
+    { icon: Compass, label: 'Artist', path: '/artist', description: 'Explore Artists' },
     { icon: Mail, label: 'Contact', path: '/contact', description: 'Get in touch' },
   ];
 

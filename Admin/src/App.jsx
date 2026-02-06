@@ -9,10 +9,6 @@ import Login from './pages/auth/Login';
 // Dashboard
 import Dashboard from './pages/Dashboard';
 
-// Categories
-import Categories from './pages/categories/Categories';
-import CategoryForm from './pages/categories/CategoryForm';
-
 // Artists
 import Artists from './pages/artists/Artists';
 import ArtistForm from './pages/artists/ArtistForm';
@@ -46,11 +42,6 @@ function App() {
         
         <Route path="/" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
-          
-          {/* Categories */}
-          <Route path="categories" element={<Categories />} />
-          <Route path="categories/new" element={<CategoryForm />} />
-          <Route path="categories/edit/:id" element={<CategoryForm />} />
           
           {/* Artists */}
           <Route path="artists" element={<Artists />} />

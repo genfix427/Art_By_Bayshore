@@ -23,8 +23,6 @@ import Register from './pages/auth/Register';
 import NotFound from './pages/NotFound.jsx';
 import Artists from './pages/Artists.jsx';
 import ArtistDetails from './pages/ArtistDetails.jsx';
-import Categories from './pages/Categories.jsx';
-import CategoryDetails from './pages/CategoryDetails.jsx';
 import Wishlist from './pages/Wishlist.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import About from './pages/About.jsx';
@@ -47,8 +45,6 @@ function App() {
               <Route path="products/:slug" element={<ProductDetail />} />
               <Route path="artists" element={<Artists />} />
               <Route path="artists/:slug" element={<ArtistDetails />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="categories/:slug" element={<CategoryDetails />} />
               <Route path="contact" element={<ContactPage />} />
               <Route path="about" element={<About />} />
               <Route path="login" element={<Login />} />

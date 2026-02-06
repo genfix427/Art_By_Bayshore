@@ -1,3 +1,4 @@
+// controllers/artistController.js
 import Artist from '../models/Artist.js';
 import Product from '../models/Product.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -129,11 +130,20 @@ export const createArtist = asyncHandler(async (req, res, next) => {
 
   // Handle image upload
   if (req.file) {
-    const processedPath = await imageProcessor.processImage(req.file.path, {
-      width: 800,
-      height: 800,
-    });
-    req.body.profileImage = '/uploads/' + processedPath.split('/uploads/')[1];
+    try {
+      // Use uploadSingle method instead of processImage
+      const uploadResult = await imageProcessor.uploadSingle(req.file, 'art_haven/artists');
+      
+      // Store the Cloudinary URL
+      req.body.profileImage = uploadResult.url;
+      // Optionally store the public_id if you need to manage the image later
+      req.body.profileImagePublicId = uploadResult.public_id;
+      
+      logger.info(`Artist image uploaded to Cloudinary: ${uploadResult.public_id}`);
+    } catch (uploadError) {
+      logger.error(`Failed to upload artist image: ${uploadError.message}`);
+      return next(new ErrorResponse('Failed to upload image', 500));
+    }
   }
 
   const artist = await Artist.create(req.body);
@@ -159,17 +169,25 @@ export const updateArtist = asyncHandler(async (req, res, next) => {
 
   // Handle image upload
   if (req.file) {
-    // Delete old image if exists
-    if (artist.profileImage) {
-      const oldImagePath = path.join(__dirname, '..', artist.profileImage);
-      imageProcessor.deleteFile(oldImagePath);
-    }
+    try {
+      // Delete old image from Cloudinary if exists
+      if (artist.profileImagePublicId) {
+        await imageProcessor.deleteFromCloudinary(artist.profileImagePublicId);
+        logger.info(`Deleted old artist image: ${artist.profileImagePublicId}`);
+      }
 
-    const processedPath = await imageProcessor.processImage(req.file.path, {
-      width: 800,
-      height: 800,
-    });
-    req.body.profileImage = '/uploads/' + processedPath.split('/uploads/')[1];
+      // Upload new image
+      const uploadResult = await imageProcessor.uploadSingle(req.file, 'art_haven/artists');
+      
+      // Store the Cloudinary URL and public_id
+      req.body.profileImage = uploadResult.url;
+      req.body.profileImagePublicId = uploadResult.public_id;
+      
+      logger.info(`Artist image updated on Cloudinary: ${uploadResult.public_id}`);
+    } catch (uploadError) {
+      logger.error(`Failed to update artist image: ${uploadError.message}`);
+      return next(new ErrorResponse('Failed to update image', 500));
+    }
   }
 
   artist = await Artist.findByIdAndUpdate(req.params.id, req.body, {
@@ -207,10 +225,15 @@ export const deleteArtist = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Delete image if exists
-  if (artist.profileImage) {
-    const imagePath = path.join(__dirname, '..', artist.profileImage);
-    imageProcessor.deleteFile(imagePath);
+  // Delete image from Cloudinary if exists
+  if (artist.profileImagePublicId) {
+    try {
+      await imageProcessor.deleteFromCloudinary(artist.profileImagePublicId);
+      logger.info(`Deleted artist image from Cloudinary: ${artist.profileImagePublicId}`);
+    } catch (deleteError) {
+      logger.error(`Failed to delete artist image: ${deleteError.message}`);
+      // Continue with deletion even if image deletion fails
+    }
   }
 
   await artist.deleteOne();

@@ -26,25 +26,10 @@ export const register = asyncHandler(async (req, res, next) => {
     phoneNumber,
   });
 
-  // Generate verification token - THIS RETURNS THE PLAIN TOKEN
   const verificationToken = user.generateEmailVerificationToken();
-  
-  // Save user with the HASHED token in the database
   await user.save({ validateBeforeSave: false });
-
-  // IMPORTANT: Build a backend verification URL so that clicking the email
-  // verifies immediately (avoids front-end token translation issues).
   const backendBase = process.env.BACKEND_URL || process.env.API_URL || `http://localhost:${process.env.PORT || 5000}`;
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
-  
-  // Debug logs
-  console.log('📧 Registration Debug:');
-  console.log('Plain Token (for email URL):', verificationToken);
-  console.log('Plain Token Length:', verificationToken.length); // Should be 64
-  console.log('Hashed Token (in DB):', user.emailVerificationToken);
-  console.log('Hashed Token Length:', user.emailVerificationToken.length); // Should be 64
-  console.log('Verification URL:', verificationUrl);
-  console.log('Tokens are different?', verificationToken !== user.emailVerificationToken); // Should be TRUE
   
   try {
     await emailService.emailVerificationEmail(user, verificationUrl);
@@ -81,12 +66,6 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
   // Compute hash for lookup
   const hashedToken = crypto.createHash('sha256').update(plainToken).digest('hex');
 
-  console.log('🔍 Verification Attempt:');
-  console.log('Raw Token from URL:', rawToken);
-  console.log('Decoded Plain Token:', plainToken);
-  console.log('Hashed Token for Query:', hashedToken);
-  console.log('Current Time:', new Date());
-
   // Try to find user by hashing the provided token (normal case)
   let user = await User.findOne({
     emailVerificationToken: hashedToken,
@@ -95,7 +74,6 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
 
   // Fallback: if not found, maybe the token in the URL was already the hashed token
   if (!user && plainToken && plainToken.length === 64) {
-    console.log('ℹ️ Fallback: trying token as already-hashed value');
     user = await User.findOne({
       emailVerificationToken: plainToken,
       emailVerificationExpire: { $gt: Date.now() },
@@ -115,17 +93,11 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
   return next(new ErrorResponse('Invalid or expired verification token', 400));
 }
 
-
-  console.log('✅ User found:', user.email);
-  console.log('Is already verified?', user.isEmailVerified);
-
   // Check if already verified (shouldn't happen but good to check)
   if (user.isEmailVerified) {
     user.emailVerificationToken = undefined;
     user.emailVerificationExpire = undefined;
     await user.save({ validateBeforeSave: false });
-
-    console.log('ℹ️ Email was already verified');
 
     return res.status(200).json({
       success: true,
@@ -139,8 +111,6 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
   user.emailVerificationToken = undefined;
   user.emailVerificationExpire = undefined;
   await user.save({ validateBeforeSave: false });
-
-  console.log('✅ Email verified successfully for:', user.email);
   logger.info(`Email verified for user: ${user.email}`);
 
   res.status(200).json({
@@ -184,11 +154,6 @@ export const resendVerificationEmail = asyncHandler(async (req, res, next) => {
 
   // Send verification email
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
-  
-  console.log('📧 Resending Verification:');
-  console.log('Email:', email);
-  console.log('New Token:', verificationToken);
-  console.log('URL:', verificationUrl);
   
   try {
     await emailService.emailVerificationEmail(user, verificationUrl);
@@ -294,11 +259,6 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   // Create reset URL
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-  console.log('🔑 Password Reset:');
-  console.log('Email:', email);
-  console.log('Reset Token:', resetToken);
-  console.log('Reset URL:', resetUrl);
-
   try {
     await emailService.passwordResetEmail(user, resetUrl);
 
@@ -328,21 +288,14 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
     .update(req.params.token)
     .digest('hex');
 
-  console.log('🔑 Password Reset Attempt:');
-  console.log('Plain Token:', req.params.token);
-  console.log('Hashed Token:', hashedToken);
-
   const user = await User.findOne({
     passwordResetToken: hashedToken,
     passwordResetExpire: { $gt: Date.now() },
   });
 
   if (!user) {
-    console.log('❌ Invalid or expired reset token');
     return next(new ErrorResponse('Invalid or expired reset token', 400));
   }
-
-  console.log('✅ Valid reset token for:', user.email);
 
   // Set new password
   user.password = req.body.password;

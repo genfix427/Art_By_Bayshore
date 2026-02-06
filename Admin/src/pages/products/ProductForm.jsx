@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { productService, categoryService, artistService } from '../../api/services';
+import { productService, artistService } from '../../api/services';
 import PageHeader from '../../components/common/PageHeader';
 import { getImageUrl } from '../../utils/formatters';
 import toast from 'react-hot-toast';
@@ -14,7 +14,6 @@ const ProductForm = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: '',
     artist: '',
     productType: 'price-based',
     price: '',
@@ -55,7 +54,6 @@ const ProductForm = () => {
   // Enhanced image state management
   const [selectedImages, setSelectedImages] = useState([]); // Array of { file, preview, id }
   const [existingImages, setExistingImages] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -86,11 +84,9 @@ const ProductForm = () => {
 
   const fetchCategoriesAndArtists = async () => {
     try {
-      const [categoriesRes, artistsRes] = await Promise.all([
-        categoryService.getAll({ isActive: true }),
+      const [artistsRes] = await Promise.all([
         artistService.getAll({ isActive: true }),
       ]);
-      setCategories(categoriesRes.data);
       setArtists(artistsRes.data);
     } catch (error) {
       console.error(error);
@@ -105,7 +101,6 @@ const ProductForm = () => {
       setFormData({
         title: product.title,
         description: product.description,
-        category: product.category?._id || '',
         artist: product.artist?._id || '',
         productType: product.productType,
         price: product.price || '',
@@ -269,7 +264,6 @@ const ProductForm = () => {
       // Basic fields
       data.append('title', formData.title);
       data.append('description', formData.description);
-      data.append('category', formData.category);
       data.append('artist', formData.artist);
       data.append('productType', formData.productType);
       
@@ -436,27 +430,6 @@ const ProductForm = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                Category *
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                }}
-              >
-                <option value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>

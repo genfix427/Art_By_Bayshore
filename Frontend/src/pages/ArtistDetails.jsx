@@ -260,27 +260,13 @@ const ArtistDetails = () => {
                     e.target.src = PLACEHOLDER_IMAGE;
                     setImageLoaded(true);
                   }}
-                  className={`w-full aspect-[3/4] object-cover transition-opacity duration-700 ${
+                  className={`w-full aspect-[4/3] object-cover transition-opacity duration-700 ${
                     imageLoaded ? 'opacity-100' : 'opacity-0'
                   }`}
                   initial={{ scale: 1.1 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 1.2 }}
                 />
-
-                {/* Corner decorations */}
-                <div className="absolute top-4 left-4">
-                  <CornerDecor className="w-6 h-6 text-gray-900/10" />
-                </div>
-                <div className="absolute top-4 right-4 rotate-90">
-                  <CornerDecor className="w-6 h-6 text-gray-900/10" />
-                </div>
-                <div className="absolute bottom-4 left-4 -rotate-90">
-                  <CornerDecor className="w-6 h-6 text-gray-900/10" />
-                </div>
-                <div className="absolute bottom-4 right-4 rotate-180">
-                  <CornerDecor className="w-6 h-6 text-gray-900/10" />
-                </div>
 
                 {/* Flower decorations */}
                 <motion.div
@@ -426,26 +412,6 @@ const ArtistDetails = () => {
                 {artist.biography || "No biography provided for this artist."}
               </p>
             </motion.div>
-
-            {/* Art Styles */}
-            {artist.artStyle && artist.artStyle.length > 0 && (
-              <motion.div custom={5} variants={textReveal}>
-                <div className="flex items-center gap-3 mb-4">
-                  <Palette className="w-5 h-5 text-gray-400" strokeWidth={1.5} />
-                  <span className="text-gray-600">Specializes in</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {artist.artStyle.map((style, index) => (
-                    <span
-                      key={index}
-                      className="px-4 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-full"
-                    >
-                      {style}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            )}
 
             {/* Contact & Social */}
             <motion.div

@@ -688,30 +688,6 @@ const ProductDetails = () => {
       {/* Main Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8">
 
-        {/* Breadcrumb */}
-        <motion.nav
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-gray-900/50 mb-8"
-        >
-          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
-          <ChevronRight className="w-4 h-4" />
-          <Link to="/products" className="hover:text-gray-900 transition-colors">Collection</Link>
-          {product.category?.name && (
-            <>
-              <ChevronRight className="w-4 h-4" />
-              <Link
-                to={`/categories/${product.category.slug}`}
-                className="hover:text-gray-900 transition-colors"
-              >
-                {product.category.name}
-              </Link>
-            </>
-          )}
-          <ChevronRight className="w-4 h-4" />
-          <span className="text-gray-900 truncate max-w-[200px]">{product.title}</span>
-        </motion.nav>
-
         {/* Product Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
 
@@ -819,29 +795,7 @@ const ProductDetails = () => {
             animate="visible"
             className="space-y-8"
           >
-            {/* Category & Title */}
             <div>
-              <motion.div
-                variants={lineAnimation}
-                className="w-12 h-px bg-gray-900 mb-6 origin-left"
-              />
-
-              <motion.span
-                custom={0}
-                variants={textReveal}
-                className="text-xs tracking-[0.3em] text-gray-900/50 uppercase block mb-3"
-              >
-                {product.category?.name || 'Artwork'}
-              </motion.span>
-
-              <motion.h1
-                custom={1}
-                variants={textReveal}
-                className="font-playfair text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4"
-              >
-                {product.title}
-              </motion.h1>
-
               {/* Artist */}
               {product.artist && (
                 <motion.div custom={2} variants={textReveal}>

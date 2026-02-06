@@ -131,18 +131,11 @@ const ArtistCard = ({ artist, index = 0 }) => {
             </p>
           )}
 
-          {/* Art Styles */}
-          {artist.artStyle && artist.artStyle.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-              {artist.artStyle.slice(0, 3).map((style, i) => (
-                <span
-                  key={i}
-                  className="text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full"
-                >
-                  {style}
-                </span>
-              ))}
-            </div>
+          {/* Description - Limited to 4 lines */}
+          {artist.biography && (
+            <p className="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-4">
+              {artist.biography}
+            </p>
           )}
 
           {/* Stats */}

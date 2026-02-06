@@ -16,7 +16,6 @@ import errorHandler from './middleware/errorHandler.js';
 
 // Route imports
 import authRoutes from './routes/authRoutes.js';
-import categoryRoutes from './routes/categoryRoutes.js';
 import artistRoutes from './routes/artistRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
@@ -104,7 +103,6 @@ app.get('/health', (req, res) => {
 // API Routes
 const API_VERSION = process.env.API_VERSION || 'v1';
 app.use(`/api/${API_VERSION}/auth`, authRoutes);
-app.use(`/api/${API_VERSION}/categories`, categoryRoutes);
 app.use(`/api/${API_VERSION}/artists`, artistRoutes);
 app.use(`/api/${API_VERSION}/products`, productRoutes);
 app.use(`/api/${API_VERSION}/orders`, orderRoutes);

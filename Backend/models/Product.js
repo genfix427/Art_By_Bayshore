@@ -38,11 +38,6 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Product description is required'],
     maxlength: [5000, 'Description cannot exceed 5000 characters'],
   },
-  category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-    required: [true, 'Category is required'],
-  },
   artist: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Artist',
@@ -211,7 +206,6 @@ productSchema.virtual('discountPercentage').get(function () {
 
 // Index for better performance
 productSchema.index({ slug: 1 });
-productSchema.index({ category: 1, isActive: 1 });
 productSchema.index({ artist: 1, isActive: 1 });
 productSchema.index({ productType: 1 });
 productSchema.index({ isFeatured: 1, isActive: 1 });

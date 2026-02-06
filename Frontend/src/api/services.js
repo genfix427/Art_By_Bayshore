@@ -28,12 +28,6 @@ export const productService = {
   getFeatured: () => api.get('/products/featured/list'),
 };
 
-// Category Services
-export const categoryService = {
-  getAll: (params) => api.get('/categories', { params }),
-  getBySlug: (slug) => api.get(`/categories/slug/${slug}`),
-};
-
 // Artist Services
 export const artistService = {
   getAll: (params) => api.get('/artists', { params }),

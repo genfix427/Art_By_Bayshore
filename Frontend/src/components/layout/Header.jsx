@@ -77,7 +77,7 @@ const Header = () => {
   const navLinks = [
     { name: 'Home', href: '/', end: true },
     { name: 'Store', href: '/products', end: false },
-    { name: 'Categories', href: '/categories', end: false },
+    { name: 'Virtual Gallery', href: '/virtual-gallery', end: false },
     { name: 'Artists', href: '/artists', end: false },
     { name: 'About', href: '/about', end: false },
     { name: 'Contact', href: '/contact', end: false },

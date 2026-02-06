@@ -1,6 +1,5 @@
 // validators/productValidator.js
 import { body, param } from 'express-validator';
-import Category from '../models/Category.js';
 import Artist from '../models/Artist.js';
 
 export const createProductValidator = [
@@ -17,19 +16,6 @@ export const createProductValidator = [
     .withMessage('Description is required')
     .isLength({ max: 5000 })
     .withMessage('Description cannot exceed 5000 characters'),
-
-  body('category')
-    .notEmpty()
-    .withMessage('Category is required')
-    .isMongoId()
-    .withMessage('Invalid category ID')
-    .custom(async (value) => {
-      const category = await Category.findById(value);
-      if (!category) {
-        throw new Error('Category not found');
-      }
-      return true;
-    }),
 
   body('artist')
     .notEmpty()
