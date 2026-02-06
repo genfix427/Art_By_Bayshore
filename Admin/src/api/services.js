@@ -7,6 +7,17 @@ export const authService = {
   getProfile: () => api.get('/auth/me'),
 };
 
+// Admin Services
+export const adminService = {
+  // User Management
+  getAllUsers: (params) => api.get('/admin/users', { params }),
+  getUserById: (id) => api.get(`/admin/users/${id}`),
+  updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
+  toggleUserVerification: (id) => api.put(`/admin/users/${id}/verify`),
+  toggleUserStatus: (id) => api.put(`/admin/users/${id}/status`),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+};
+
 // Artist Services
 export const artistService = {
   getAll: (params) => api.get('/artists', { params }),

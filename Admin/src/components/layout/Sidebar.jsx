@@ -9,8 +9,9 @@ const Sidebar = () => {
     { path: '/products', label: 'Products', icon: '🖼️' },
     { path: '/orders', label: 'Orders', icon: '📦' },
     { path: '/coupons', label: 'Coupons', icon: '🎫' },
+    { path: '/users', label: 'Users', icon: '👤' },
     { path: '/inquiries', label: 'Inquiries', icon: '💬' },
-    { path: '/newsletter/subscribers', label: 'Newsletter', icon: '📧' },
+    { path: '/newsletter/subscribers', label: 'Newsletter', icon: '✉️' },
     { path: '/newsletter/campaigns', label: 'Campaigns', icon: '📧' },
   ];
 

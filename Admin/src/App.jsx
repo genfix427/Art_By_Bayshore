@@ -33,6 +33,7 @@ import InquiryDetail from './pages/inquiries/InquiryDetail';
 import Subscribers from './pages/newsletter/Subscribers';
 import Campaigns from './pages/newsletter/Campaigns';
 import CampaignForm from './pages/newsletter/CampaignForm';
+import Users from './pages/auth/Users';
 
 function App() {
   return (
@@ -61,6 +62,9 @@ function App() {
           <Route path="coupons" element={<Coupons />} />
           <Route path="coupons/new" element={<CouponForm />} />
           <Route path="coupons/edit/:id" element={<CouponForm />} />
+
+          {/* Users */}
+          <Route path="users" element={<Users />} />
           
           {/* Inquiries */}
           <Route path="inquiries" element={<Inquiries />} />
