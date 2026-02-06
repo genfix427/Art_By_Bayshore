@@ -380,7 +380,7 @@ const ProductSlider = ({
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.5, type: "spring" }}
-                  className="hidden sm:inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold"
+                  className="hidden sm:inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold"
                 >
                   <Sparkles className="w-3 h-3" />
                   {getBadgeText()}

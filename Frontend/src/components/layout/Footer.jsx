@@ -150,7 +150,7 @@ const Footer = () => {
       </div>
 
       {/* Main Footer Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 ">
         <motion.div
           initial="hidden"
           whileInView="visible"
