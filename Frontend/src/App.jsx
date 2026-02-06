@@ -19,7 +19,7 @@ import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
-import NewsletterUnsubscribe from './pages/NewsletterUnsubscribe';
+// import NewsletterUnsubscribe from './pages/NewsletterUnsubscribe';
 import NotFound from './pages/NotFound.jsx';
 import Artists from './pages/Artists.jsx';
 import ArtistDetails from './pages/ArtistDetails.jsx';
@@ -58,7 +58,7 @@ function App() {
               <Route path="/resend-verification" element={<ResendVerification />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
-              <Route path="newsletter/unsubscribe/:token" element={<NewsletterUnsubscribe />} />
+              {/* <Route path="newsletter/unsubscribe/:token" element={<NewsletterUnsubscribe />} /> */}
 
               {/* Protected Routes */}
               <Route path="cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />

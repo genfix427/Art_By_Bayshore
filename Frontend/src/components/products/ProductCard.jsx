@@ -120,7 +120,7 @@ const ProductCard = ({ product, index = 0 }) => {
   return (
     <>
       <motion.div
-        className="relative bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl border border-gray-100"
+        className="relative bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-sm border border-gray-100"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -8 }}

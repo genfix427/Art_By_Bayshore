@@ -1,39 +1,186 @@
 // pages/Checkout.jsx
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useSEO } from '../hooks/useSEO';
 import { shippingService, couponService, paymentService } from '../api/services';
 import { formatCurrency } from '../utils/formatters';
 import toast from 'react-hot-toast';
+import {
+  ChevronRight,
+  MapPin,
+  Truck,
+  CreditCard,
+  Check,
+  User,
+  Phone,
+  Home,
+  Building2,
+  MapPinned,
+  Tag,
+  X,
+  Lock,
+  ShieldCheck,
+  Package,
+  ArrowRight,
+  ArrowLeft,
+  Loader2,
+  AlertCircle,
+  Sparkles,
+  Gift
+} from 'lucide-react';
 
-// Initialize Stripe outside component to avoid recreating on every render
+// Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
+// Floating petal component
+const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0"
+    style={{ left: `${startX}%`, top: "-5%" }}
+    initial={{ opacity: 0, y: -20, rotate: 0 }}
+    animate={{
+      opacity: [0, 0.08, 0.08, 0],
+      y: [-20, 400, 800],
+      rotate: [0, 180, 360],
+      x: [0, 30, -20],
+    }}
+    transition={{
+      duration: duration,
+      delay: delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-900">
+      <path
+        d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z"
+        fill="currentColor"
+      />
+    </svg>
+  </motion.div>
+);
+
+// Flower decoration component
+const FlowerDecor = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+    <ellipse cx="12" cy="5" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="12" cy="19" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="5" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+    <ellipse cx="19" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+  </svg>
+);
 
 // Helper function to get image URL
 const getImageUrl = (image) => {
   if (!image) return '/placeholder-image.jpg';
-  
-  // If it's already a full URL (Cloudinary)
-  if (typeof image === 'string' && image.startsWith('http')) {
-    return image;
-  }
-  
-  // If it's an object with url property (Cloudinary format)
-  if (typeof image === 'object' && image.url) {
-    return image.url;
-  }
-  
-  // If it's a local path
+  if (typeof image === 'string' && image.startsWith('http')) return image;
+  if (typeof image === 'object' && image.url) return image.url;
   if (typeof image === 'string' && image.startsWith('/')) {
     return `${import.meta.env.VITE_API_URL || ''}${image}`;
   }
-  
-  // Default
   return image || '/placeholder-image.jpg';
+};
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+};
+
+const slideVariants = {
+  enter: (direction) => ({
+    x: direction > 0 ? 300 : -300,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction) => ({
+    x: direction < 0 ? 300 : -300,
+    opacity: 0,
+  }),
+};
+
+// Input component with animations
+const AnimatedInput = ({ 
+  icon: Icon, 
+  label, 
+  required, 
+  error, 
+  ...props 
+}) => {
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative"
+    >
+      <label className="block text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-2">
+        {label} {required && <span className="text-gray-900/30">*</span>}
+      </label>
+      <div className="relative">
+        {Icon && (
+          <Icon className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-300 ${
+            focused ? 'text-gray-900' : 'text-gray-900/30'
+          }`} />
+        )}
+        <input
+          {...props}
+          onFocus={(e) => {
+            setFocused(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            props.onBlur?.(e);
+          }}
+          className={`w-full ${Icon ? 'pl-12' : 'pl-4'} pr-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-all duration-300 bg-white ${
+            error ? 'border-red-500' : ''
+          }`}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 h-px bg-gray-900"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: focused ? 1 : 0 }}
+          style={{ originX: 0 }}
+          transition={{ duration: 0.3 }}
+        />
+      </div>
+      {error && (
+        <motion.p
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-red-500 text-xs mt-1"
+        >
+          {error}
+        </motion.p>
+      )}
+    </motion.div>
+  );
 };
 
 // Checkout Form Component
@@ -47,15 +194,11 @@ const CheckoutForm = ({ clientSecret, orderSummary, shippingAddress, onSuccess, 
     e.preventDefault();
     setErrorMessage('');
 
-    if (!stripe || !elements) {
-      console.log('Stripe not loaded yet');
-      return;
-    }
+    if (!stripe || !elements) return;
 
     setProcessing(true);
 
     try {
-      // First, validate the payment element
       const { error: submitError } = await elements.submit();
       if (submitError) {
         setErrorMessage(submitError.message);
@@ -63,11 +206,9 @@ const CheckoutForm = ({ clientSecret, orderSummary, shippingAddress, onSuccess, 
         return;
       }
 
-      // Confirm the payment without redirect
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          // Don't use return_url to avoid redirect issues
           payment_method_data: {
             billing_details: {
               name: shippingAddress.fullName,
@@ -87,29 +228,21 @@ const CheckoutForm = ({ clientSecret, orderSummary, shippingAddress, onSuccess, 
       });
 
       if (error) {
-        console.error('Payment error:', error);
         setErrorMessage(error.message);
         toast.error(error.message);
         if (onError) onError(error);
       } else if (paymentIntent) {
-        console.log('Payment Intent:', paymentIntent);
-        
         if (paymentIntent.status === 'succeeded') {
           toast.success('Payment successful!');
           onSuccess(paymentIntent);
-        } else if (paymentIntent.status === 'requires_action') {
-          // Handle 3D Secure or other actions
-          toast.info('Additional authentication required...');
         } else if (paymentIntent.status === 'processing') {
           toast.info('Payment is processing...');
-          // You might want to poll for status updates
           onSuccess(paymentIntent);
         } else {
           setErrorMessage(`Payment status: ${paymentIntent.status}`);
         }
       }
     } catch (error) {
-      console.error('Payment error:', error);
       setErrorMessage(error.message || 'An unexpected error occurred');
       toast.error('Payment failed. Please try again.');
       if (onError) onError(error);
@@ -120,67 +253,49 @@ const CheckoutForm = ({ clientSecret, orderSummary, shippingAddress, onSuccess, 
 
   return (
     <form onSubmit={handleSubmit}>
-      <PaymentElement 
-        options={{
-          layout: 'tabs',
-          paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
-        }}
-      />
+      <div className="bg-white border border-gray-900/10 p-6">
+        <PaymentElement 
+          options={{
+            layout: 'tabs',
+            paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
+          }}
+        />
+      </div>
       
-      {errorMessage && (
-        <div style={{
-          padding: '1rem',
-          backgroundColor: '#f8d7da',
-          color: '#721c24',
-          borderRadius: '4px',
-          marginTop: '1rem',
-        }}>
-          {errorMessage}
-        </div>
-      )}
+      <AnimatePresence>
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 mt-4"
+          >
+            <AlertCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700 text-sm">{errorMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      <button
+      <motion.button
         type="submit"
         disabled={!stripe || !elements || processing}
-        style={{
-          width: '100%',
-          padding: '1rem',
-          backgroundColor: processing ? '#ccc' : '#28a745',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: processing ? 'not-allowed' : 'pointer',
-          fontSize: '1.125rem',
-          fontWeight: 'bold',
-          marginTop: '1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.5rem',
-        }}
+        whileHover={{ scale: processing ? 1 : 1.02 }}
+        whileTap={{ scale: processing ? 1 : 0.98 }}
+        className="w-full mt-6 bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 cursor-pointer"
       >
         {processing ? (
           <>
-            <span className="spinner" style={{
-              width: '20px',
-              height: '20px',
-              border: '2px solid #fff',
-              borderTopColor: 'transparent',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-            }} />
-            Processing...
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Processing Payment...</span>
           </>
         ) : (
-          `Pay ${formatCurrency(orderSummary?.total || 0)}`
+          <>
+            <Lock className="w-5 h-5" />
+            <span>Pay {formatCurrency(orderSummary?.total || 0)}</span>
+            <ArrowRight className="w-5 h-5" />
+          </>
         )}
-      </button>
-
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      </motion.button>
     </form>
   );
 };
@@ -194,6 +309,7 @@ const Checkout = () => {
   const { user, isAuthenticated } = useAuth();
 
   const [step, setStep] = useState(1);
+  const [direction, setDirection] = useState(0);
   const [shippingAddress, setShippingAddress] = useState({
     fullName: '',
     phoneNumber: '',
@@ -214,6 +330,20 @@ const Checkout = () => {
   const [orderSummary, setOrderSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [paymentIntentId, setPaymentIntentId] = useState(null);
+
+  // Generate floating petals
+  const petals = Array.from({ length: 8 }).map((_, i) => ({
+    delay: i * 2,
+    startX: 5 + i * 12,
+    duration: 18 + Math.random() * 10,
+    size: 12 + Math.random() * 8,
+  }));
+
+  const steps = [
+    { number: 1, title: 'Shipping', icon: MapPin },
+    { number: 2, title: 'Delivery', icon: Truck },
+    { number: 3, title: 'Payment', icon: CreditCard },
+  ];
 
   // Initialize shipping address with user data
   useEffect(() => {
@@ -242,7 +372,7 @@ const Checkout = () => {
     }
   }, [cart, navigate]);
 
-  // Handle Stripe redirect (for 3D Secure)
+  // Handle Stripe redirect
   useEffect(() => {
     const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret');
     const redirectStatus = searchParams.get('redirect_status');
@@ -267,7 +397,6 @@ const Checkout = () => {
   };
 
   const handleValidateAddress = async () => {
-    // Basic validation
     const required = ['fullName', 'phoneNumber', 'addressLine1', 'city', 'state', 'zipCode'];
     const missing = required.filter(field => !shippingAddress[field]?.trim());
     
@@ -299,7 +428,6 @@ const Checkout = () => {
         toast.error(response.data.error || 'Address validation failed');
       }
     } catch (error) {
-      console.error('Address validation error:', error);
       toast.error(error.message || 'Failed to validate address');
     } finally {
       setLoading(false);
@@ -318,12 +446,12 @@ const Checkout = () => {
       
       if (response.data.shippingOptions?.length > 0) {
         setShippingOptions(response.data.shippingOptions);
+        setDirection(1);
         setStep(2);
       } else {
         toast.error('No shipping options available for this address');
       }
     } catch (error) {
-      console.error('Shipping calculation error:', error);
       toast.error(error.message || 'Failed to calculate shipping');
     } finally {
       setLoading(false);
@@ -345,7 +473,6 @@ const Checkout = () => {
       setAppliedCoupon(response.data);
       toast.success(`Coupon applied! You saved ${formatCurrency(response.data.discountAmount)}`);
     } catch (error) {
-      console.error('Coupon error:', error);
       toast.error(error.message || 'Invalid coupon code');
       setAppliedCoupon(null);
     } finally {
@@ -371,7 +498,6 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      // Save checkout data for potential redirect recovery
       localStorage.setItem('checkoutData', JSON.stringify({
         shippingAddress,
         selectedShipping,
@@ -387,84 +513,45 @@ const Checkout = () => {
         setClientSecret(response.data.clientSecret);
         setOrderSummary(response.data.breakdown);
         setPaymentIntentId(response.data.paymentIntentId);
+        setDirection(1);
         setStep(3);
       } else {
         throw new Error('Failed to create payment intent');
       }
     } catch (error) {
-      console.error('Payment intent error:', error);
       toast.error(error.message || 'Failed to initialize payment');
     } finally {
       setLoading(false);
     }
   };
 
-  // Update handlePaymentSuccess function
-const handlePaymentSuccess = async (paymentIntent) => {
-  setLoading(true);
-  try {
-    const response = await paymentService.confirmPayment({
-      paymentIntentId: paymentIntent.id,
-      shippingAddress: {
-        fullName: shippingAddress.fullName,
-        phoneNumber: shippingAddress.phoneNumber,
-        addressLine1: shippingAddress.addressLine1,
-        addressLine2: shippingAddress.addressLine2 || '',
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        zipCode: shippingAddress.zipCode,
-        country: shippingAddress.country || 'US',
-      },
-      billingAddress: {
-        fullName: shippingAddress.fullName,
-        phoneNumber: shippingAddress.phoneNumber,
-        addressLine1: shippingAddress.addressLine1,
-        addressLine2: shippingAddress.addressLine2 || '',
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        zipCode: shippingAddress.zipCode,
-        country: shippingAddress.country || 'US',
-      },
-      shippingService: selectedShipping.serviceType,
-      couponCode: appliedCoupon?.code || '',
-    });
-
-    // Clear checkout data from localStorage
-    localStorage.removeItem('checkoutData');
-    
-    // Clear the cart
-    await clearCart();
-    
-    toast.success('Order placed successfully!');
-    
-    // Navigate to order confirmation
-    const orderId = response.data._id || response.data.data?._id;
-    navigate(`/order-confirmation/${orderId}`);
-  } catch (error) {
-    console.error('Order confirmation error:', error);
-    toast.error(error.response?.data?.message || error.message || 'Failed to confirm order');
-  } finally {
-    setLoading(false);
-  }
-};
-
-// Update handlePaymentSuccessFromRedirect function
-const handlePaymentSuccessFromRedirect = async (paymentIntentId) => {
-  if (!paymentIntentId) return;
-  
-  setLoading(true);
-  try {
-    // Restore checkout data from localStorage
-    const savedCheckoutData = localStorage.getItem('checkoutData');
-    if (savedCheckoutData) {
-      const checkoutData = JSON.parse(savedCheckoutData);
-      
+  const handlePaymentSuccess = async (paymentIntent) => {
+    setLoading(true);
+    try {
       const response = await paymentService.confirmPayment({
-        paymentIntentId,
-        shippingAddress: checkoutData.shippingAddress,
-        billingAddress: checkoutData.shippingAddress,
-        shippingService: checkoutData.selectedShipping?.serviceType,
-        couponCode: checkoutData.appliedCoupon?.code || '',
+        paymentIntentId: paymentIntent.id,
+        shippingAddress: {
+          fullName: shippingAddress.fullName,
+          phoneNumber: shippingAddress.phoneNumber,
+          addressLine1: shippingAddress.addressLine1,
+          addressLine2: shippingAddress.addressLine2 || '',
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          zipCode: shippingAddress.zipCode,
+          country: shippingAddress.country || 'US',
+        },
+        billingAddress: {
+          fullName: shippingAddress.fullName,
+          phoneNumber: shippingAddress.phoneNumber,
+          addressLine1: shippingAddress.addressLine1,
+          addressLine2: shippingAddress.addressLine2 || '',
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          zipCode: shippingAddress.zipCode,
+          country: shippingAddress.country || 'US',
+        },
+        shippingService: selectedShipping.serviceType,
+        couponCode: appliedCoupon?.code || '',
       });
 
       localStorage.removeItem('checkoutData');
@@ -473,32 +560,72 @@ const handlePaymentSuccessFromRedirect = async (paymentIntentId) => {
       
       const orderId = response.data._id || response.data.data?._id;
       navigate(`/order-confirmation/${orderId}`);
-    } else {
-      toast.error('Order data not found. Please contact support.');
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || 'Failed to confirm order');
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error confirming payment from redirect:', error);
-    toast.error(error.response?.data?.message || error.message || 'Failed to confirm order');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  const handlePaymentSuccessFromRedirect = async (paymentIntentId) => {
+    if (!paymentIntentId) return;
+    
+    setLoading(true);
+    try {
+      const savedCheckoutData = localStorage.getItem('checkoutData');
+      if (savedCheckoutData) {
+        const checkoutData = JSON.parse(savedCheckoutData);
+        
+        const response = await paymentService.confirmPayment({
+          paymentIntentId,
+          shippingAddress: checkoutData.shippingAddress,
+          billingAddress: checkoutData.shippingAddress,
+          shippingService: checkoutData.selectedShipping?.serviceType,
+          couponCode: checkoutData.appliedCoupon?.code || '',
+        });
+
+        localStorage.removeItem('checkoutData');
+        await clearCart();
+        toast.success('Order placed successfully!');
+        
+        const orderId = response.data._id || response.data.data?._id;
+        navigate(`/order-confirmation/${orderId}`);
+      } else {
+        toast.error('Order data not found. Please contact support.');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || 'Failed to confirm order');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePaymentError = (error) => {
     console.error('Payment error:', error);
-    // Don't navigate away, let user retry
   };
 
-  // Loading state
+  const goBack = () => {
+    setDirection(-1);
+    setStep(step - 1);
+  };
+
   if (loading && step === 3) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '50vh' 
-      }}>
-        <div>Processing your order...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 border border-gray-900/10 flex items-center justify-center mx-auto mb-6"
+          >
+            <FlowerDecor className="w-8 h-8 text-gray-900/20" />
+          </motion.div>
+          <p className="text-gray-900/60">Processing your order...</p>
+        </motion.div>
       </div>
     );
   }
@@ -507,7 +634,6 @@ const handlePaymentSuccessFromRedirect = async (paymentIntentId) => {
     return null;
   }
 
-  // Calculate totals
   const subtotal = cart.subtotal || cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const discount = appliedCoupon?.discountAmount || 0;
   const shippingCost = selectedShipping?.totalCharge || 0;
@@ -515,619 +641,809 @@ const handlePaymentSuccessFromRedirect = async (paymentIntentId) => {
   const total = orderSummary?.total || (subtotal - discount + shippingCost + tax);
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-      <h1 style={{ marginBottom: '2rem' }}>Checkout</h1>
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
 
-      {/* Progress Steps */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '3rem', flexWrap: 'wrap' }}>
-        {['Shipping Address', 'Shipping Method', 'Payment'].map((label, index) => (
-          <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: step > index + 1 ? '#28a745' : step === index + 1 ? '#007bff' : '#ddd',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-            }}>
-              {step > index + 1 ? '✓' : index + 1}
-            </div>
-            <span style={{
-              margin: '0 1rem',
-              color: step >= index + 1 ? '#333' : '#999',
-              fontWeight: step === index + 1 ? 'bold' : 'normal',
-            }}>
-              {label}
-            </span>
-            {index < 2 && (
-              <div style={{
-                width: '60px',
-                height: '2px',
-                backgroundColor: step > index + 1 ? '#28a745' : '#ddd',
-                marginRight: '1rem',
-              }} />
-            )}
-          </div>
+      {/* Floating Petals */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {petals.map((petal, i) => (
+          <FloatingPetal key={i} {...petal} />
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-        {/* For larger screens, use 2-column layout */}
-        <style>{`
-          @media (min-width: 768px) {
-            .checkout-grid {
-              grid-template-columns: 2fr 1fr !important;
-            }
-          }
-        `}</style>
+      {/* Decorative Elements */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 0.03, scale: 1 }}
+        transition={{ duration: 1, delay: 0.5 }}
+        className="absolute top-40 left-10 w-64 h-64 pointer-events-none hidden lg:block"
+      >
+        <FlowerDecor className="w-full h-full text-gray-900" />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 0.03, scale: 1 }}
+        transition={{ duration: 1, delay: 0.7 }}
+        className="absolute bottom-40 right-10 w-48 h-48 pointer-events-none hidden lg:block"
+      >
+        <FlowerDecor className="w-full h-full text-gray-900" />
+      </motion.div>
+
+      {/* Main Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         
-        <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-          {/* Main Content */}
-          <div>
-            {/* Step 1: Shipping Address */}
-            {step === 1 && (
-              <div style={{ padding: '2rem', border: '1px solid #ddd', borderRadius: '8px' }}>
-                <h2 style={{ marginBottom: '1.5rem' }}>Shipping Address</h2>
+        {/* Breadcrumb */}
+        <motion.nav
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 text-sm text-gray-900/50 mb-8"
+        >
+          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
+          <ChevronRight className="w-4 h-4" />
+          <Link to="/cart" className="hover:text-gray-900 transition-colors">Cart</Link>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-gray-900">Checkout</span>
+        </motion.nav>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={shippingAddress.fullName}
-                      onChange={handleAddressChange}
-                      required
-                      style={{ 
-                        width: '100%', 
-                        padding: '0.75rem', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '4px',
-                        fontSize: '1rem',
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phoneNumber"
-                      value={shippingAddress.phoneNumber}
-                      onChange={handleAddressChange}
-                      required
-                      style={{ 
-                        width: '100%', 
-                        padding: '0.75rem', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '4px',
-                        fontSize: '1rem',
-                      }}
-                    />
-                  </div>
-                </div>
+        {/* Page Header */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="text-center mb-12"
+        >
+          <motion.div
+            variants={itemVariants}
+            className="w-16 h-px bg-gray-900 mx-auto mb-8 origin-center"
+          />
 
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                    Address Line 1 *
-                  </label>
-                  <input
-                    type="text"
-                    name="addressLine1"
-                    value={shippingAddress.addressLine1}
-                    onChange={handleAddressChange}
-                    required
-                    placeholder="Street address"
-                    style={{ 
-                      width: '100%', 
-                      padding: '0.75rem', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '4px',
-                      fontSize: '1rem',
-                    }}
-                  />
-                </div>
+          <motion.div
+            variants={itemVariants}
+            className="flex items-center justify-center gap-3 mb-6"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="w-10 h-10 border border-gray-900/10 flex items-center justify-center"
+            >
+              <FlowerDecor className="w-5 h-5 text-gray-900/20" />
+            </motion.div>
+          </motion.div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                    Address Line 2
-                  </label>
-                  <input
-                    type="text"
-                    name="addressLine2"
-                    value={shippingAddress.addressLine2}
-                    onChange={handleAddressChange}
-                    placeholder="Apartment, suite, etc. (optional)"
-                    style={{ 
-                      width: '100%', 
-                      padding: '0.75rem', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '4px',
-                      fontSize: '1rem',
-                    }}
-                  />
-                </div>
+          <motion.span
+            variants={itemVariants}
+            className="text-xs tracking-[0.3em] text-gray-900/50 uppercase block mb-4"
+          >
+            Secure Checkout
+          </motion.span>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={shippingAddress.city}
-                      onChange={handleAddressChange}
-                      required
-                      style={{ 
-                        width: '100%', 
-                        padding: '0.75rem', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '4px',
-                        fontSize: '1rem',
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={shippingAddress.state}
-                      onChange={handleAddressChange}
-                      required
-                      maxLength="2"
-                      placeholder="NY"
-                      style={{ 
-                        width: '100%', 
-                        padding: '0.75rem', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '4px',
-                        fontSize: '1rem',
-                        textTransform: 'uppercase',
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                      ZIP Code *
-                    </label>
-                    <input
-                      type="text"
-                      name="zipCode"
-                      value={shippingAddress.zipCode}
-                      onChange={handleAddressChange}
-                      required
-                      placeholder="12345"
-                      style={{ 
-                        width: '100%', 
-                        padding: '0.75rem', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '4px',
-                        fontSize: '1rem',
-                      }}
-                    />
-                  </div>
-                </div>
+          <motion.h1
+            variants={itemVariants}
+            className="font-playfair text-4xl sm:text-5xl font-bold text-gray-900 mb-4"
+          >
+            Complete Your Order
+          </motion.h1>
+        </motion.div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                    Country
-                  </label>
-                  <select
-                    name="country"
-                    value={shippingAddress.country}
-                    onChange={handleAddressChange}
-                    style={{ 
-                      width: '100%', 
-                      padding: '0.75rem', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '4px',
-                      fontSize: '1rem',
-                    }}
-                  >
-                    <option value="US">United States</option>
-                    <option value="CA">Canada</option>
-                  </select>
-                </div>
-
-                {validationResult && (
-                  <div style={{
-                    padding: '1rem',
-                    borderRadius: '4px',
-                    marginBottom: '1rem',
-                    backgroundColor: validationResult.isValid ? '#d4edda' : '#f8d7da',
-                    color: validationResult.isValid ? '#155724' : '#721c24',
-                  }}>
-                    {validationResult.isValid ? (
-                      <>
-                        <strong>✓ Address Validated</strong>
-                        {validationResult.classification && (
-                          <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem' }}>
-                            Classification: {validationResult.classification}
-                          </p>
-                        )}
-                      </>
+        {/* Progress Steps */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex justify-center items-center mb-12"
+        >
+          <div className="flex items-center gap-4 md:gap-8">
+            {steps.map((s, index) => (
+              <div key={s.number} className="flex items-center">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className={`flex items-center gap-3 px-4 py-3 border transition-all duration-300 ${
+                    step === s.number 
+                      ? 'bg-gray-900 text-white border-gray-900' 
+                      : step > s.number 
+                        ? 'bg-white text-gray-900 border-gray-900' 
+                        : 'bg-white text-gray-400 border-gray-200'
+                  }`}
+                >
+                  <div className={`w-8 h-8 flex items-center justify-center ${
+                    step > s.number ? 'bg-gray-900 text-white' : ''
+                  }`}>
+                    {step > s.number ? (
+                      <Check className="w-4 h-4" />
                     ) : (
-                      <>
-                        <strong>✗ Validation Failed</strong>
-                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem' }}>
-                          {validationResult.error}
-                        </p>
-                      </>
+                      <s.icon className="w-4 h-4" />
                     )}
                   </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={handleValidateAddress}
-                    disabled={loading}
-                    style={{
-                      flex: '1 1 200px',
-                      padding: '0.75rem',
-                      backgroundColor: loading ? '#ccc' : '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      fontSize: '1rem',
-                    }}
-                  >
-                    {loading ? 'Validating...' : 'Validate Address'}
-                  </button>
-
-                  <button
-                    onClick={handleCalculateShipping}
-                    disabled={!addressValidated || loading}
-                    style={{
-                      flex: '1 1 200px',
-                      padding: '0.75rem',
-                      backgroundColor: !addressValidated || loading ? '#ccc' : '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: !addressValidated || loading ? 'not-allowed' : 'pointer',
-                      fontSize: '1rem',
-                    }}
-                  >
-                    Continue to Shipping
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Shipping Method */}
-            {step === 2 && (
-              <div style={{ padding: '2rem', border: '1px solid #ddd', borderRadius: '8px' }}>
-                <h2 style={{ marginBottom: '1.5rem' }}>Select Shipping Method</h2>
-
-                {shippingOptions.length === 0 ? (
-                  <p>No shipping options available. Please go back and check your address.</p>
-                ) : (
-                  shippingOptions.map((option, index) => (
-                    <div
-                      key={index}
-                      onClick={() => handleSelectShipping(option)}
-                      style={{
-                        padding: '1rem',
-                        border: selectedShipping?.serviceType === option.serviceType 
-                          ? '2px solid #007bff' 
-                          : '1px solid #ddd',
-                        borderRadius: '4px',
-                        marginBottom: '1rem',
-                        cursor: 'pointer',
-                        backgroundColor: selectedShipping?.serviceType === option.serviceType 
-                          ? '#f0f8ff' 
-                          : 'white',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <strong style={{ fontSize: '1.125rem' }}>{option.serviceName}</strong>
-                          {option.transitDays && option.transitDays !== 'N/A' && (
-                            <p style={{ margin: '0.25rem 0 0', color: '#666', fontSize: '0.875rem' }}>
-                              Estimated delivery: {option.transitDays} business days
-                            </p>
-                          )}
-                          {option.deliveryTimestamp && (
-                            <p style={{ margin: '0.25rem 0 0', color: '#666', fontSize: '0.875rem' }}>
-                              Delivery by: {new Date(option.deliveryTimestamp).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                        <strong style={{ fontSize: '1.25rem', color: '#28a745' }}>
-                          {formatCurrency(option.totalCharge)}
-                        </strong>
-                      </div>
-                    </div>
-                  ))
-                )}
-
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                  <button
-                    onClick={() => setStep(1)}
-                    style={{
-                      flex: 1,
-                      padding: '0.75rem',
-                      backgroundColor: '#6c757d',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                    }}
-                  >
-                    ← Back
-                  </button>
-
-                  <button
-                    onClick={handleProceedToPayment}
-                    disabled={!selectedShipping || loading}
-                    style={{
-                      flex: 1,
-                      padding: '0.75rem',
-                      backgroundColor: !selectedShipping || loading ? '#ccc' : '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: !selectedShipping || loading ? 'not-allowed' : 'pointer',
-                      fontSize: '1rem',
-                    }}
-                  >
-                    {loading ? 'Processing...' : 'Continue to Payment →'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Payment */}
-            {step === 3 && clientSecret && (
-              <div style={{ padding: '2rem', border: '1px solid #ddd', borderRadius: '8px' }}>
-                <h2 style={{ marginBottom: '1.5rem' }}>Payment Information</h2>
-
-                <Elements 
-                  stripe={stripePromise} 
-                  options={{ 
-                    clientSecret,
-                    appearance: {
-                      theme: 'stripe',
-                      variables: {
-                        colorPrimary: '#007bff',
-                      },
-                    },
-                  }}
-                >
-                  <CheckoutForm
-                    clientSecret={clientSecret}
-                    orderSummary={orderSummary}
-                    shippingAddress={shippingAddress}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
+                  <span className="hidden sm:block font-medium text-sm tracking-wide">
+                    {s.title}
+                  </span>
+                </motion.div>
+                {index < steps.length - 1 && (
+                  <motion.div
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: step > s.number ? 1 : 0 }}
+                    className="w-8 md:w-16 h-px bg-gray-900 origin-left"
                   />
-                </Elements>
-
-                <button
-                  onClick={() => setStep(2)}
-                  disabled={loading}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    backgroundColor: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    marginTop: '1rem',
-                    fontSize: '1rem',
-                  }}
-                >
-                  ← Back to Shipping
-                </button>
+                )}
               </div>
-            )}
+            ))}
           </div>
+        </motion.div>
 
-          {/* Order Summary Sidebar */}
-          <div>
-            <div style={{
-              position: 'sticky',
-              top: '100px',
-              padding: '1.5rem',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              backgroundColor: '#f9f9f9',
-            }}>
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Order Summary</h3>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column - Forms */}
+          <div className="lg:col-span-2">
+            <AnimatePresence mode="wait" custom={direction}>
+              
+              {/* Step 1: Shipping Address */}
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  className="bg-white border border-gray-900/10 p-8"
+                >
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-12 h-12 border border-gray-900/10 flex items-center justify-center">
+                      <MapPin className="w-6 h-6 text-gray-900" />
+                    </div>
+                    <div>
+                      <h2 className="font-playfair text-2xl font-bold text-gray-900">
+                        Shipping Address
+                      </h2>
+                      <p className="text-sm text-gray-900/50">
+                        Where should we deliver your artwork?
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Cart Items */}
-              <div style={{ marginBottom: '1.5rem', maxHeight: '300px', overflowY: 'auto' }}>
-                {cart.items.map((item) => (
-                  <div key={item._id || item.product} style={{ 
-                    display: 'flex', 
-                    gap: '0.75rem', 
-                    marginBottom: '1rem',
-                    paddingBottom: '1rem',
-                    borderBottom: '1px solid #eee',
-                  }}>
-                    <div style={{
-                      width: '60px',
-                      height: '60px',
-                      backgroundColor: '#f5f5f5',
-                      borderRadius: '4px',
-                      flexShrink: 0,
-                      overflow: 'hidden',
-                    }}>
-                      <img
-                        src={getImageUrl(item.image)}
-                        alt={item.title || 'Product'}
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          objectFit: 'cover',
-                        }}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = '/placeholder-image.jpg';
-                        }}
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <AnimatedInput
+                        icon={User}
+                        label="Full Name"
+                        required
+                        type="text"
+                        name="fullName"
+                        value={shippingAddress.fullName}
+                        onChange={handleAddressChange}
+                        placeholder="John Doe"
+                      />
+                      <AnimatedInput
+                        icon={Phone}
+                        label="Phone Number"
+                        required
+                        type="tel"
+                        name="phoneNumber"
+                        value={shippingAddress.phoneNumber}
+                        onChange={handleAddressChange}
+                        placeholder="+1 (555) 000-0000"
                       />
                     </div>
-                    <div style={{ flex: 1, fontSize: '0.875rem' }}>
-                      <p style={{ margin: 0, fontWeight: 'bold', lineHeight: 1.3 }}>
-                        {item.title || 'Product'}
-                      </p>
-                      <p style={{ margin: '0.25rem 0', color: '#666' }}>
-                        Qty: {item.quantity}
-                      </p>
-                      <p style={{ margin: 0, fontWeight: '600' }}>
-                        {formatCurrency(item.price * item.quantity)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
 
-              {/* Coupon */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                {!appliedCoupon ? (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
+                    <AnimatedInput
+                      icon={Home}
+                      label="Address Line 1"
+                      required
                       type="text"
-                      placeholder="Coupon code"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      style={{
-                        flex: 1,
-                        padding: '0.5rem',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '0.875rem',
-                      }}
+                      name="addressLine1"
+                      value={shippingAddress.addressLine1}
+                      onChange={handleAddressChange}
+                      placeholder="Street address"
                     />
-                    <button
-                      onClick={handleApplyCoupon}
-                      disabled={!couponCode || loading}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: !couponCode || loading ? '#ccc' : '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: !couponCode || loading ? 'not-allowed' : 'pointer',
-                        fontSize: '0.875rem',
-                      }}
-                    >
-                      Apply
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{
-                    padding: '0.75rem',
-                    backgroundColor: '#d4edda',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}>
+
+                    <AnimatedInput
+                      icon={Building2}
+                      label="Address Line 2"
+                      type="text"
+                      name="addressLine2"
+                      value={shippingAddress.addressLine2}
+                      onChange={handleAddressChange}
+                      placeholder="Apartment, suite, etc. (optional)"
+                    />
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                      <AnimatedInput
+                        label="City"
+                        required
+                        type="text"
+                        name="city"
+                        value={shippingAddress.city}
+                        onChange={handleAddressChange}
+                        placeholder="Miami"
+                      />
+                      <AnimatedInput
+                        label="State"
+                        required
+                        type="text"
+                        name="state"
+                        value={shippingAddress.state}
+                        onChange={handleAddressChange}
+                        placeholder="FL"
+                        maxLength="2"
+                        style={{ textTransform: 'uppercase' }}
+                      />
+                      <AnimatedInput
+                        label="ZIP Code"
+                        required
+                        type="text"
+                        name="zipCode"
+                        value={shippingAddress.zipCode}
+                        onChange={handleAddressChange}
+                        placeholder="33132"
+                      />
+                    </div>
+
                     <div>
-                      <strong style={{ color: '#155724' }}>
-                        ✓ {appliedCoupon.code}
-                      </strong>
-                      <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#155724' }}>
-                        -{formatCurrency(appliedCoupon.discountAmount)}
+                      <label className="block text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-2">
+                        Country
+                      </label>
+                      <select
+                        name="country"
+                        value={shippingAddress.country}
+                        onChange={handleAddressChange}
+                        className="w-full px-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-all duration-300 bg-white"
+                      >
+                        <option value="US">United States</option>
+                        <option value="CA">Canada</option>
+                      </select>
+                    </div>
+
+                    {/* Validation Result */}
+                    <AnimatePresence>
+                      {validationResult && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className={`flex items-center gap-3 p-4 ${
+                            validationResult.isValid 
+                              ? 'bg-gray-900 text-white' 
+                              : 'bg-red-50 border border-red-200 text-red-700'
+                          }`}
+                        >
+                          {validationResult.isValid ? (
+                            <>
+                              <Check className="w-5 h-5" />
+                              <div>
+                                <strong>Address Validated</strong>
+                                {validationResult.classification && (
+                                  <p className="text-sm text-white/70">
+                                    Classification: {validationResult.classification}
+                                  </p>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-5 h-5" />
+                              <div>
+                                <strong>Validation Failed</strong>
+                                <p className="text-sm">{validationResult.error}</p>
+                              </div>
+                            </>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                      <motion.button
+                        onClick={handleValidateAddress}
+                        disabled={loading}
+                        whileHover={{ scale: loading ? 1 : 1.02 }}
+                        whileTap={{ scale: loading ? 1 : 0.98 }}
+                        className="flex-1 py-4 border border-gray-900 text-gray-900 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Validating...
+                          </>
+                        ) : (
+                          <>
+                            <MapPinned className="w-5 h-5" />
+                            Validate Address
+                          </>
+                        )}
+                      </motion.button>
+
+                      <motion.button
+                        onClick={handleCalculateShipping}
+                        disabled={!addressValidated || loading}
+                        whileHover={{ scale: !addressValidated || loading ? 1 : 1.02 }}
+                        whileTap={{ scale: !addressValidated || loading ? 1 : 0.98 }}
+                        className="flex-1 py-4 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        Continue to Shipping
+                        <ArrowRight className="w-5 h-5" />
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: Shipping Method */}
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  className="bg-white border border-gray-900/10 p-8"
+                >
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-12 h-12 border border-gray-900/10 flex items-center justify-center">
+                      <Truck className="w-6 h-6 text-gray-900" />
+                    </div>
+                    <div>
+                      <h2 className="font-playfair text-2xl font-bold text-gray-900">
+                        Delivery Options
+                      </h2>
+                      <p className="text-sm text-gray-900/50">
+                        Choose your preferred shipping method
                       </p>
                     </div>
-                    <button
-                      onClick={handleRemoveCoupon}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#721c24',
-                        cursor: 'pointer',
-                        fontSize: '1.5rem',
-                        lineHeight: 1,
-                      }}
+                  </div>
+
+                  {/* Delivery Address Summary */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-gray-50 border border-gray-900/5 p-4 mb-6"
+                  >
+                    <p className="text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-2">
+                      Delivering to
+                    </p>
+                    <p className="font-medium text-gray-900">
+                      {shippingAddress.fullName}
+                    </p>
+                    <p className="text-sm text-gray-900/70">
+                      {shippingAddress.addressLine1}, {shippingAddress.city}, {shippingAddress.state} {shippingAddress.zipCode}
+                    </p>
+                  </motion.div>
+
+                  {/* Shipping Options */}
+                  <div className="space-y-4 mb-8">
+                    {shippingOptions.length === 0 ? (
+                      <p className="text-gray-900/60 text-center py-8">
+                        No shipping options available.
+                      </p>
+                    ) : (
+                      shippingOptions.map((option, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          onClick={() => handleSelectShipping(option)}
+                          whileHover={{ scale: 1.01 }}
+                          className={`p-6 border cursor-pointer transition-all duration-300 ${
+                            selectedShipping?.serviceType === option.serviceType
+                              ? 'bg-gray-900 text-white border-gray-900'
+                              : 'bg-white border-gray-900/10 hover:border-gray-900/30'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-10 h-10 border flex items-center justify-center ${
+                                selectedShipping?.serviceType === option.serviceType
+                                  ? 'border-white/30'
+                                  : 'border-gray-900/10'
+                              }`}>
+                                <Package className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-lg">{option.serviceName}</h3>
+                                {option.transitDays && option.transitDays !== 'N/A' && (
+                                  <p className={`text-sm ${
+                                    selectedShipping?.serviceType === option.serviceType
+                                      ? 'text-white/70'
+                                      : 'text-gray-900/50'
+                                  }`}>
+                                    {option.transitDays} business days
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-playfair text-2xl font-bold">
+                                {formatCurrency(option.totalCharge)}
+                              </p>
+                              {selectedShipping?.serviceType === option.serviceType && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="flex items-center justify-end gap-1 mt-1"
+                                >
+                                  <Check className="w-4 h-4" />
+                                  <span className="text-xs">Selected</span>
+                                </motion.div>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-4">
+                    <motion.button
+                      onClick={goBack}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 py-4 border border-gray-900 text-gray-900 font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <ArrowLeft className="w-5 h-5" />
+                      Back
+                    </motion.button>
 
-              {/* Price Breakdown */}
-              <div style={{ borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span>Subtotal:</span>
-                  <span>{formatCurrency(subtotal)}</span>
+                    <motion.button
+                      onClick={handleProceedToPayment}
+                      disabled={!selectedShipping || loading}
+                      whileHover={{ scale: !selectedShipping || loading ? 1 : 1.02 }}
+                      whileTap={{ scale: !selectedShipping || loading ? 1 : 0.98 }}
+                      className="flex-1 py-4 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          Continue to Payment
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Payment */}
+              {step === 3 && clientSecret && (
+                <motion.div
+                  key="step3"
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  className="bg-white border border-gray-900/10 p-8"
+                >
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-12 h-12 border border-gray-900/10 flex items-center justify-center">
+                      <CreditCard className="w-6 h-6 text-gray-900" />
+                    </div>
+                    <div>
+                      <h2 className="font-playfair text-2xl font-bold text-gray-900">
+                        Payment Details
+                      </h2>
+                      <p className="text-sm text-gray-900/50">
+                        Complete your purchase securely
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Order Summary Mini */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="bg-gray-50 border border-gray-900/5 p-4"
+                    >
+                      <p className="text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-1">
+                        Shipping to
+                      </p>
+                      <p className="font-medium text-gray-900 text-sm">
+                        {shippingAddress.city}, {shippingAddress.state}
+                      </p>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                      className="bg-gray-50 border border-gray-900/5 p-4"
+                    >
+                      <p className="text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-1">
+                        Delivery
+                      </p>
+                      <p className="font-medium text-gray-900 text-sm">
+                        {selectedShipping?.serviceName}
+                      </p>
+                    </motion.div>
+                  </div>
+
+                  <Elements 
+                    stripe={stripePromise} 
+                    options={{ 
+                      clientSecret,
+                      appearance: {
+                        theme: 'stripe',
+                        variables: {
+                          colorPrimary: '#111827',
+                          colorBackground: '#ffffff',
+                          colorText: '#111827',
+                          colorDanger: '#ef4444',
+                          fontFamily: 'system-ui, sans-serif',
+                          borderRadius: '0px',
+                        },
+                        rules: {
+                          '.Input': {
+                            border: '1px solid #e5e7eb',
+                            boxShadow: 'none',
+                          },
+                          '.Input:focus': {
+                            border: '1px solid #111827',
+                            boxShadow: 'none',
+                          },
+                        },
+                      },
+                    }}
+                  >
+                    <CheckoutForm
+                      clientSecret={clientSecret}
+                      orderSummary={orderSummary}
+                      shippingAddress={shippingAddress}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                    />
+                  </Elements>
+
+                  <motion.button
+                    onClick={goBack}
+                    disabled={loading}
+                    whileHover={{ scale: loading ? 1 : 1.02 }}
+                    whileTap={{ scale: loading ? 1 : 0.98 }}
+                    className="w-full mt-4 py-4 border border-gray-900 text-gray-900 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                    Back to Shipping
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Right Column - Order Summary */}
+          <div className="lg:col-span-1">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="sticky top-24"
+            >
+              <div className="bg-white border border-gray-900/10 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 border border-gray-900/10 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-gray-900" />
+                  </div>
+                  <h3 className="font-playfair text-xl font-bold text-gray-900">
+                    Order Summary
+                  </h3>
                 </div>
 
-                {discount > 0 && (
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    marginBottom: '0.5rem', 
-                    color: '#28a745' 
-                  }}>
-                    <span>Discount:</span>
-                    <span>-{formatCurrency(discount)}</span>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span>Shipping:</span>
-                  <span>
-                    {selectedShipping 
-                      ? formatCurrency(shippingCost) 
-                      : <span style={{ color: '#666' }}>Calculated next</span>
-                    }
-                  </span>
+                {/* Cart Items */}
+                <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
+                  {cart.items.map((item, index) => (
+                    <motion.div
+                      key={item._id || item.product}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex gap-4 pb-4 border-b border-gray-900/5 last:border-0"
+                    >
+                      <div className="w-16 h-16 bg-gray-100 flex-shrink-0 overflow-hidden">
+                        <img
+                          src={getImageUrl(item.image)}
+                          alt={item.title || 'Product'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/placeholder-image.jpg';
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 text-sm truncate">
+                          {item.title || 'Product'}
+                        </h4>
+                        <p className="text-xs text-gray-900/50 mt-1">
+                          Qty: {item.quantity}
+                        </p>
+                        <p className="font-medium text-gray-900 mt-1">
+                          {formatCurrency(item.price * item.quantity)}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
 
-                {tax > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span>Tax:</span>
-                    <span>{formatCurrency(tax)}</span>
-                  </div>
-                )}
-
-                <div style={{
-                  borderTop: '2px solid #333',
-                  paddingTop: '1rem',
-                  marginTop: '1rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '1.25rem',
-                  fontWeight: 'bold',
-                }}>
-                  <span>Total:</span>
-                  <span>{formatCurrency(total)}</span>
+                {/* Coupon Section */}
+                <div className="mb-6">
+                  {!appliedCoupon ? (
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-900/30" />
+                        <input
+                          type="text"
+                          placeholder="Coupon code"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none text-sm"
+                        />
+                      </div>
+                      <motion.button
+                        onClick={handleApplyCoupon}
+                        disabled={!couponCode || loading}
+                        whileHover={{ scale: !couponCode || loading ? 1 : 1.02 }}
+                        whileTap={{ scale: !couponCode || loading ? 1 : 0.98 }}
+                        className="px-4 py-3 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        Apply
+                      </motion.button>
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-gray-900 text-white p-4 flex justify-between items-center"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Gift className="w-5 h-5" />
+                        <div>
+                          <p className="font-medium">{appliedCoupon.code}</p>
+                          <p className="text-xs text-white/70">
+                            -{formatCurrency(appliedCoupon.discountAmount)}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="w-8 h-8 flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </motion.div>
+                  )}
                 </div>
+
+                {/* Price Breakdown */}
+                <div className="space-y-3 pt-4 border-t border-gray-900/10">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-900/60">Subtotal</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
+                  </div>
+
+                  <AnimatePresence>
+                    {discount > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex justify-between text-sm text-green-600"
+                      >
+                        <span>Discount</span>
+                        <span>-{formatCurrency(discount)}</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-900/60">Shipping</span>
+                    <span className="font-medium text-gray-900">
+                      {selectedShipping 
+                        ? formatCurrency(shippingCost) 
+                        : <span className="text-gray-900/40">Calculated next</span>
+                      }
+                    </span>
+                  </div>
+
+                  {tax > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-900/60">Tax</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(tax)}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-4 border-t border-gray-900">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-medium text-gray-900">Total</span>
+                      <span className="font-playfair text-2xl font-bold text-gray-900">
+                        {formatCurrency(total)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Badge */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-6 pt-6 border-t border-gray-900/10"
+                >
+                  <div className="flex items-center justify-center gap-3 text-gray-900/50">
+                    <ShieldCheck className="w-5 h-5" />
+                    <span className="text-xs tracking-wide">
+                      Secure checkout powered by Stripe
+                    </span>
+                  </div>
+                </motion.div>
               </div>
 
-              {/* Security Badge */}
-              <div style={{
-                marginTop: '1.5rem',
-                padding: '1rem',
-                backgroundColor: '#e8f5e9',
-                borderRadius: '4px',
-                textAlign: 'center',
-                fontSize: '0.875rem',
-                color: '#2e7d32',
-              }}>
-                🔒 Secure checkout powered by Stripe
-              </div>
-            </div>
+              {/* Trust Badges */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="mt-6 grid grid-cols-3 gap-4"
+              >
+                {[
+                  { icon: Lock, text: 'Secure' },
+                  { icon: Truck, text: 'Tracked' },
+                  { icon: Sparkles, text: 'Insured' },
+                ].map((badge, index) => (
+                  <motion.div
+                    key={badge.text}
+                    whileHover={{ y: -2 }}
+                    className="bg-white border border-gray-900/10 p-4 text-center"
+                  >
+                    <badge.icon className="w-5 h-5 mx-auto mb-2 text-gray-900" />
+                    <span className="text-xs text-gray-900/60">{badge.text}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
           </div>
         </div>
+
+        {/* Bottom Quote */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1 }}
+          className="mt-20 text-center"
+        >
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 1.5 }}
+            className="w-32 h-px bg-gray-900/10 mx-auto mb-8"
+          />
+          
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="w-10 h-10 border border-gray-900/10 flex items-center justify-center mx-auto mb-4"
+          >
+            <FlowerDecor className="w-5 h-5 text-gray-900/20" />
+          </motion.div>
+          
+          <p className="text-sm text-gray-900/40">
+            Your artwork will be carefully packaged and shipped with care
+          </p>
+        </motion.div>
       </div>
     </div>
   );

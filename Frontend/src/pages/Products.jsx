@@ -1,6 +1,6 @@
 // pages/Products.jsx
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
@@ -8,13 +8,84 @@ import {
   X, 
   ChevronDown,
   ChevronUp,
+  ChevronRight,
+  ChevronLeft,
+  Grid3X3,
+  LayoutGrid,
+  SlidersHorizontal,
+  Sparkles,
+  Package,
+  Palette,
+  User,
+  DollarSign,
+  Tag,
+  ArrowUpDown
 } from 'lucide-react';
 import { productService, categoryService, artistService } from '../api/services';
 import { useSEO } from '../hooks/useSEO';
 import { useDebounce } from '../hooks/useDebounce';
 import ProductCard from '../components/products/ProductCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import Pagination from '../components/common/Pagination';
+
+// Floating petal component
+const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0"
+    style={{ left: `${startX}%`, top: "-5%" }}
+    initial={{ opacity: 0, y: -20, rotate: 0 }}
+    animate={{
+      opacity: [0, 0.06, 0.06, 0],
+      y: [-20, 400, 800],
+      rotate: [0, 180, 360],
+      x: [0, 30, -20],
+    }}
+    transition={{
+      duration: duration,
+      delay: delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-900">
+      <path
+        d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z"
+        fill="currentColor"
+      />
+    </svg>
+  </motion.div>
+);
+
+// Flower decoration component
+const FlowerDecor = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+    <ellipse cx="12" cy="5" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="12" cy="19" rx="2" ry="4" fill="currentColor" opacity="0.5" />
+    <ellipse cx="5" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+    <ellipse cx="19" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+  </svg>
+);
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" },
+  },
+};
 
 const Products = () => {
   useSEO({
@@ -28,6 +99,7 @@ const Products = () => {
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [gridView, setGridView] = useState('grid'); // 'grid' or 'large'
 
   // Dropdown states for searchable selects
   const [categorySearch, setCategorySearch] = useState('');
@@ -47,7 +119,7 @@ const Products = () => {
     page: parseInt(searchParams.get('page')) || 1,
   });
 
-  // For multi-select (like store page)
+  // For multi-select
   const [selectedCategories, setSelectedCategories] = useState(
     searchParams.get('categories') ? searchParams.get('categories').split(',') : []
   );
@@ -56,6 +128,14 @@ const Products = () => {
   );
 
   const debouncedSearch = useDebounce(filters.search, 500);
+
+  // Generate floating petals
+  const petals = Array.from({ length: 12 }).map((_, i) => ({
+    delay: i * 1.8,
+    startX: 3 + i * 8,
+    duration: 20 + Math.random() * 10,
+    size: 10 + Math.random() * 8,
+  }));
 
   // Fetch initial data
   useEffect(() => {
@@ -228,6 +308,14 @@ const Products = () => {
     filters.maxPrice || 
     filters.productType;
 
+  const activeFilterCount = 
+    (filters.search ? 1 : 0) + 
+    selectedCategories.length + 
+    selectedArtists.length + 
+    (filters.minPrice ? 1 : 0) + 
+    (filters.maxPrice ? 1 : 0) + 
+    (filters.productType ? 1 : 0);
+
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(categorySearch.toLowerCase())
   );
@@ -238,28 +326,37 @@ const Products = () => {
 
   // Filters Panel Component
   const FiltersPanel = () => (
-    <div className="p-6 font-sans">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Filters</h2>
+    <div className="p-8 font-sans">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 border border-gray-900/10 flex items-center justify-center">
+            <SlidersHorizontal className="w-5 h-5 text-gray-900" />
+          </div>
+          <h2 className="font-playfair text-2xl font-bold text-gray-900">Filters</h2>
+        </div>
         {hasActiveFilters && (
-          <button
+          <motion.button
             onClick={clearFilters}
-            className="text-sm text-gray-700 hover:text-gray-800 font-semibold cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="text-sm text-gray-900 hover:text-gray-700 font-medium flex items-center gap-1 cursor-pointer"
           >
+            <X className="w-4 h-4" />
             Clear all
-          </button>
+          </motion.button>
         )}
       </div>
 
       {/* Sort By */}
-      <div className="mb-6">
-        <label className="block text-base font-semibold text-gray-700 mb-2 cursor-pointer">
+      <div className="mb-8">
+        <label className="flex items-center gap-2 text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3">
+          <ArrowUpDown className="w-4 h-4" />
           Sort By
         </label>
         <select
           value={filters.sortBy}
           onChange={(e) => handleFilterChange({ sortBy: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-gray-600 cursor-pointer"
+          className="w-full px-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors bg-white cursor-pointer"
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
@@ -271,39 +368,47 @@ const Products = () => {
       </div>
 
       {/* Price Range */}
-      <div className="mb-6">
-        <label className="block text-base font-semibold text-gray-700 mb-2">
-          Price Range ($)
+      <div className="mb-8">
+        <label className="flex items-center gap-2 text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3">
+          <DollarSign className="w-4 h-4" />
+          Price Range
         </label>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            placeholder="Min"
-            value={filters.minPrice}
-            onChange={(e) => handleFilterChange({ minPrice: e.target.value })}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-gray-600"
-            min="0"
-          />
-          <input
-            type="number"
-            placeholder="Max"
-            value={filters.maxPrice}
-            onChange={(e) => handleFilterChange({ maxPrice: e.target.value })}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-gray-600"
-            min="0"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-900/30">$</span>
+            <input
+              type="number"
+              placeholder="Min"
+              value={filters.minPrice}
+              onChange={(e) => handleFilterChange({ minPrice: e.target.value })}
+              className="w-full pl-8 pr-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+              min="0"
+            />
+          </div>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-900/30">$</span>
+            <input
+              type="number"
+              placeholder="Max"
+              value={filters.maxPrice}
+              onChange={(e) => handleFilterChange({ maxPrice: e.target.value })}
+              className="w-full pl-8 pr-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+              min="0"
+            />
+          </div>
         </div>
       </div>
 
       {/* Product Type Filter */}
-      <div className="mb-6">
-        <label className="block text-base font-semibold text-gray-700 mb-2 cursor-pointer">
+      <div className="mb-8">
+        <label className="flex items-center gap-2 text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3">
+          <Tag className="w-4 h-4" />
           Product Type
         </label>
         <select
           value={filters.productType}
           onChange={(e) => handleFilterChange({ productType: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-gray-600 cursor-pointer"
+          className="w-full px-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors bg-white cursor-pointer"
         >
           <option value="">All Types</option>
           <option value="original">Original</option>
@@ -313,8 +418,9 @@ const Products = () => {
       </div>
 
       {/* Categories with Search */}
-      <div className="mb-6 category-dropdown">
-        <label className="block text-base font-semibold text-gray-700 mb-2">
+      <div className="mb-8 category-dropdown">
+        <label className="flex items-center gap-2 text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3">
+          <Palette className="w-4 h-4" />
           Categories
         </label>
         <div className="relative">
@@ -324,59 +430,84 @@ const Products = () => {
             value={categorySearch}
             onChange={(e) => setCategorySearch(e.target.value)}
             onFocus={() => setShowCategoryDropdown(true)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-gray-600"
+            className="w-full px-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
           />
           {showCategoryDropdown ? (
-            <ChevronUp className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <ChevronUp className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           ) : (
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           )}
           
-          {showCategoryDropdown && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-              <div className="p-2 space-y-1">
-                {filteredCategories.map(category => (
-                  <label key={category._id} className="flex items-center p-2 hover:bg-neutral-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(category._id)}
-                      onChange={() => handleCategoryChange(category._id)}
-                      className="rounded border-gray-300 text-gray-700 focus:ring-gray-600"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">{category.name}</span>
-                  </label>
-                ))}
-                {filteredCategories.length === 0 && (
-                  <div className="p-2 text-sm text-gray-500 text-center">No categories found</div>
-                )}
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {showCategoryDropdown && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute z-10 w-full mt-1 bg-white border border-gray-900/10 shadow-lg max-h-48 overflow-y-auto"
+              >
+                <div className="p-2 space-y-1">
+                  {filteredCategories.map(category => (
+                    <label 
+                      key={category._id} 
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category._id)}
+                        onChange={() => handleCategoryChange(category._id)}
+                        className="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
+                      />
+                      <span className="ml-3 text-sm text-gray-900">{category.name}</span>
+                    </label>
+                  ))}
+                  {filteredCategories.length === 0 && (
+                    <div className="p-3 text-sm text-gray-500 text-center">No categories found</div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+        
         {/* Selected Categories */}
-        {selectedCategories.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {selectedCategories.map(catId => {
-              const category = categories.find(c => c._id === catId);
-              return category ? (
-                <span key={catId} className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs flex items-center">
-                  {category.name}
-                  <button
-                    onClick={() => handleCategoryChange(catId)}
-                    className="ml-1 hover:text-gray-900 cursor-pointer"
+        <AnimatePresence>
+          {selectedCategories.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex flex-wrap gap-2 mt-3"
+            >
+              {selectedCategories.map(catId => {
+                const category = categories.find(c => c._id === catId);
+                return category ? (
+                  <motion.span 
+                    key={catId} 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="bg-gray-900 text-white px-3 py-1 text-xs flex items-center gap-2"
                   >
-                    <X size={12} />
-                  </button>
-                </span>
-              ) : null;
-            })}
-          </div>
-        )}
+                    {category.name}
+                    <button
+                      onClick={() => handleCategoryChange(catId)}
+                      className="hover:text-gray-300 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                ) : null;
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Artists with Search */}
-      <div className="mb-6 artist-dropdown">
-        <label className="block text-base font-semibold text-gray-700 mb-2">
+      <div className="mb-8 artist-dropdown">
+        <label className="flex items-center gap-2 text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3">
+          <User className="w-4 h-4" />
           Artists
         </label>
         <div className="relative">
@@ -386,55 +517,90 @@ const Products = () => {
             value={artistSearch}
             onChange={(e) => setArtistSearch(e.target.value)}
             onFocus={() => setShowArtistDropdown(true)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-gray-600"
+            className="w-full px-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
           />
           {showArtistDropdown ? (
-            <ChevronUp className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <ChevronUp className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           ) : (
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           )}
           
-          {showArtistDropdown && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-              <div className="p-2 space-y-1">
-                {filteredArtists.map(artist => (
-                  <label key={artist._id} className="flex items-center p-2 hover:bg-neutral-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedArtists.includes(artist._id)}
-                      onChange={() => handleArtistChange(artist._id)}
-                      className="rounded border-gray-300 text-gray-700 focus:ring-gray-600"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">{artist.name}</span>
-                  </label>
-                ))}
-                {filteredArtists.length === 0 && (
-                  <div className="p-2 text-sm text-gray-500 text-center">No artists found</div>
-                )}
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {showArtistDropdown && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute z-10 w-full mt-1 bg-white border border-gray-900/10 shadow-lg max-h-48 overflow-y-auto"
+              >
+                <div className="p-2 space-y-1">
+                  {filteredArtists.map(artist => (
+                    <label 
+                      key={artist._id} 
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedArtists.includes(artist._id)}
+                        onChange={() => handleArtistChange(artist._id)}
+                        className="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
+                      />
+                      <span className="ml-3 text-sm text-gray-900">{artist.name}</span>
+                    </label>
+                  ))}
+                  {filteredArtists.length === 0 && (
+                    <div className="p-3 text-sm text-gray-500 text-center">No artists found</div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+        
         {/* Selected Artists */}
-        {selectedArtists.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {selectedArtists.map(artistId => {
-              const artist = artists.find(a => a._id === artistId);
-              return artist ? (
-                <span key={artistId} className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs flex items-center">
-                  {artist.name}
-                  <button
-                    onClick={() => handleArtistChange(artistId)}
-                    className="ml-1 hover:text-gray-900 cursor-pointer"
+        <AnimatePresence>
+          {selectedArtists.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex flex-wrap gap-2 mt-3"
+            >
+              {selectedArtists.map(artistId => {
+                const artist = artists.find(a => a._id === artistId);
+                return artist ? (
+                  <motion.span 
+                    key={artistId} 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="bg-gray-900 text-white px-3 py-1 text-xs flex items-center gap-2"
                   >
-                    <X size={12} />
-                  </button>
-                </span>
-              ) : null;
-            })}
-          </div>
-        )}
+                    {artist.name}
+                    <button
+                      onClick={() => handleArtistChange(artistId)}
+                      className="hover:text-gray-300 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                ) : null;
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Apply Filters Button (Mobile) */}
+      <motion.button
+        onClick={() => setShowFilters(false)}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="w-full py-4 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 lg:hidden cursor-pointer"
+      >
+        <Sparkles className="w-5 h-5" />
+        Apply Filters
+      </motion.button>
     </div>
   );
 
@@ -453,48 +619,91 @@ const Products = () => {
     
     for (let i = startPage; i <= endPage; i++) {
       pages.push(
-        <button
+        <motion.button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`w-10 h-10 flex items-center justify-center font-medium transition-all cursor-pointer ${
             pagination.page === i
-              ? 'bg-gray-700 text-white border border-gray-700'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-neutral-50'
+              ? 'bg-gray-900 text-white'
+              : 'bg-white text-gray-900 border border-gray-900/10 hover:border-gray-900'
           }`}
         >
           {i}
-        </button>
+        </motion.button>
       );
     }
     
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-between mt-12 pt-8 border-t border-neutral-200 space-y-4 sm:space-y-0">
-        <div className="text-sm text-gray-600 cursor-pointer">
-          Showing <span className="font-bold">{((pagination.page - 1) * 12) + 1} - {Math.min(pagination.page * 12, pagination.total)}</span> of <span className="font-bold">{pagination.total}</span> products
-        </div>
-        <div className="flex items-center space-x-2">
-          <button
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row items-center justify-between mt-16 pt-8 border-t border-gray-900/10 gap-6"
+      >
+        <p className="text-sm text-gray-900/60">
+          Showing <span className="font-medium text-gray-900">{((pagination.page - 1) * 12) + 1}</span> - <span className="font-medium text-gray-900">{Math.min(pagination.page * 12, pagination.total)}</span> of <span className="font-medium text-gray-900">{pagination.total}</span> artworks
+        </p>
+        <div className="flex items-center gap-2">
+          <motion.button
             onClick={() => handlePageChange(Math.max(pagination.page - 1, 1))}
             disabled={pagination.page === 1}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 font-semibold cursor-pointer"
+            whileHover={{ scale: pagination.page === 1 ? 1 : 1.05 }}
+            whileTap={{ scale: pagination.page === 1 ? 1 : 0.95 }}
+            className="w-10 h-10 flex items-center justify-center border border-gray-900/10 disabled:opacity-30 disabled:cursor-not-allowed hover:border-gray-900 transition-colors cursor-pointer"
           >
-            Previous
-          </button>
+            <ChevronLeft className="w-5 h-5" />
+          </motion.button>
           {pages}
-          <button
+          <motion.button
             onClick={() => handlePageChange(Math.min(pagination.page + 1, pagination.totalPages))}
             disabled={pagination.page === pagination.totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 font-semibold cursor-pointer"
+            whileHover={{ scale: pagination.page === pagination.totalPages ? 1 : 1.05 }}
+            whileTap={{ scale: pagination.page === pagination.totalPages ? 1 : 0.95 }}
+            className="w-10 h-10 flex items-center justify-center border border-gray-900/10 disabled:opacity-30 disabled:cursor-not-allowed hover:border-gray-900 transition-colors cursor-pointer"
           >
-            Next
-          </button>
+            <ChevronRight className="w-5 h-5" />
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 relative overflow-x-hidden">
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Floating Petals */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {petals.map((petal, i) => (
+          <FloatingPetal key={i} {...petal} />
+        ))}
+      </div>
+
+      {/* Decorative Elements */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 0.03, scale: 1 }}
+        transition={{ duration: 1, delay: 0.5 }}
+        className="absolute top-60 left-10 w-64 h-64 pointer-events-none hidden lg:block"
+      >
+        <FlowerDecor className="w-full h-full text-gray-900" />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 0.03, scale: 1 }}
+        transition={{ duration: 1, delay: 0.7 }}
+        className="absolute bottom-40 right-10 w-48 h-48 pointer-events-none hidden lg:block"
+      >
+        <FlowerDecor className="w-full h-full text-gray-900" />
+      </motion.div>
 
       {/* Filter Overlay */}
       <AnimatePresence>
@@ -502,7 +711,7 @@ const Products = () => {
           <>
             {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 bg-black/50 z-40"
+              className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -511,7 +720,7 @@ const Products = () => {
             
             {/* Mobile Drawer */}
             <motion.div
-              className="fixed inset-y-0 left-0 w-80 bg-white overflow-y-auto z-50 lg:hidden"
+              className="fixed inset-y-0 left-0 w-full max-w-sm bg-white overflow-y-auto z-50 lg:hidden"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -519,9 +728,9 @@ const Products = () => {
             >
               <button
                 onClick={() => setShowFilters(false)}
-                className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg z-10 cursor-pointer"
+                className="absolute top-6 right-6 w-10 h-10 border border-gray-900/10 flex items-center justify-center hover:bg-gray-100 z-10 cursor-pointer transition-colors"
               >
-                <X size={24} />
+                <X className="w-5 h-5" />
               </button>
               <FiltersPanel />
             </motion.div>
@@ -529,198 +738,463 @@ const Products = () => {
             {/* Desktop Modal */}
             <motion.div
               className="hidden lg:flex fixed inset-0 z-50 items-center justify-center p-4"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative bg-white border border-gray-900/10 shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+              >
                 <button
                   onClick={() => setShowFilters(false)}
-                  className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg z-10 cursor-pointer"
+                  className="absolute top-6 right-6 w-10 h-10 border border-gray-900/10 flex items-center justify-center hover:bg-gray-100 z-10 cursor-pointer transition-colors"
                 >
-                  <X size={24} />
+                  <X className="w-5 h-5" />
                 </button>
                 <FiltersPanel />
-              </div>
+              </motion.div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900">Our Art Store</h1>
-          <p className="text-gray-600 mt-2 text-lg">Discover unique artworks from talented artists</p>
-        </div>
+      {/* Main Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        {/* Breadcrumb */}
+        <motion.nav
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 text-sm text-gray-900/50 mb-12"
+        >
+          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-gray-900">Art Store</span>
+        </motion.nav>
+
+        {/* Page Header */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="text-center mb-16"
+        >
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 1, ease: "easeInOut" }}
+            className="w-16 h-px bg-gray-900 mx-auto mb-8 origin-center"
+          />
+
+          <motion.div
+            variants={itemVariants}
+            className="flex items-center justify-center gap-3 mb-6"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="w-10 h-10 border border-gray-900/10 flex items-center justify-center"
+            >
+              <FlowerDecor className="w-5 h-5 text-gray-900/20" />
+            </motion.div>
+          </motion.div>
+
+          <motion.span
+            variants={itemVariants}
+            className="text-xs tracking-[0.3em] text-gray-900/50 uppercase block mb-4"
+          >
+            Curated Collection
+          </motion.span>
+
+          <motion.h1
+            variants={itemVariants}
+            className="font-playfair text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6"
+          >
+            Our Art Store
+          </motion.h1>
+
+          <motion.p
+            variants={itemVariants}
+            className="text-gray-900/60 max-w-2xl mx-auto leading-relaxed"
+          >
+            Discover unique artworks from talented artists worldwide. Each piece is carefully 
+            curated to bring exceptional art into your space.
+          </motion.p>
+        </motion.div>
 
         {/* Search and Filter Bar */}
-        <div className="sticky top-4 z-20 bg-neutral-50/80 backdrop-blur-sm py-4 mb-6 rounded-lg">
-          <div className="flex items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="sticky top-4 z-20 mb-8"
+        >
+          <div className="bg-white/80 backdrop-blur-md border border-gray-900/10 p-4 flex items-center gap-4">
+            {/* Search Input */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-900/30 w-5 h-5" />
               <input
                 type="text"
                 value={filters.search}
                 onChange={(e) => handleFilterChange({ search: e.target.value })}
-                placeholder="Search artworks, artists, or tags..."
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-gray-600 shadow-sm"
+                placeholder="Search artworks, artists, or styles..."
+                className="w-full pl-12 pr-4 py-3 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors bg-transparent"
               />
             </div>
-            <button
+            
+            {/* Filter Button */}
+            <motion.button
               onClick={() => setShowFilters(true)}
-              className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-neutral-100 flex items-center gap-2 bg-white font-semibold shadow-sm transition-colors cursor-pointer"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-6 py-3 border border-gray-900 text-gray-900 font-medium hover:bg-gray-900 hover:text-white transition-all flex items-center gap-3 cursor-pointer"
             >
-              <Filter size={20} className="text-gray-700" />
-              <span>Filters</span>
-              {hasActiveFilters && (
-                <span className="bg-gray-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                  {
-                    (filters.search ? 1 : 0) + 
-                    selectedCategories.length + 
-                    selectedArtists.length + 
-                    (filters.minPrice ? 1 : 0) + 
-                    (filters.maxPrice ? 1 : 0) + 
-                    (filters.productType ? 1 : 0)
-                  }
+              <Filter className="w-5 h-5" />
+              <span className="hidden sm:block">Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="w-6 h-6 bg-gray-900 text-white text-xs flex items-center justify-center">
+                  {activeFilterCount}
                 </span>
               )}
-            </button>
+            </motion.button>
+
+            {/* Grid View Toggle */}
+            <div className="hidden md:flex border border-gray-900/10">
+              <button
+                onClick={() => setGridView('grid')}
+                className={`w-10 h-10 flex items-center justify-center transition-colors cursor-pointer ${
+                  gridView === 'grid' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'
+                }`}
+              >
+                <Grid3X3 className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setGridView('large')}
+                className={`w-10 h-10 flex items-center justify-center transition-colors cursor-pointer ${
+                  gridView === 'large' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'
+                }`}
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-        </div>
+        </motion.div>
         
         {/* Quick Filters: Categories */}
-        <div className="mb-4">
-          <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase tracking-wider">Categories</h3>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-6"
+        >
+          <h3 className="text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3 flex items-center gap-2">
+            <Palette className="w-4 h-4" />
+            Categories
+          </h3>
           <div className="flex overflow-x-auto pb-2 gap-2 scrollbar-hide">
-            {categories.map(category => (
-              <button
+            {categories.map((category, index) => (
+              <motion.button
                 key={category._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + index * 0.05 }}
                 onClick={() => handleCategoryChange(category._id)}
-                className={`px-4 py-2 rounded-full font-semibold text-sm transition-colors border whitespace-nowrap cursor-pointer ${
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`px-5 py-2.5 font-medium text-sm transition-all whitespace-nowrap cursor-pointer ${
                   selectedCategories.includes(category._id)
-                  ? 'bg-gray-700 text-white border-gray-700'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-neutral-50 hover:border-gray-400'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-900 border border-gray-900/10 hover:border-gray-900'
                 }`}
               >
                 {category.name}
-              </button>
+              </motion.button>
             ))}
           </div>
-        </div>
+        </motion.div>
         
         {/* Quick Filters: Artists */}
-        <div className="mb-8">
-           <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase tracking-wider">Artists</h3>
-           <div className="flex overflow-x-auto pb-2 gap-2 scrollbar-hide">
-            {artists.map(artist => (
-              <button
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mb-10"
+        >
+          <h3 className="text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-3 flex items-center gap-2">
+            <User className="w-4 h-4" />
+            Artists
+          </h3>
+          <div className="flex overflow-x-auto pb-2 gap-2 scrollbar-hide">
+            {artists.map((artist, index) => (
+              <motion.button
                 key={artist._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + index * 0.05 }}
                 onClick={() => handleArtistChange(artist._id)}
-                className={`px-4 py-2 rounded-full font-semibold text-sm transition-colors border whitespace-nowrap cursor-pointer ${
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`px-5 py-2.5 font-medium text-sm transition-all whitespace-nowrap cursor-pointer ${
                   selectedArtists.includes(artist._id)
-                  ? 'bg-gray-700 text-white border-gray-700'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-neutral-50 hover:border-gray-400'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-900 border border-gray-900/10 hover:border-gray-900'
                 }`}
               >
                 {artist.name}
-              </button>
+              </motion.button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Active Filters Display */}
+        {/* Active Filters Display */}
+        <AnimatePresence>
           {hasActiveFilters && (
-            <div className="flex flex-wrap gap-2 mb-6 pb-6 border-b border-neutral-200">
-              <span className="text-sm font-semibold text-gray-700 self-center">Active:</span>
-              {filters.search && (
-                <span className="bg-neutral-200 text-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                  Search: "{filters.search}"
-                  <button onClick={() => handleFilterChange({ search: '' })} className="hover:text-black cursor-pointer"><X size={14} /></button>
-                </span>
-              )}
-              {selectedCategories.map(catId => {
-                const category = categories.find(c => c._id === catId);
-                return category ? (
-                  <span key={catId} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                    {category.name}
-                    <button onClick={() => handleCategoryChange(catId)} className="hover:text-green-900 cursor-pointer"><X size={14} /></button>
-                  </span>
-                ) : null;
-              })}
-              {selectedArtists.map(artistId => {
-                const artist = artists.find(a => a._id === artistId);
-                return artist ? (
-                  <span key={artistId} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                    {artist.name}
-                    <button onClick={() => handleArtistChange(artistId)} className="hover:text-purple-900 cursor-pointer"><X size={14} /></button>
-                  </span>
-                ) : null;
-              })}
-              {filters.minPrice && (
-                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                  Min: ${filters.minPrice}
-                  <button onClick={() => handleFilterChange({ minPrice: '' })} className="hover:text-yellow-900 cursor-pointer"><X size={14} /></button>
-                </span>
-              )}
-              {filters.maxPrice && (
-                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                  Max: ${filters.maxPrice}
-                  <button onClick={() => handleFilterChange({ maxPrice: '' })} className="hover:text-yellow-900 cursor-pointer"><X size={14} /></button>
-                </span>
-              )}
-              {filters.productType && (
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                  Type: {filters.productType}
-                  <button onClick={() => handleFilterChange({ productType: '' })} className="hover:text-blue-900 cursor-pointer"><X size={14} /></button>
-                </span>
-              )}
-              <button onClick={clearFilters} className="text-gray-700 hover:underline text-sm font-semibold ml-2 cursor-pointer">Clear All</button>
-            </div>
-          )}
-
-          {/* Products Grid */}
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <LoadingSpinner size="large" />
-            </div>
-          ) : products.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {products.map((product, index) => (
-                  <motion.div
-                    key={product._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-8 pb-8 border-b border-gray-900/10"
+            >
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs tracking-[0.15em] text-gray-900/50 uppercase">Active Filters:</span>
+                
+                {filters.search && (
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="bg-gray-100 text-gray-900 px-4 py-2 text-sm flex items-center gap-2"
                   >
-                    <ProductCard product={product} index={index} />
-                  </motion.div>
-                ))}
+                    <Search className="w-3 h-3" />
+                    "{filters.search}"
+                    <button onClick={() => handleFilterChange({ search: '' })} className="hover:text-gray-600 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+                
+                {selectedCategories.map(catId => {
+                  const category = categories.find(c => c._id === catId);
+                  return category ? (
+                    <motion.span 
+                      key={catId} 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="bg-gray-900 text-white px-4 py-2 text-sm flex items-center gap-2"
+                    >
+                      <Palette className="w-3 h-3" />
+                      {category.name}
+                      <button onClick={() => handleCategoryChange(catId)} className="hover:text-gray-300 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </motion.span>
+                  ) : null;
+                })}
+                
+                {selectedArtists.map(artistId => {
+                  const artist = artists.find(a => a._id === artistId);
+                  return artist ? (
+                    <motion.span 
+                      key={artistId} 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="bg-gray-900 text-white px-4 py-2 text-sm flex items-center gap-2"
+                    >
+                      <User className="w-3 h-3" />
+                      {artist.name}
+                      <button onClick={() => handleArtistChange(artistId)} className="hover:text-gray-300 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </motion.span>
+                  ) : null;
+                })}
+                
+                {filters.minPrice && (
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="bg-gray-100 text-gray-900 px-4 py-2 text-sm flex items-center gap-2"
+                  >
+                    <DollarSign className="w-3 h-3" />
+                    Min: ${filters.minPrice}
+                    <button onClick={() => handleFilterChange({ minPrice: '' })} className="hover:text-gray-600 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+                
+                {filters.maxPrice && (
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="bg-gray-100 text-gray-900 px-4 py-2 text-sm flex items-center gap-2"
+                  >
+                    <DollarSign className="w-3 h-3" />
+                    Max: ${filters.maxPrice}
+                    <button onClick={() => handleFilterChange({ maxPrice: '' })} className="hover:text-gray-600 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+                
+                {filters.productType && (
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="bg-gray-100 text-gray-900 px-4 py-2 text-sm flex items-center gap-2"
+                  >
+                    <Tag className="w-3 h-3" />
+                    {filters.productType}
+                    <button onClick={() => handleFilterChange({ productType: '' })} className="hover:text-gray-600 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+                
+                <motion.button 
+                  onClick={clearFilters} 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="text-gray-900 text-sm font-medium flex items-center gap-1 ml-2 cursor-pointer hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  Clear All
+                </motion.button>
               </div>
-              {renderPagination()}
-            </>
-          ) : (
-            <div className="text-center py-12 bg-white rounded-lg shadow-md border border-neutral-200">
-              <div className="text-gray-400 mb-4">
-                <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-500 mb-6">Try adjusting your filters or search terms</p>
-              <button
-                onClick={clearFilters}
-                className="bg-gray-700 text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition-colors font-semibold cursor-pointer"
-              >
-                Clear all filters
-              </button>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+
+        {/* Results Count */}
+        {!loading && products.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center justify-between mb-8"
+          >
+            <p className="text-gray-900/60">
+              <span className="font-medium text-gray-900">{pagination.total || products.length}</span> artworks found
+            </p>
+          </motion.div>
+        )}
+
+        {/* Products Grid */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 border border-gray-900/10 flex items-center justify-center mb-6"
+            >
+              <FlowerDecor className="w-8 h-8 text-gray-900/20" />
+            </motion.div>
+            <p className="text-gray-900/60">Loading artworks...</p>
+          </div>
+        ) : products.length > 0 ? (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className={`grid gap-8 ${
+              gridView === 'large' 
+                ? 'grid-cols-1 sm:grid-cols-2' 
+                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+            }`}
+          >
+            {products.map((product, index) => (
+              <motion.div
+                key={product._id}
+                variants={itemVariants}
+                whileHover={{ y: -5 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ProductCard product={product} index={index} />
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-24 border border-gray-900/10 bg-white"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="w-20 h-20 border border-gray-900/10 flex items-center justify-center mx-auto mb-8"
+            >
+              <Package className="w-10 h-10 text-gray-900/20" />
+            </motion.div>
+            
+            <h3 className="font-playfair text-2xl font-bold text-gray-900 mb-3">
+              No artworks found
+            </h3>
+            <p className="text-gray-900/60 mb-8 max-w-md mx-auto">
+              We couldn't find any artworks matching your criteria. Try adjusting your filters or search terms.
+            </p>
+            <motion.button
+              onClick={clearFilters}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-flex items-center gap-2 bg-gray-900 text-white px-8 py-4 font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+              Clear all filters
+            </motion.button>
+          </motion.div>
+        )}
+
+        {/* Pagination */}
+        {renderPagination()}
+
+        {/* Bottom Quote */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="mt-24 text-center"
+        >
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 1.5 }}
+            className="w-32 h-px bg-gray-900/10 mx-auto mb-8"
+          />
+          
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="w-10 h-10 border border-gray-900/10 flex items-center justify-center mx-auto mb-4"
+          >
+            <FlowerDecor className="w-5 h-5 text-gray-900/20" />
+          </motion.div>
+          
+          <p className="font-playfair text-lg text-gray-900/40 italic max-w-xl mx-auto">
+            "Every artist dips his brush in his own soul, and paints his own nature into his pictures."
+          </p>
+          <p className="text-sm text-gray-900/30 mt-2">— Henry Ward Beecher</p>
+        </motion.div>
       </div>
+
+      {/* Scroll to Top Button */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-8 right-8 z-40 w-14 h-14 bg-gray-900 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors cursor-pointer"
+      >
+        <ChevronUp className="w-6 h-6" />
+      </motion.button>
     </div>
   );
 };

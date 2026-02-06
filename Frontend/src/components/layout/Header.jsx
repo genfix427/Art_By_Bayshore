@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CompanyLogo from '../../assets/ABBS_LOGO_O.png';
 
 // Custom hook (no changes)
 const useClickOutside = (ref, handler) => {
@@ -93,11 +94,11 @@ const Header = () => {
               <Link
                 to="/"
                 className="flex items-center !space-x-2 group"
-                title="ArtGallery Home"
+                title="ArtByBayshore Home"
               >
                 {/*  */}
                 <span className="font-parisienne text-4xl font-bold text-gray-700 group-hover:opacity-80 transition-opacity">
-                  ArtGallery
+                  <img src={CompanyLogo} alt="ArtByBayshore Logo" className="h-16 w-auto" />
                 </span>
               </Link>
             </div>

@@ -261,7 +261,7 @@ const Cart = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-3 bg-gray-900 text-white px-8 py-4 font-medium hover:bg-gray-800 transition-colors group"
+              className="inline-flex items-center gap-3 bg-gray-900 text-white px-8 py-4 font-medium hover:bg-gray-800 transition-colors group cursor-pointer"
             >
               <Sparkles className="w-5 h-5" />
               <span>Explore Collection</span>
@@ -279,7 +279,7 @@ const Cart = () => {
             {[
               { icon: Calculator, label: 'Shipping', sublabel: 'Calculated at checkout' },
               { icon: ShieldCheck, label: 'Secure Payment', sublabel: '100% Protected' },
-              { icon: RotateCcw, label: 'Easy Returns', sublabel: '30-Day Policy' },
+              { icon: RotateCcw, label: '%100 Original', sublabel: 'Authentic artworks' },
             ].map((item, index) => (
               <motion.div
                 key={index}
@@ -513,7 +513,7 @@ const Cart = () => {
                               {isRemoving ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5 cursor-pointer" />
                               )}
                             </motion.button>
                           </div>
