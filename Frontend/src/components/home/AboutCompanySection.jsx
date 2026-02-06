@@ -77,16 +77,6 @@ const AboutCompanySection = () => {
         }}
       />
 
-      {/* Floating animated line */}
-      <motion.div
-        style={{ y }}
-        className="absolute top-40 right-[5%] w-px h-64 bg-gray-900/10 origin-top"
-      />
-      <motion.div
-        style={{ y: useTransform(scrollYProgress, [0, 1], [-50, 50]) }}
-        className="absolute bottom-40 left-[5%] w-px h-48 bg-gray-900/10 origin-bottom"
-      />
-
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
         
         {/* Header */}

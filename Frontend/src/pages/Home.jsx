@@ -10,6 +10,7 @@ import HeroSlider from '../components/home/HeroSlider';
 import AboutCompanySection from '../components/home/AboutCompanySection';
 import AnimatedBanner from '../components/home/AnimatedBanner';
 import TrustBar from '../components/home/TrustBar';
+import ProductSlider from '../components/products/ProductSlider';
 
 const Home = () => {
   useSEO({
@@ -46,13 +47,25 @@ const Home = () => {
         autoPlay={true}
         autoPlayInterval={6000}
       />
-      <AnimatedBanner />
+      
       <ArtistSlider 
         title="Meet Our Artists"
         subtitle="Discover the stories behind every brushstroke."
         viewAllHref="/artists"
         autoPlay={true}
         autoPlayInterval={5000}
+      />
+
+      <AnimatedBanner />
+
+      {/* New Arrivals */}
+      <ProductSlider
+        title="New Arrivals"
+        subtitle="Fresh additions to our collection, straight from the artists' studios."
+        viewAllHref="/products?sort=-createdAt"
+        filterType="new"
+        autoPlay={true}
+        autoPlayInterval={6000}
       />
       
       <TrustBar />
