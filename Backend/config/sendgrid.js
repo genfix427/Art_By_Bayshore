@@ -1083,6 +1083,483 @@ welcomeEmail(user) {
     return this.send(process.env.SUPPORT_EMAIL, subject, html);
   }
 
+  async sendNewsletterCampaign(campaign, subscribers) {
+  try {
+    const results = {
+      sentCount: 0,
+      failedCount: 0,
+      failedEmails: [],
+    };
+
+    console.log(`📧 Starting to send campaign "${campaign.name}" to ${subscribers.length} subscribers`);
+
+    // Send emails in smaller batches to avoid rate limits
+    const batchSize = 10;
+    
+    for (let i = 0; i < subscribers.length; i += batchSize) {
+      const batch = subscribers.slice(i, i + batchSize);
+      console.log(`📦 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(subscribers.length/batchSize)}`);
+      
+      const batchPromises = batch.map(async (subscriber) => {
+        try {
+          // Generate beautiful black and white email
+          const emailContent = this.generateBlackWhiteNewsletter(
+            campaign, 
+            subscriber
+          );
+
+          console.log(`Sending to: ${subscriber.email}`);
+          
+          // Send email using the class method
+          const result = await this.send(
+            subscriber.email,
+            campaign.subject,
+            emailContent.html,
+            emailContent.text
+          );
+
+          if (result.success) {
+            results.sentCount++;
+            console.log(`✓ Sent to ${subscriber.email}`);
+            return { success: true, email: subscriber.email };
+          } else {
+            results.failedCount++;
+            results.failedEmails.push({
+              email: subscriber.email,
+              error: result.error,
+            });
+            console.log(`✗ Failed to send to ${subscriber.email}: ${result.error}`);
+            return { success: false, email: subscriber.email, error: result.error };
+          }
+        } catch (error) {
+          results.failedCount++;
+          results.failedEmails.push({
+            email: subscriber.email,
+            error: error.message,
+          });
+          console.log(`✗ Error sending to ${subscriber.email}: ${error.message}`);
+          return { success: false, email: subscriber.email, error: error.message };
+        }
+      });
+
+      // Wait for current batch to complete
+      await Promise.all(batchPromises);
+      
+      // Small delay between batches
+      if (i + batchSize < subscribers.length) {
+        console.log(`⏳ Waiting 2 seconds before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    console.log(`📊 Campaign complete: ${results.sentCount} sent, ${results.failedCount} failed`);
+    return results;
+  } catch (error) {
+    console.error('Campaign sending error:', error);
+    throw error;
+  }
+}
+
+generateBlackWhiteNewsletter(campaign, subscriber) {
+  // Personalize the HTML content
+  let personalizedHtml = campaign.content.html
+    .replace(/\{\{firstName\}\}/g, subscriber.firstName || 'Subscriber')
+    .replace(/\{\{email\}\}/g, subscriber.email);
+
+  // Generate unsubscribe URL
+  const unsubscribeUrl = `${this.frontendUrl}/newsletter/unsubscribe/${subscriber.unsubscribeToken}`;
+  const viewInBrowserUrl = `${this.frontendUrl}/newsletter/campaign/${campaign._id}`;
+  
+  // Create beautiful black and white template wrapper
+  const wrappedHtml = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="x-apple-disable-message-reformatting">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <title>${campaign.subject}</title>
+      <style type="text/css">
+        /* Reset for email clients */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          color: #000000;
+          background-color: #ffffff;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          margin: 0;
+          padding: 20px 0;
+        }
+        
+        /* Email wrapper */
+        .email-wrapper {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          border: 1px solid #e0e0e0;
+        }
+        
+        /* Header */
+        .header {
+          background-color: #000000;
+          color: #ffffff;
+          padding: 30px 20px;
+          text-align: center;
+        }
+        
+        .header h1 {
+          font-size: 28px;
+          font-weight: 300;
+          letter-spacing: 1px;
+          margin: 0;
+          text-transform: uppercase;
+        }
+        
+        .header p {
+          font-size: 14px;
+          opacity: 0.8;
+          margin-top: 8px;
+          letter-spacing: 0.5px;
+        }
+        
+        /* Preheader */
+        .preheader {
+          font-size: 0;
+          line-height: 0;
+          color: transparent;
+          display: none;
+          max-height: 0;
+          overflow: hidden;
+        }
+        
+        /* Content container */
+        .content {
+          padding: 40px 30px;
+        }
+        
+        /* Campaign content */
+        .campaign-content {
+          margin-bottom: 40px;
+        }
+        
+        /* Typography */
+        h2 {
+          font-size: 24px;
+          font-weight: 600;
+          margin-bottom: 20px;
+          color: #000000;
+        }
+        
+        h3 {
+          font-size: 18px;
+          font-weight: 600;
+          margin: 25px 0 15px;
+          color: #000000;
+        }
+        
+        p {
+          margin-bottom: 20px;
+          font-size: 16px;
+          color: #333333;
+          line-height: 1.7;
+        }
+        
+        a {
+          color: #000000;
+          text-decoration: underline;
+        }
+        
+        /* Quote block */
+        .quote {
+          border-left: 3px solid #000000;
+          padding-left: 20px;
+          margin: 30px 0;
+          font-style: italic;
+          color: #666666;
+        }
+        
+        /* Divider */
+        .divider {
+          height: 1px;
+          background-color: #e0e0e0;
+          margin: 40px 0;
+        }
+        
+        /* Footer */
+        .footer {
+          background-color: #f8f8f8;
+          padding: 30px;
+          text-align: center;
+          border-top: 1px solid #e0e0e0;
+        }
+        
+        .footer-logo {
+          font-size: 18px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          margin-bottom: 15px;
+          text-transform: uppercase;
+        }
+        
+        .footer-address {
+          font-size: 14px;
+          color: #666666;
+          margin-bottom: 20px;
+          line-height: 1.5;
+        }
+        
+        .footer-links {
+          margin: 20px 0;
+        }
+        
+        .footer-links a {
+          color: #666666;
+          text-decoration: none;
+          font-size: 14px;
+          margin: 0 10px;
+        }
+        
+        .footer-links a:hover {
+          text-decoration: underline;
+        }
+        
+        .unsubscribe {
+          font-size: 12px;
+          color: #999999;
+          margin-top: 25px;
+          padding-top: 20px;
+          border-top: 1px solid #e0e0e0;
+        }
+        
+        .unsubscribe a {
+          color: #999999;
+          text-decoration: underline;
+        }
+        
+        /* Button */
+        .btn {
+          display: inline-block;
+          background-color: #000000;
+          color: #ffffff;
+          text-decoration: none;
+          padding: 14px 30px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          border: none;
+          cursor: pointer;
+          margin: 10px 0;
+          text-align: center;
+          font-size: 15px;
+        }
+        
+        .btn:hover {
+          background-color: #333333;
+        }
+        
+        /* Info box */
+        .info-box {
+          background-color: #f8f8f8;
+          border: 1px solid #e0e0e0;
+          padding: 20px;
+          margin: 30px 0;
+        }
+        
+        .info-box h4 {
+          font-size: 16px;
+          margin-bottom: 10px;
+          color: #000000;
+        }
+        
+        /* Lists */
+        ul, ol {
+          margin: 20px 0 20px 20px;
+          color: #333333;
+        }
+        
+        li {
+          margin-bottom: 10px;
+          font-size: 16px;
+          line-height: 1.6;
+        }
+        
+        /* Image styling */
+        img {
+          max-width: 100%;
+          height: auto;
+          display: block;
+          margin: 20px 0;
+        }
+        
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+          .content {
+            padding: 30px 20px;
+          }
+          
+          .header {
+            padding: 25px 15px;
+          }
+          
+          .header h1 {
+            font-size: 24px;
+          }
+          
+          h2 {
+            font-size: 20px;
+          }
+          
+          h3 {
+            font-size: 16px;
+          }
+          
+          p {
+            font-size: 15px;
+          }
+          
+          .footer {
+            padding: 25px 20px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <!-- Preheader text for email clients -->
+      <div class="preheader">
+        ${campaign.subject} - ${this.companyName} Newsletter
+      </div>
+      
+      <div class="email-wrapper">
+        <!-- Header -->
+        <div class="header">
+          <h1>${this.companyName}</h1>
+          <p>Art & Culture Newsletter</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="content">
+          <!-- Greeting -->
+          <h2>Dear ${subscriber.firstName || 'Art Enthusiast'},</h2>
+          
+          <p>Welcome to this edition of our newsletter. We're excited to share the latest from ${this.companyName}.</p>
+          
+          <!-- Campaign Content -->
+          <div class="campaign-content">
+            ${personalizedHtml}
+          </div>
+          
+          <!-- Divider -->
+          <div class="divider"></div>
+          
+          <!-- Additional Resources -->
+          <div class="info-box">
+            <h4>📚 Additional Resources</h4>
+            <p>Explore more from our collection:</p>
+            <ul>
+              <li><a href="${this.frontendUrl}/shop">Browse Our Gallery</a></li>
+              <li><a href="${this.frontendUrl}/artists">Meet Our Artists</a></li>
+              <li><a href="${this.frontendUrl}/exhibitions">Upcoming Exhibitions</a></li>
+              <li><a href="${this.frontendUrl}/blog">Art Insights Blog</a></li>
+            </ul>
+          </div>
+          
+          <!-- Call to Action -->
+          <div style="text-align: center; margin: 40px 0;">
+            <a href="${this.frontendUrl}/shop" class="btn">
+              EXPLORE THE COLLECTION
+            </a>
+            <p style="font-size: 14px; color: #666666; margin-top: 15px;">
+              <a href="${viewInBrowserUrl}">View this email in your browser</a>
+            </p>
+          </div>
+          
+          <!-- Quote -->
+          <div class="quote">
+            "Every artist dips his brush in his own soul, and paints his own nature into his pictures."<br>
+            <span style="font-size: 14px; color: #999999;">- Henry Ward Beecher</span>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+          <div class="footer-logo">${this.companyName}</div>
+          <div class="footer-address">
+            ${this.companyAddress}<br>
+            Miami, Florida
+          </div>
+          
+          <div class="footer-links">
+            <a href="${this.frontendUrl}">Website</a> • 
+            <a href="${this.frontendUrl}/about">About</a> • 
+            <a href="${this.frontendUrl}/contact">Contact</a> • 
+            <a href="${this.frontendUrl}/privacy">Privacy</a>
+          </div>
+          
+          <div class="unsubscribe">
+            You're receiving this email because you subscribed to ${this.companyName} newsletter.<br>
+            <a href="${unsubscribeUrl}">Unsubscribe from this list</a> • 
+            <a href="${this.frontendUrl}/preferences">Update preferences</a>
+          </div>
+          
+          <div style="font-size: 12px; color: #999999; margin-top: 20px;">
+            &copy; ${new Date().getFullYear()} ${this.companyName}. All rights reserved.
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Generate plain text version
+  const plainText = `
+${campaign.subject}
+
+Dear ${subscriber.firstName || 'Art Enthusiast'},
+
+Welcome to this edition of our newsletter. We're excited to share the latest from ${this.companyName}.
+
+${this.stripHtml(personalizedHtml)}
+
+---
+Explore more from our collection:
+- Browse Our Gallery: ${this.frontendUrl}/shop
+- Meet Our Artists: ${this.frontendUrl}/artists
+- Upcoming Exhibitions: ${this.frontendUrl}/exhibitions
+- Art Insights Blog: ${this.frontendUrl}/blog
+
+"Every artist dips his brush in his own soul, and paints his own nature into his pictures."
+- Henry Ward Beecher
+
+---
+${this.companyName}
+${this.companyAddress}
+Miami, Florida
+
+Website: ${this.frontendUrl}
+About: ${this.frontendUrl}/about
+Contact: ${this.frontendUrl}/contact
+Privacy: ${this.frontendUrl}/privacy
+
+You're receiving this email because you subscribed to ${this.companyName} newsletter.
+Unsubscribe: ${unsubscribeUrl}
+Update preferences: ${this.frontendUrl}/preferences
+
+© ${new Date().getFullYear()} ${this.companyName}. All rights reserved.
+  `;
+
+  return {
+    html: wrappedHtml,
+    text: plainText
+  };
+}
+
 }
 
 export default new EmailService();

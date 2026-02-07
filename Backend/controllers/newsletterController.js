@@ -252,82 +252,94 @@ export const sendCampaign = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('This campaign has already been sent', 400));
   }
 
+  if (campaign.status === 'sending') {
+    return next(new ErrorResponse('This campaign is currently being sent', 400));
+  }
+
+  // Update campaign status to "sending"
   campaign.status = 'sending';
   await campaign.save();
 
-  // Get recipients based on campaign settings
-  let recipientQuery = { status: 'subscribed' };
+  try {
+    // Get recipients based on campaign settings
+    let recipientQuery = { status: 'subscribed' };
 
-  if (campaign.recipients === 'tags' && campaign.recipientTags.length > 0) {
-    recipientQuery.tags = { $in: campaign.recipientTags };
-  } else if (campaign.recipients === 'custom' && campaign.recipientEmails.length > 0) {
-    recipientQuery.email = { $in: campaign.recipientEmails };
-  }
-
-  const subscribers = await Subscriber.find(recipientQuery);
-
-  if (subscribers.length === 0) {
-    campaign.status = 'failed';
-    await campaign.save();
-    return next(new ErrorResponse('No recipients found for this campaign', 400));
-  }
-
-  // Prepare emails
-  const emails = subscribers.map(subscriber => {
-    const unsubscribeUrl = `${process.env.FRONTEND_URL}/newsletter/unsubscribe/${subscriber.unsubscribeToken}`;
-    
-    let personalizedHtml = campaign.content.html;
-    personalizedHtml = personalizedHtml.replace(/{{firstName}}/g, subscriber.firstName || '');
-    personalizedHtml = personalizedHtml.replace(/{{email}}/g, subscriber.email);
-    personalizedHtml += `
-      <hr style="margin-top: 30px;">
-      <p style="font-size: 12px; color: #666;">
-        You're receiving this email because you subscribed to ${process.env.COMPANY_NAME}.
-        <br>
-        <a href="${unsubscribeUrl}">Unsubscribe</a>
-      </p>
-    `;
-
-    return {
-      to: subscriber.email,
-      from: {
-        email: campaign.fromEmail,
-        name: campaign.fromName,
-      },
-      subject: campaign.subject,
-      html: personalizedHtml,
-      text: campaign.content.text,
-    };
-  });
-
-  // Send emails in batches
-  const batchSize = 100;
-  let sentCount = 0;
-
-  for (let i = 0; i < emails.length; i += batchSize) {
-    const batch = emails.slice(i, i + batchSize);
-    try {
-      await emailService.sendMultiple(batch);
-      sentCount += batch.length;
-    } catch (error) {
-      logger.error(`Failed to send campaign batch: ${error.message}`);
+    if (campaign.recipients === 'tags' && campaign.recipientTags.length > 0) {
+      recipientQuery.tags = { $in: campaign.recipientTags };
+    } else if (campaign.recipients === 'custom' && campaign.recipientEmails.length > 0) {
+      recipientQuery.email = { $in: campaign.recipientEmails };
     }
+
+    const subscribers = await Subscriber.find(recipientQuery)
+      .select('email firstName lastName unsubscribeToken');
+
+    console.log(`Found ${subscribers.length} subscribers to send to`);
+
+    if (subscribers.length === 0) {
+      campaign.status = 'failed';
+      campaign.error = 'No recipients found';
+      await campaign.save();
+      return next(new ErrorResponse('No recipients found for this campaign', 400));
+    }
+
+    // Send campaign using email service
+    const result = await emailService.sendNewsletterCampaign(campaign, subscribers);
+
+    console.log('Campaign sending result:', result);
+
+    // Update campaign stats
+    if (result.sentCount > 0) {
+      campaign.status = result.failedCount === 0 ? 'sent' : 'partial';
+      campaign.stats = {
+        totalSent: result.sentCount,
+        delivered: result.sentCount,
+        opened: 0,
+        clicked: 0,
+        bounced: result.failedCount,
+        unsubscribed: 0,
+      };
+      campaign.sentAt = new Date();
+      
+      if (result.failedCount > 0) {
+        campaign.error = `Failed to send to ${result.failedCount} emails`;
+        campaign.failedEmails = result.failedEmails;
+      }
+    } else {
+      campaign.status = 'failed';
+      campaign.error = 'No emails were sent successfully';
+    }
+    
+    await campaign.save();
+
+    logger.info(
+      `Campaign sent: ${campaign.name} - ${result.sentCount} sent, ${result.failedCount} failed`
+    );
+
+    res.status(200).json({
+      success: true,
+      message: result.failedCount === 0 
+        ? `Campaign sent successfully to ${result.sentCount} recipients`
+        : `Campaign partially sent. ${result.sentCount} sent, ${result.failedCount} failed`,
+      data: {
+        campaign,
+        stats: {
+          sent: result.sentCount,
+          failed: result.failedCount,
+          failedEmails: result.failedEmails,
+        },
+      },
+    });
+
+  } catch (error) {
+    // Update campaign status to failed
+    campaign.status = 'failed';
+    campaign.error = error.message;
+    await campaign.save();
+
+    console.error('Campaign send error:', error);
+    logger.error(`Campaign send failed: ${error.message}`);
+    return next(new ErrorResponse(`Failed to send campaign: ${error.message}`, 500));
   }
-
-  // Update campaign
-  campaign.status = 'sent';
-  campaign.sentAt = new Date();
-  campaign.stats.totalSent = sentCount;
-  campaign.stats.delivered = sentCount; // Will be updated by webhooks
-  await campaign.save();
-
-  logger.info(`Campaign sent: ${campaign.name} to ${sentCount} recipients by ${req.user.email}`);
-
-  res.status(200).json({
-    success: true,
-    message: `Campaign sent successfully to ${sentCount} recipients`,
-    data: campaign,
-  });
 });
 
 // @desc    Delete campaign
