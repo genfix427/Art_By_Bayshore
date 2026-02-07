@@ -150,6 +150,7 @@ const ArtistSlider = ({
   const [isAutoPlaying, setIsAutoPlaying] = useState(autoPlay);
   const [slidesPerView, setSlidesPerView] = useState(3);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef(null);
   const autoPlayRef = useRef(null);
 
@@ -159,10 +160,13 @@ const ArtistSlider = ({
       const width = window.innerWidth;
       if (width < 640) {
         setSlidesPerView(1);
+        setIsMobile(true);
       } else if (width < 1024) {
         setSlidesPerView(2);
+        setIsMobile(false);
       } else {
         setSlidesPerView(3);
+        setIsMobile(false);
       }
     };
 
@@ -412,14 +416,14 @@ const ArtistSlider = ({
 
         {/* Carousel */}
         <div className="relative">
-          {/* Navigation Arrows */}
-          {!loading && artists.length > slidesPerView && (
+          {/* Navigation Arrows - Hidden on small screens */}
+          {!loading && artists.length > slidesPerView && !isMobile && (
             <>
               <motion.button
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 onClick={prevSlide}
-                className="absolute -left-2 sm:-left-4 lg:-left-8 top-[35%] -translate-y-1/2 z-30 group"
+                className="hidden sm:flex absolute -left-2 sm:-left-4 lg:-left-8 top-[35%] -translate-y-1/2 z-30 group"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -432,7 +436,7 @@ const ArtistSlider = ({
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 onClick={nextSlide}
-                className="absolute -right-2 sm:-right-4 lg:-right-8 top-[35%] -translate-y-1/2 z-30 group"
+                className="hidden sm:flex absolute -right-2 sm:-right-4 lg:-right-8 top-[35%] -translate-y-1/2 z-30 group"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >

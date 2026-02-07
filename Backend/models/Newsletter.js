@@ -65,6 +65,13 @@ const subscriberSchema = new mongoose.Schema({
     opened: Boolean,
     clicked: Boolean,
   }],
+  notificationCleared: {
+    type: Boolean,
+    default: false,
+  },
+  notificationClearedAt: {
+    type: Date,
+  },
 }, {
   timestamps: true,
 });

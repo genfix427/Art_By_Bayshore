@@ -49,7 +49,7 @@ export const getMyOrders = asyncHandler(async (req, res, next) => {
 
   const query = { user: req.user.id };
   const total = await Order.countDocuments(query);
-  
+
   const orders = await Order.find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -204,7 +204,7 @@ export const createShipment = asyncHandler(async (req, res, next) => {
     shipmentResult = await fedexService.createShipment(shipmentData);
   } catch (error) {
     logger.error(`FedEx shipment creation error for order ${order.orderNumber}: ${error.message}`);
-    
+
     // In development, use mock data
     if (process.env.NODE_ENV === 'development') {
       logger.warn('Using mock shipment data in development mode');
@@ -246,6 +246,8 @@ export const createShipment = asyncHandler(async (req, res, next) => {
   order.fedexShipment.estimatedDelivery = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); // 5 days from now
   order.shippingStatus = 'label-created';
   order.orderStatus = 'shipped';
+  order.notificationCleared = true;
+  order.notificationClearedAt = new Date();
 
   order.statusHistory.push({
     status: 'shipped',
@@ -261,10 +263,10 @@ export const createShipment = asyncHandler(async (req, res, next) => {
   // Send shipping confirmation email
   try {
     const user = await User.findById(order.user._id || order.user);
-    
+
     if (user) {
       const emailResult = await emailService.shippingConfirmationEmail(order, user);
-      
+
       order.emailsSent.push({
         type: 'shipping',
         sentAt: new Date(),
@@ -334,7 +336,7 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
     // If in development and FedEx not configured, use mock data
     if (process.env.NODE_ENV === 'development') {
       logger.warn('Using mock tracking data in development mode');
-      
+
       // Simulate tracking progression
       const mockStatuses = ['label-created', 'picked-up', 'in-transit', 'out-for-delivery', 'delivered'];
       const currentIndex = mockStatuses.indexOf(order.shippingStatus);
@@ -379,7 +381,7 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
 
   // Update shipping status based on latest event
   const latestStatus = (trackingResult.status || '').toLowerCase();
-  
+
   if (latestStatus.includes('delivered')) {
     order.shippingStatus = 'delivered';
     order.orderStatus = 'delivered';
@@ -415,23 +417,23 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
   if (order.shippingStatus === 'delivered' && previousShippingStatus !== 'delivered') {
     try {
       const user = order.user._id ? order.user : await User.findById(order.user);
-      
+
       if (user && user.email) {
         // Check if delivery email was already sent
         const alreadySent = order.emailsSent.some(
           e => e.type === 'delivery' && e.success
         );
-        
+
         if (!alreadySent) {
           const emailResult = await emailService.deliveryConfirmationEmail(order, user);
-          
+
           order.emailsSent.push({
             type: 'delivery',
             sentAt: new Date(),
             success: emailResult.success,
           });
           await order.save();
-          
+
           if (emailResult.success) {
             logger.info(`Delivery confirmation email sent for order: ${order.orderNumber}`);
           } else {
@@ -530,7 +532,7 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
 
   order.orderStatus = 'cancelled';
   order.shippingStatus = 'cancelled';
-  
+
   order.statusHistory.push({
     status: 'cancelled',
     timestamp: new Date(),
@@ -543,7 +545,7 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
   // Restore product stock
   for (const item of order.items) {
     await Product.findByIdAndUpdate(item.product, {
-      $inc: { 
+      $inc: {
         stockQuantity: item.quantity,
         salesCount: -item.quantity,
       },
@@ -555,10 +557,10 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
   // Send cancellation email
   try {
     const user = order.user._id ? order.user : await User.findById(order.user);
-    
+
     if (user && user.email) {
       const emailResult = await emailService.orderCancellationEmail(order, user);
-      
+
       order.emailsSent.push({
         type: 'cancellation',
         sentAt: new Date(),

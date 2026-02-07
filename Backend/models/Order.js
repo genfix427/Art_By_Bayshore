@@ -178,6 +178,13 @@ const orderSchema = new mongoose.Schema({
     },
     success: Boolean,
   }],
+  notificationCleared: {
+    type: Boolean,
+    default: false,
+  },
+  notificationClearedAt: {
+    type: Date,
+  },
   refundDetails: {
     amount: Number,
     reason: String,

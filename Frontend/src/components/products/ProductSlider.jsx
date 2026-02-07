@@ -87,7 +87,7 @@ const ProductCardSkeleton = ({ index }) => (
   >
     <div className="bg-white rounded-xl overflow-hidden border border-gray-100">
       {/* Image Skeleton */}
-      <div className="relative h-64 sm:h-72 md:h-80 bg-gray-100">
+      <div className="relative h-48 sm:h-56 md:h-64 lg:h-72 bg-gray-100">
         <motion.div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
           animate={{ x: ['-100%', '100%'] }}
@@ -148,7 +148,7 @@ const ProductSlider = ({
   viewAllHref = "/products",
   autoPlay = true,
   autoPlayInterval = 5000,
-  filterType = "featured", // "featured", "new", "bestseller", "all"
+  filterType = "featured",
   category = null,
   limit = 12
 }) => {
@@ -159,6 +159,7 @@ const ProductSlider = ({
   const [isAutoPlaying, setIsAutoPlaying] = useState(autoPlay);
   const [slidesPerView, setSlidesPerView] = useState(4);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef(null);
   const autoPlayRef = useRef(null);
 
@@ -168,12 +169,16 @@ const ProductSlider = ({
       const width = window.innerWidth;
       if (width < 640) {
         setSlidesPerView(1);
+        setIsMobile(true);
       } else if (width < 768) {
         setSlidesPerView(2);
+        setIsMobile(false);
       } else if (width < 1024) {
         setSlidesPerView(3);
+        setIsMobile(false);
       } else {
-        setSlidesPerView(6);
+        setSlidesPerView(4);
+        setIsMobile(false);
       }
     };
 
@@ -196,7 +201,6 @@ const ProductSlider = ({
         limit: limit,
       };
 
-      // Add filter based on type
       if (filterType === "featured") {
         params.isFeatured = true;
       } else if (filterType === "new") {
@@ -295,7 +299,6 @@ const ProductSlider = ({
     visible: { scaleX: 1, transition: { duration: 1.2, ease: "easeInOut" } }
   };
 
-  // Get badge text based on filter type
   const getBadgeText = () => {
     switch (filterType) {
       case "featured": return "Featured";
@@ -349,7 +352,7 @@ const ProductSlider = ({
               className="w-12 sm:w-16 h-px bg-gray-900 mb-6 sm:mb-8 origin-left"
             />
 
-            <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 whileInView={{ scale: 1, rotate: 0 }}
@@ -365,33 +368,31 @@ const ProductSlider = ({
                 </motion.div>
               </motion.div>
 
-              <div className="flex items-center gap-3">
-                <motion.h2 
-                  custom={0}
-                  variants={textReveal}
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900"
-                >
-                  {title}
-                </motion.h2>
-                
-                {/* Badge */}
-                <motion.span
-                  initial={{ opacity: 0, scale: 0 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5, type: "spring" }}
-                  className="hidden sm:inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  {getBadgeText()}
-                </motion.span>
-              </div>
+              <motion.h2 
+                custom={0}
+                variants={textReveal}
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900"
+              >
+                {title}
+              </motion.h2>
+              
+              {/* Badge */}
+              <motion.span
+                initial={{ opacity: 0, scale: 0 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5, type: "spring" }}
+                className="hidden sm:inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold"
+              >
+                <Sparkles className="w-3 h-3" />
+                {getBadgeText()}
+              </motion.span>
             </div>
 
             <motion.p 
               custom={1}
               variants={textReveal}
-              className="text-gray-900/60 text-sm sm:text-base lg:text-lg ml-14 sm:ml-16 lg:ml-20"
+              className="text-gray-900/60 text-sm sm:text-base lg:text-lg ml-0 sm:ml-16 lg:ml-20"
             >
               {subtitle}
             </motion.p>
@@ -400,7 +401,7 @@ const ProductSlider = ({
               <motion.div 
                 custom={2}
                 variants={textReveal}
-                className="flex flex-wrap items-center gap-4 sm:gap-6 lg:gap-8 mt-4 sm:mt-6 ml-14 sm:ml-16 lg:ml-20"
+                className="flex flex-wrap items-center gap-4 sm:gap-6 lg:gap-8 mt-4 sm:mt-6 ml-0 sm:ml-16 lg:ml-20"
               >
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-gray-900/50" />
@@ -464,14 +465,14 @@ const ProductSlider = ({
 
         {/* Carousel */}
         <div className="relative">
-          {/* Navigation Arrows */}
-          {!loading && products.length > slidesPerView && (
+          {/* Navigation Arrows - Hidden on small screens */}
+          {!loading && products.length > slidesPerView && !isMobile && (
             <>
               <motion.button
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 onClick={prevSlide}
-                className="absolute -left-2 sm:-left-4 lg:-left-8 top-[40%] -translate-y-1/2 z-30 group"
+                className="hidden sm:flex absolute -left-2 sm:-left-4 lg:-left-8 top-[40%] -translate-y-1/2 z-30 group"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -484,7 +485,7 @@ const ProductSlider = ({
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 onClick={nextSlide}
-                className="absolute -right-2 sm:-right-4 lg:-right-8 top-[40%] -translate-y-1/2 z-30 group"
+                className="hidden sm:flex absolute -right-2 sm:-right-4 lg:-right-8 top-[40%] -translate-y-1/2 z-30 group"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -496,9 +497,9 @@ const ProductSlider = ({
           )}
 
           {/* Carousel Content */}
-          <div className="overflow-hidden px-2">
+          <div className="overflow-hidden px-1 sm:px-2">
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
                 {Array.from({ length: slidesPerView }).map((_, i) => (
                   <ProductCardSkeleton key={i} index={i} />
                 ))}
@@ -511,7 +512,7 @@ const ProductSlider = ({
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -100 }}
                   transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 lg:gap-8"
+                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8"
                   drag="x"
                   dragConstraints={{ left: 0, right: 0 }}
                   dragElastic={0.1}
@@ -545,7 +546,7 @@ const ProductSlider = ({
 
           {/* Dots Indicator */}
           {!loading && totalSlides > 1 && (
-            <div className="flex items-center justify-center gap-3 mt-10 sm:mt-12">
+            <div className="flex items-center justify-center gap-3 mt-8 sm:mt-10 lg:mt-12">
               {/* Desktop Progress Bars */}
               <div className="hidden sm:flex items-center gap-2">
                 {Array.from({ length: totalSlides }).map((_, index) => (
@@ -589,7 +590,7 @@ const ProductSlider = ({
                     aria-label={`Go to slide ${index + 1}`}
                   >
                     <motion.div
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
                         currentSlide === index 
                           ? 'bg-gray-900 scale-125' 
                           : 'bg-gray-300'
@@ -637,7 +638,7 @@ const ProductSlider = ({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-10 sm:mt-12 lg:hidden text-center"
+            className="mt-8 sm:mt-10 lg:hidden text-center"
           >
             <Link 
               to={viewAllHref} 

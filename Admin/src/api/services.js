@@ -87,3 +87,21 @@ export const newsletterService = {
   deleteCampaign: (id) => api.delete(`/newsletter/campaigns/${id}`),
   getStats: () => api.get('/newsletter/stats'),
 };
+
+// Dashboard Services
+export const dashboardService = {
+  getStats: () => api.get('/dashboard/stats'),
+  getNotificationCounts: () => api.get('/dashboard/notification-counts'),
+};
+
+// Notification Services
+export const notificationService = {
+  getAll: () => api.get('/notifications'),
+  getSidebarCounts: () => api.get('/notifications/sidebar-counts'),
+  markInquiryAsRead: (id) => api.put(`/notifications/inquiries/${id}/read`),
+  markAllInquiriesAsRead: () => api.put('/notifications/inquiries/read-all'),
+  clearOrderNotification: (id) => api.put(`/notifications/orders/${id}/clear`),
+  clearOrderNotifications: () => api.put('/notifications/orders/clear'),
+  clearSubscriberNotifications: () => api.put('/notifications/subscribers/clear'),
+  markAllNotificationsAsViewed: () => api.put('/notifications/view-all'),
+};

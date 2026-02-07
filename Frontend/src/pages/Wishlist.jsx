@@ -4,12 +4,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Heart, 
-  ShoppingCart, 
   Trash2, 
   ArrowLeft,
-  Eye,
-  Star,
-  Tag,
   Sparkles
 } from 'lucide-react';
 import ProductCard from '../components/products/ProductCard';
@@ -30,25 +26,48 @@ const Wishlist = () => {
     wishlistItems, 
     loading, 
     clearWishlist,
-    removeFromWishlist,
-    fetchWishlist 
+    removeFromWishlist
   } = useWishlist();
-  const [products, setProducts] = useState([]);
+  
   const [removingId, setRemovingId] = useState(null);
 
+  // Debug: Log wishlistItems to see structure
   useEffect(() => {
-    if (isAuthenticated) {
-      loadWishlistProducts();
-    }
-  }, [wishlistItems, isAuthenticated]);
+    console.log('Wishlist Items:', wishlistItems);
+    console.log('Wishlist Items Length:', wishlistItems?.length);
+  }, [wishlistItems]);
 
-  const loadWishlistProducts = () => {
-    // Extract products from wishlist items
-    const productList = wishlistItems?.map(item => item.product)?.filter(Boolean) || [];
- // Filter out null products
+  // Get products from wishlist items
+  const getProductsFromWishlist = () => {
+    if (!wishlistItems || !Array.isArray(wishlistItems)) {
+      return [];
+    }
     
-    setProducts(productList);
+    // Try different possible structures
+    const products = wishlistItems.map(item => {
+      // Check if item is the product itself
+      if (item._id && item.title) {
+        return item;
+      }
+      
+      // Check if item has a product property
+      if (item.product && typeof item.product === 'object') {
+        return item.product;
+      }
+      
+      // Check if item has productId and product is populated
+      if (item.productId && typeof item.productId === 'object') {
+        return item.productId;
+      }
+      
+      return null;
+    }).filter(Boolean); // Remove null items
+    
+    console.log('Extracted Products:', products);
+    return products;
   };
+
+  const products = getProductsFromWishlist();
 
   const handleRemoveItem = async (productId) => {
     if (!isAuthenticated) {
@@ -61,6 +80,7 @@ const Wishlist = () => {
       await removeFromWishlist(productId);
       toast.success('Removed from wishlist');
     } catch (error) {
+      console.error('Error removing from wishlist:', error);
       toast.error('Failed to remove item');
     } finally {
       setRemovingId(null);
@@ -76,8 +96,14 @@ const Wishlist = () => {
       await clearWishlist();
       toast.success('Wishlist cleared');
     } catch (error) {
+      console.error('Error clearing wishlist:', error);
       toast.error('Failed to clear wishlist');
     }
+  };
+
+  // Add this function to get the correct product ID for removal
+  const getProductIdFromItem = (product) => {
+    return product._id || product.product?._id || product.productId?._id;
   };
 
   if (!isAuthenticated) {
@@ -152,32 +178,39 @@ const Wishlist = () => {
           <>
             {/* Products Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product, index) => (
-                <motion.div
-                  key={product._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="relative group"
-                >
-                  {/* Remove Button */}
-                  <button
-                    onClick={() => handleRemoveItem(product._id)}
-                    disabled={removingId === product._id}
-                    className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-white disabled:opacity-50"
-                    title="Remove from wishlist"
+              {products.map((product, index) => {
+                const productId = getProductIdFromItem(product);
+                
+                return (
+                  <motion.div
+                    key={productId || index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="relative group"
                   >
-                    {removingId === product._id ? (
-                      <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Trash2 size={18} className="text-red-600" />
-                    )}
-                  </button>
+                    {/* Remove Button */}
+                    <button
+                      onClick={() => handleRemoveItem(productId)}
+                      disabled={removingId === productId}
+                      className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-white disabled:opacity-50"
+                      title="Remove from wishlist"
+                    >
+                      {removingId === productId ? (
+                        <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 size={18} className="text-red-600" />
+                      )}
+                    </button>
 
-                  {/* Product Card */}
-                  <ProductCard product={product} index={index} />
-                </motion.div>
-              ))}
+                    {/* Product Card */}
+                    <ProductCard 
+                      product={product} 
+                      index={index} 
+                    />
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* Empty Wishlist Message */}
@@ -207,18 +240,20 @@ const Wishlist = () => {
                 <Heart className="w-12 h-12 text-gray-400" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                Your wishlist is empty
+                {loading ? 'Loading...' : 'Your wishlist is empty'}
               </h3>
               <p className="text-gray-600 mb-6">
-                Save your favorite artworks here to view them later
+                {loading ? 'Fetching your saved items...' : 'Save your favorite artworks here to view them later'}
               </p>
-              <Link
-                to="/products"
-                className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-gray-900 to-black text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200"
-              >
-                <Sparkles size={18} />
-                Browse Artworks
-              </Link>
+              {!loading && (
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-gray-900 to-black text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200"
+                >
+                  <Sparkles size={18} />
+                  Browse Artworks
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

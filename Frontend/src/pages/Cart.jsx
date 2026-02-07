@@ -14,8 +14,6 @@ import {
   ArrowLeft,
   Package,
   ShieldCheck,
-  Gift,
-  Tag,
   ChevronRight,
   AlertCircle,
   Check,
@@ -25,7 +23,6 @@ import {
   CreditCard,
   RotateCcw,
   Calculator,
-  Info
 } from 'lucide-react';
 
 // Floating petal component
@@ -80,12 +77,12 @@ const Cart = () => {
   const [promoCode, setPromoCode] = useState('');
   const [applyingPromo, setApplyingPromo] = useState(false);
 
-  // Generate floating petals
-  const petals = Array.from({ length: 8 }).map((_, i) => ({
-    delay: i * 2,
-    startX: 10 + i * 12,
+  // Generate floating petals - fewer on mobile
+  const petals = Array.from({ length: 6 }).map((_, i) => ({
+    delay: i * 2.5,
+    startX: 10 + i * 15,
     duration: 18 + Math.random() * 10,
-    size: 10 + Math.random() * 8,
+    size: 8 + Math.random() * 6,
   }));
 
   // Animation variants
@@ -166,7 +163,6 @@ const Cart = () => {
     
     setApplyingPromo(true);
     try {
-      // Add your promo code API call here
       await new Promise(resolve => setTimeout(resolve, 1000));
       showFeedback('Promo code applied!');
       setPromoCode('');
@@ -181,19 +177,18 @@ const Cart = () => {
     navigate('/checkout');
   };
 
-  // Calculate subtotal only (shipping and taxes calculated at checkout)
   const subtotal = cart?.subtotal || 0;
 
   // Loading State
   if (loading && !cart) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border border-gray-900/20 flex items-center justify-center"
+          className="w-12 h-12 sm:w-16 sm:h-16 border border-gray-900/20 flex items-center justify-center"
         >
-          <div className="w-8 h-8 border-t border-gray-900" />
+          <div className="w-6 h-6 sm:w-8 sm:h-8 border-t border-gray-900" />
         </motion.div>
       </div>
     );
@@ -202,7 +197,7 @@ const Cart = () => {
   // Empty Cart State
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center px-4">
+      <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center px-4 py-12">
         {/* Background Pattern */}
         <div 
           className="absolute inset-0 opacity-[0.02] pointer-events-none"
@@ -211,8 +206,8 @@ const Cart = () => {
           }}
         />
 
-        {/* Floating Petals */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Floating Petals - Hidden on very small screens */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
           {petals.map((petal, i) => (
             <FloatingPetal key={i} {...petal} />
           ))}
@@ -221,21 +216,20 @@ const Cart = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative z-10 text-center max-w-md"
+          className="relative z-10 text-center max-w-md w-full"
         >
           {/* Empty Cart Icon */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring" }}
-            className="relative w-32 h-32 mx-auto mb-8"
+            className="relative w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 sm:mb-8"
           >
             <div className="absolute inset-0 border border-gray-900/10 flex items-center justify-center">
-              <ShoppingBag className="w-16 h-16 text-gray-900/20" />
+              <ShoppingBag className="w-12 h-12 sm:w-16 sm:h-16 text-gray-900/20" />
             </div>
-            {/* Decorative elements */}
             <motion.div
-              className="absolute -top-2 -right-2 w-6 h-6"
+              className="absolute -top-2 -right-2 w-5 h-5 sm:w-6 sm:h-6"
               animate={{ rotate: 360 }}
               transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
             >
@@ -247,13 +241,13 @@ const Cart = () => {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="w-16 h-px bg-gray-900 mx-auto mb-6"
+            className="w-12 sm:w-16 h-px bg-gray-900 mx-auto mb-4 sm:mb-6"
           />
 
-          <h1 className="font-playfair text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="font-playfair text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
             Your Cart is Empty
           </h1>
-          <p className="text-gray-900/50 mb-8 leading-relaxed">
+          <p className="text-gray-900/50 mb-6 sm:mb-8 leading-relaxed text-sm sm:text-base px-4">
             Discover our curated collection of beautiful artworks and start building your personal gallery.
           </p>
 
@@ -261,11 +255,11 @@ const Cart = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-3 bg-gray-900 text-white px-8 py-4 font-medium hover:bg-gray-800 transition-colors group cursor-pointer"
+              className="inline-flex items-center gap-2 sm:gap-3 bg-gray-900 text-white px-6 sm:px-8 py-3 sm:py-4 font-medium hover:bg-gray-800 transition-colors group cursor-pointer text-sm sm:text-base"
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Explore Collection</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </motion.button>
           </Link>
 
@@ -274,12 +268,12 @@ const Cart = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="mt-16 grid grid-cols-3 gap-6"
+            className="mt-10 sm:mt-16 grid grid-cols-3 gap-3 sm:gap-6"
           >
             {[
-              { icon: Calculator, label: 'Shipping', sublabel: 'Calculated at checkout' },
-              { icon: ShieldCheck, label: 'Secure Payment', sublabel: '100% Protected' },
-              { icon: RotateCcw, label: '%100 Original', sublabel: 'Authentic artworks' },
+              { icon: Calculator, label: 'Shipping', sublabel: 'At checkout' },
+              { icon: ShieldCheck, label: 'Secure', sublabel: 'Protected' },
+              { icon: RotateCcw, label: 'Original', sublabel: 'Authentic' },
             ].map((item, index) => (
               <motion.div
                 key={index}
@@ -288,11 +282,11 @@ const Cart = () => {
                 transition={{ delay: 0.7 + index * 0.1 }}
                 className="text-center"
               >
-                <div className="w-12 h-12 mx-auto mb-3 border border-gray-900/10 flex items-center justify-center">
-                  <item.icon className="w-5 h-5 text-gray-900/40" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 border border-gray-900/10 flex items-center justify-center">
+                  <item.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-900/40" />
                 </div>
-                <span className="text-sm font-medium text-gray-900 block">{item.label}</span>
-                <span className="text-xs text-gray-900/40">{item.sublabel}</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-900 block">{item.label}</span>
+                <span className="text-[10px] sm:text-xs text-gray-900/40">{item.sublabel}</span>
               </motion.div>
             ))}
           </motion.div>
@@ -311,8 +305,8 @@ const Cart = () => {
         }}
       />
 
-      {/* Floating Petals */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Floating Petals - Hidden on mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
         {petals.map((petal, i) => (
           <FloatingPetal key={i} {...petal} />
         ))}
@@ -325,14 +319,14 @@ const Cart = () => {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 shadow-lg ${
+            className={`fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50 px-4 sm:px-6 py-3 flex items-center justify-center gap-2 shadow-lg ${
               feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
             } text-white`}
           >
             {feedback.type === 'error' ? (
-              <AlertCircle className="w-4 h-4" />
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
             ) : (
-              <Check className="w-4 h-4" />
+              <Check className="w-4 h-4 flex-shrink-0" />
             )}
             <span className="text-sm font-medium">{feedback.message}</span>
           </motion.div>
@@ -340,13 +334,13 @@ const Cart = () => {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         
-        {/* Breadcrumb */}
+        {/* Breadcrumb - Hidden on very small screens */}
         <motion.nav
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-gray-900/50 mb-8"
+          className="hidden sm:flex items-center gap-2 text-sm text-gray-900/50 mb-6 sm:mb-8"
         >
           <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
           <ChevronRight className="w-4 h-4" />
@@ -357,19 +351,19 @@ const Cart = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10"
+          className="flex flex-col gap-4 mb-6 sm:mb-10"
         >
           <div>
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 0.8 }}
-              className="w-12 h-px bg-gray-900 mb-6 origin-left"
+              className="w-8 sm:w-12 h-px bg-gray-900 mb-4 sm:mb-6 origin-left"
             />
-            <h1 className="font-playfair text-4xl lg:text-5xl font-bold text-gray-900 mb-2">
+            <h1 className="font-playfair text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-1 sm:mb-2">
               Shopping Cart
             </h1>
-            <p className="text-gray-900/50">
+            <p className="text-gray-900/50 text-sm sm:text-base">
               {cart.items.length} {cart.items.length === 1 ? 'item' : 'items'} in your cart
             </p>
           </div>
@@ -380,29 +374,28 @@ const Cart = () => {
               disabled={clearing}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 text-sm font-medium cursor-pointer"
+              className="self-start inline-flex items-center gap-2 px-3 sm:px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 text-xs sm:text-sm font-medium cursor-pointer"
             >
               {clearing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
               ) : (
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
               )}
               Clear Cart
             </motion.button>
           )}
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
           
-          {/* Cart Items */}
+          {/* Cart Items - Shows FIRST on mobile (order-1), second on desktop (lg:order-1) */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="lg:col-span-2"
+            className="lg:col-span-2 order-1 lg:order-1"
           >
             <div className="relative bg-white border border-gray-900/10">
-
               <AnimatePresence mode="popLayout">
                 {cart.items.map((item, index) => {
                   const isUpdating = updatingItem === item._id;
@@ -417,11 +410,11 @@ const Cart = () => {
                       variants={itemVariants}
                       layout
                       exit="exit"
-                      className={`p-6 border-b border-gray-900/10 last:border-b-0 transition-opacity ${
+                      className={`p-4 sm:p-6 border-b border-gray-900/10 last:border-b-0 transition-opacity ${
                         isRemoving ? 'opacity-50' : ''
                       }`}
                     >
-                      <div className="flex gap-4 sm:gap-6">
+                      <div className="flex gap-3 sm:gap-4 md:gap-6">
                         {/* Product Image */}
                         <Link 
                           to={`/products/${item.product?.slug}`}
@@ -429,7 +422,7 @@ const Cart = () => {
                         >
                           <motion.div
                             whileHover={{ scale: 1.02 }}
-                            className="w-24 h-24 sm:w-32 sm:h-32 border border-gray-900/10 overflow-hidden bg-gray-50 relative"
+                            className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 border border-gray-900/10 overflow-hidden bg-gray-50 relative"
                           >
                             {item.image ? (
                               <img
@@ -439,14 +432,13 @@ const Cart = () => {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <Package className="w-8 h-8 text-gray-300" />
+                                <Package className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300" />
                               </div>
                             )}
                             
-                            {/* Unavailable overlay */}
                             {isUnavailable && (
                               <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                <span className="text-xs text-red-600 font-medium">Unavailable</span>
+                                <span className="text-[10px] sm:text-xs text-red-600 font-medium">Unavailable</span>
                               </div>
                             )}
                           </motion.div>
@@ -454,26 +446,26 @@ const Cart = () => {
 
                         {/* Product Details */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between gap-4">
+                          <div className="flex justify-between gap-2 sm:gap-4">
                             <div className="min-w-0 flex-1">
                               <Link 
                                 to={`/products/${item.product?.slug}`}
                                 className="group"
                               >
-                                <h3 className="font-playfair text-lg font-bold text-gray-900 truncate group-hover:text-gray-700 transition-colors">
+                                <h3 className="font-playfair text-sm sm:text-base md:text-lg font-bold text-gray-900 truncate group-hover:text-gray-700 transition-colors">
                                   {item.title}
                                 </h3>
                               </Link>
                               
                               {item.product?.artist && (
-                                <p className="text-sm text-gray-900/50 mt-1">
+                                <p className="text-xs sm:text-sm text-gray-900/50 mt-0.5 sm:mt-1 truncate">
                                   by {item.product.artist.name}
                                 </p>
                               )}
 
-                              {/* Price */}
-                              <div className="mt-3">
-                                <span className="font-playfair text-xl font-bold text-gray-900">
+                              {/* Price - Mobile */}
+                              <div className="mt-2 sm:mt-3">
+                                <span className="font-playfair text-base sm:text-lg md:text-xl font-bold text-gray-900">
                                   {formatCurrency(item.price)}
                                 </span>
                               </div>
@@ -483,10 +475,10 @@ const Cart = () => {
                                 <motion.p
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
-                                  className="flex items-center gap-1 text-red-600 text-sm mt-2"
+                                  className="flex items-center gap-1 text-red-600 text-xs sm:text-sm mt-1 sm:mt-2"
                                 >
-                                  <AlertCircle className="w-4 h-4" />
-                                  This item is no longer available
+                                  <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                  <span className="truncate">No longer available</span>
                                 </motion.p>
                               )}
                               
@@ -494,49 +486,49 @@ const Cart = () => {
                                 <motion.p
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
-                                  className="flex items-center gap-1 text-amber-600 text-sm mt-2"
+                                  className="flex items-center gap-1 text-amber-600 text-xs sm:text-sm mt-1 sm:mt-2"
                                 >
-                                  <AlertCircle className="w-4 h-4" />
-                                  Only {item.product.stockQuantity} available
+                                  <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                  <span className="truncate">Only {item.product.stockQuantity} left</span>
                                 </motion.p>
                               )}
                             </div>
 
-                            {/* Remove Button (Mobile visible, Desktop on hover) */}
+                            {/* Remove Button */}
                             <motion.button
                               onClick={() => handleRemoveItem(item._id)}
                               disabled={isRemoving}
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              className="w-8 h-8 flex items-center justify-center text-gray-900/30 hover:text-red-600 transition-colors self-start"
+                              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-900/30 hover:text-red-600 transition-colors self-start -mr-1 sm:mr-0"
                             >
                               {isRemoving ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                                <X className="w-5 h-5 cursor-pointer" />
+                                <X className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
                               )}
                             </motion.button>
                           </div>
 
                           {/* Quantity & Total Row */}
-                          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-900/5">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-900/5">
                             {/* Quantity Control */}
                             <div className="flex items-center">
-                              <span className="text-xs text-gray-900/40 uppercase tracking-wide mr-3">Qty</span>
+                              <span className="text-[10px] sm:text-xs text-gray-900/40 uppercase tracking-wide mr-2 sm:mr-3">Qty</span>
                               <div className="flex items-center border border-gray-900/10">
                                 <motion.button
                                   onClick={() => handleQuantityChange(item._id, item.quantity - 1)}
                                   disabled={isUpdating || item.quantity <= 1}
                                   whileHover={{ backgroundColor: 'rgba(0,0,0,0.02)' }}
                                   whileTap={{ scale: 0.95 }}
-                                  className="w-10 h-10 flex items-center justify-center text-gray-900/50 hover:text-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-gray-900/50 hover:text-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
-                                  <Minus className="w-4 h-4" />
+                                  <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </motion.button>
                                 
-                                <div className="w-14 h-10 flex items-center justify-center border-x border-gray-900/10 bg-gray-50/50">
+                                <div className="w-10 sm:w-14 h-9 sm:h-10 flex items-center justify-center border-x border-gray-900/10 bg-gray-50/50">
                                   {isUpdating ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-gray-900/50" />
+                                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-gray-900/50" />
                                   ) : (
                                     <input
                                       type="number"
@@ -549,7 +541,7 @@ const Cart = () => {
                                       }}
                                       min="1"
                                       max={item.product?.stockQuantity || 999}
-                                      className="w-full h-full text-center bg-transparent outline-none font-medium text-gray-900"
+                                      className="w-full h-full text-center bg-transparent outline-none font-medium text-gray-900 text-sm sm:text-base"
                                     />
                                   )}
                                 </div>
@@ -559,19 +551,22 @@ const Cart = () => {
                                   disabled={isUpdating || item.quantity >= (item.product?.stockQuantity || 999)}
                                   whileHover={{ backgroundColor: 'rgba(0,0,0,0.02)' }}
                                   whileTap={{ scale: 0.95 }}
-                                  className="w-10 h-10 flex items-center justify-center text-gray-900/50 hover:text-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-gray-900/50 hover:text-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </motion.button>
                               </div>
                             </div>
 
                             {/* Item Total */}
-                            <div className="text-right">
-                              <span className="text-xs text-gray-900/40 uppercase tracking-wide block mb-1">Total</span>
-                              <p className="font-playfair text-xl font-bold text-gray-900">
-                                {formatCurrency(itemTotal)}
-                              </p>
+                            <div className="flex items-center justify-between sm:justify-end sm:text-right">
+                              <span className="text-[10px] sm:text-xs text-gray-900/40 uppercase tracking-wide sm:hidden">Total</span>
+                              <div>
+                                <span className="hidden sm:block text-[10px] sm:text-xs text-gray-900/40 uppercase tracking-wide mb-0.5 sm:mb-1">Total</span>
+                                <p className="font-playfair text-base sm:text-lg md:text-xl font-bold text-gray-900">
+                                  {formatCurrency(itemTotal)}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -587,11 +582,11 @@ const Cart = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mt-8"
+              className="mt-6 sm:mt-8"
             >
               <Link
                 to="/products"
-                className="inline-flex items-center gap-2 text-gray-900/60 hover:text-gray-900 transition-colors group"
+                className="inline-flex items-center gap-2 text-gray-900/60 hover:text-gray-900 transition-colors group text-sm sm:text-base"
               >
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 <span className="relative">
@@ -602,55 +597,53 @@ const Cart = () => {
             </motion.div>
           </motion.div>
 
-          {/* Order Summary Sidebar */}
+          {/* Order Summary Sidebar - Shows SECOND on mobile (order-2), first on desktop stays on right */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="lg:col-span-1"
+            className="lg:col-span-1 order-2 lg:order-2"
           >
-            <div className="relative bg-white border border-gray-900/10 sticky top-8">
-
+            <div className="relative bg-white border border-gray-900/10 lg:sticky lg:top-8">
               {/* Header */}
-              <div className="p-6 border-b border-gray-900/10">
-                <h2 className="font-playfair text-xl font-bold text-gray-900">
+              <div className="p-4 sm:p-6 border-b border-gray-900/10">
+                <h2 className="font-playfair text-lg sm:text-xl font-bold text-gray-900">
                   Order Summary
                 </h2>
               </div>
 
-              <div className="p-6">
-
+              <div className="p-4 sm:p-6">
                 {/* Price Breakdown */}
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between text-gray-900/70">
+                <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                  <div className="flex justify-between text-gray-900/70 text-sm sm:text-base">
                     <span>Subtotal</span>
                     <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
                   </div>
 
-                  <div className="flex justify-between text-gray-900/50 text-sm">
+                  <div className="flex justify-between text-gray-900/50 text-xs sm:text-sm">
                     <span>Shipping</span>
                     <span>Calculated at checkout</span>
                   </div>
 
-                  <div className="flex justify-between text-gray-900/50 text-sm">
+                  <div className="flex justify-between text-gray-900/50 text-xs sm:text-sm">
                     <span>Tax</span>
                     <span>Calculated at checkout</span>
                   </div>
                 </div>
 
                 {/* Total at Checkout */}
-                <div className="pt-4 border-t border-gray-900/10 mb-6">
+                <div className="pt-3 sm:pt-4 border-t border-gray-900/10 mb-4 sm:mb-6">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-gray-900/70">Total at Checkout</span>
+                    <span className="text-gray-900/70 text-sm sm:text-base">Total</span>
                     <div className="text-right">
-                      <span className="text-sm text-gray-900/40 block">From</span>
-                      <span className="font-playfair text-2xl font-bold text-gray-900">
+                      <span className="text-xs sm:text-sm text-gray-900/40 block">From</span>
+                      <span className="font-playfair text-xl sm:text-2xl font-bold text-gray-900">
                         {formatCurrency(subtotal)}
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-900/40 mt-2">
-                    Final total will include shipping and applicable taxes
+                  <p className="text-[10px] sm:text-xs text-gray-900/40 mt-1 sm:mt-2">
+                    Final total includes shipping and taxes
                   </p>
                 </div>
 
@@ -660,35 +653,35 @@ const Cart = () => {
                   disabled={loading || cart.items.length === 0}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full bg-gray-900 text-white py-3 sm:py-4 font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm sm:text-base"
                 >
-                  <CreditCard className="w-5 h-5" />
+                  <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Proceed to Checkout</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
 
                 {/* Secondary Actions */}
-                <div className="mt-4 flex items-center justify-center gap-6">
+                <div className="mt-3 sm:mt-4 flex items-center justify-center gap-4 sm:gap-6">
                   <Link
                     to="/wishlist"
-                    className="inline-flex items-center gap-1.5 text-sm text-gray-900/50 hover:text-gray-900 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-gray-900/50 hover:text-gray-900 transition-colors cursor-pointer"
                   >
-                    <Heart className="w-4 h-4" />
+                    <Heart className="w-3 h-3 sm:w-4 sm:h-4" />
                     Wishlist
                   </Link>
                   <Link
                     to="/products"
-                    className="inline-flex items-center gap-1.5 text-sm text-gray-900/50 hover:text-gray-900 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-gray-900/50 hover:text-gray-900 transition-colors cursor-pointer"
                   >
-                    <Package className="w-4 h-4" />
+                    <Package className="w-3 h-3 sm:w-4 sm:h-4" />
                     Products
                   </Link>
                 </div>
               </div>
 
               {/* Trust Badges */}
-              <div className="p-6 border-t border-gray-900/10 bg-gray-50/50">
-                <div className="grid grid-cols-3 gap-3">
+              <div className="p-4 sm:p-6 border-t border-gray-900/10 bg-gray-50/50">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {[
                     { icon: ShieldCheck, label: 'Secure' },
                     { icon: Calculator, label: 'Shipping', sublabel: 'Calculated' },
@@ -701,8 +694,8 @@ const Cart = () => {
                       transition={{ delay: 0.5 + index * 0.1 }}
                       className="text-center"
                     >
-                      <item.icon className="w-4 h-4 mx-auto mb-1.5 text-gray-900/40" />
-                      <span className="text-[10px] text-gray-900/50 leading-tight block">
+                      <item.icon className="w-3 h-3 sm:w-4 sm:h-4 mx-auto mb-1 sm:mb-1.5 text-gray-900/40" />
+                      <span className="text-[9px] sm:text-[10px] text-gray-900/50 leading-tight block">
                         {item.label}
                         {item.sublabel && (
                           <span className="block">{item.sublabel}</span>
@@ -719,9 +712,9 @@ const Cart = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
-              className="mt-6 text-center"
+              className="mt-4 sm:mt-6 text-center"
             >
-              <p className="text-xs text-gray-900/40">
+              <p className="text-[10px] sm:text-xs text-gray-900/40">
                 Need help? <Link to="/contact" className="text-gray-900 underline underline-offset-2 cursor-pointer">Contact us</Link>
               </p>
             </motion.div>
@@ -734,7 +727,7 @@ const Cart = () => {
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
         transition={{ duration: 1.5 }}
-        className="w-32 h-px bg-gray-900/10 mx-auto my-16"
+        className="w-20 sm:w-32 h-px bg-gray-900/10 mx-auto my-10 sm:my-16"
       />
     </div>
   );

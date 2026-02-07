@@ -14,10 +14,6 @@ export const getWishlist = asyncHandler(async (req, res, next) => {
       select: 'title price compareAtPrice images slug category artist isActive stockQuantity productType',
       populate: [
         {
-          path: 'category',
-          select: 'name slug'
-        },
-        {
           path: 'artist',
           select: 'name slug'
         }

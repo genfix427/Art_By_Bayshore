@@ -34,15 +34,19 @@ import Subscribers from './pages/newsletter/Subscribers';
 import Campaigns from './pages/newsletter/Campaigns';
 import CampaignForm from './pages/newsletter/CampaignForm';
 import Users from './pages/auth/Users';
+import NotificationsPage from './pages/NotificationsPage';
+import AutoClearNotifications from './components/AutoClearNotifications';
 
 function App() {
   return (
     <AuthProvider>
+      <AutoClearNotifications />
       <Routes>
         <Route path="/login" element={<Login />} />
         
         <Route path="/" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           
           {/* Artists */}
           <Route path="artists" element={<Artists />} />

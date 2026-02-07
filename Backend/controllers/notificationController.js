@@ -10,15 +10,16 @@ import logger from '../utils/logger.js';
 // @access  Private/Admin
 export const getNotifications = asyncHandler(async (req, res, next) => {
   try {
-    // Get unshipped orders (pending or confirmed)
+    // Get unshipped orders that haven't been cleared
     const unshippedOrders = await Order.find({
-      orderStatus: { $in: ['pending', 'confirmed'] }
+      orderStatus: { $in: ['pending', 'confirmed'] },
+      notificationCleared: false
     })
       .populate('user', 'firstName lastName email')
       .sort({ createdAt: -1 })
       .limit(20);
 
-    // Get new inquiries (unread)
+    // Get new inquiries that haven't been read
     const newInquiries = await Inquiry.find({
       status: 'new',
       isRead: false
@@ -27,11 +28,12 @@ export const getNotifications = asyncHandler(async (req, res, next) => {
       .sort({ createdAt: -1 })
       .limit(20);
 
-    // Get recent subscribers (last 24 hours)
+    // Get recent subscribers (last 24 hours) that haven't been cleared
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const recentSubscribers = await Subscriber.find({
       status: 'subscribed',
-      createdAt: { $gte: twentyFourHoursAgo }
+      createdAt: { $gte: twentyFourHoursAgo },
+      notificationCleared: false
     })
       .sort({ createdAt: -1 })
       .limit(20);
@@ -46,7 +48,6 @@ export const getNotifications = asyncHandler(async (req, res, next) => {
         status: order.orderStatus,
         total: order.total,
         createdAt: order.createdAt,
-        priority: order.priority || 'medium',
       })),
       newInquiries: newInquiries.map(inquiry => ({
         type: 'inquiry',
@@ -58,7 +59,6 @@ export const getNotifications = asyncHandler(async (req, res, next) => {
         product: inquiry.product?.title || 'Product',
         message: inquiry.message,
         createdAt: inquiry.createdAt,
-        priority: inquiry.priority || 'medium',
       })),
       recentSubscribers: recentSubscribers.map(subscriber => ({
         type: 'subscriber',
@@ -88,6 +88,45 @@ export const getNotifications = asyncHandler(async (req, res, next) => {
   } catch (error) {
     logger.error(`Get notifications error: ${error.message}`);
     return next(new ErrorResponse('Failed to fetch notifications', 500));
+  }
+});
+
+// @desc    Get sidebar notification counts
+// @route   GET /api/v1/notifications/sidebar-counts
+// @access  Private/Admin
+export const getSidebarNotificationCounts = asyncHandler(async (req, res, next) => {
+  try {
+    // Unshipped orders that haven't been cleared
+    const unshippedOrdersCount = await Order.countDocuments({
+      orderStatus: { $in: ['pending', 'confirmed'] },
+      notificationCleared: false
+    });
+
+    // New inquiries that haven't been read
+    const newInquiriesCount = await Inquiry.countDocuments({
+      status: 'new',
+      isRead: false
+    });
+
+    // Recent subscribers (last 24 hours) that haven't been cleared
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentSubscribersCount = await Subscriber.countDocuments({
+      status: 'subscribed',
+      createdAt: { $gte: twentyFourHoursAgo },
+      notificationCleared: false
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        orders: unshippedOrdersCount,
+        inquiries: newInquiriesCount,
+        newsletter: recentSubscribersCount,
+      },
+    });
+  } catch (error) {
+    logger.error(`Sidebar notification counts error: ${error.message}`);
+    return next(new ErrorResponse('Failed to fetch sidebar notification counts', 500));
   }
 });
 
@@ -141,8 +180,8 @@ export const markAllInquiriesAsRead = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Clear order notification (when order is shipped)
-// @route   DELETE /api/v1/notifications/orders/:id/clear
+// @desc    Clear specific order notification
+// @route   PUT /api/v1/notifications/orders/:id/clear
 // @access  Private/Admin
 export const clearOrderNotification = asyncHandler(async (req, res, next) => {
   try {
@@ -152,81 +191,149 @@ export const clearOrderNotification = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('Order not found', 404));
     }
 
-    // Only clear notification if order is shipped or delivered
-    if (['shipped', 'delivered'].includes(order.orderStatus)) {
-      logger.info(`Order ${order.orderNumber} notification cleared by ${req.user.email}`);
-      
-      res.status(200).json({
-        success: true,
-        message: 'Order notification cleared',
-        data: order,
-      });
-    } else {
-      res.status(200).json({
-        success: true,
-        message: 'Order is not shipped yet',
-        data: order,
-      });
-    }
+    order.notificationCleared = true;
+    order.notificationClearedAt = new Date();
+    await order.save({ validateBeforeSave: false });
+
+    logger.info(`Order ${order.orderNumber} notification cleared by ${req.user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Order notification cleared',
+      data: order,
+    });
   } catch (error) {
     logger.error(`Clear order notification error: ${error.message}`);
     return next(new ErrorResponse('Failed to clear order notification', 500));
   }
 });
 
-// @desc    Clear subscriber notification (when viewed)
-// @route   DELETE /api/v1/notifications/subscribers/:id/clear
+// @desc    Clear all order notifications
+// @route   PUT /api/v1/notifications/orders/clear
 // @access  Private/Admin
-export const clearSubscriberNotification = asyncHandler(async (req, res, next) => {
+export const clearOrderNotifications = asyncHandler(async (req, res, next) => {
   try {
-    // This is a soft clear - we just acknowledge that the admin has seen it
-    // No actual modification needed to the subscriber record
-    
-    logger.info(`Subscriber notification cleared by ${req.user.email}`);
+    const result = await Order.updateMany(
+      { 
+        orderStatus: { $in: ['pending', 'confirmed'] },
+        notificationCleared: false 
+      },
+      { 
+        $set: { 
+          notificationCleared: true,
+          notificationClearedAt: new Date()
+        } 
+      }
+    );
+
+    logger.info(`All order notifications cleared by ${req.user.email}. Cleared: ${result.modifiedCount}`);
 
     res.status(200).json({
       success: true,
-      message: 'Subscriber notification cleared',
+      message: 'Order notifications cleared',
+      data: { modifiedCount: result.modifiedCount },
     });
   } catch (error) {
-    logger.error(`Clear subscriber notification error: ${error.message}`);
-    return next(new ErrorResponse('Failed to clear subscriber notification', 500));
+    logger.error(`Clear order notifications error: ${error.message}`);
+    return next(new ErrorResponse('Failed to clear order notifications', 500));
   }
 });
 
-// @desc    Get sidebar notification counts
-// @route   GET /api/v1/notifications/sidebar-counts
+// @desc    Clear subscriber notifications
+// @route   PUT /api/v1/notifications/subscribers/clear
 // @access  Private/Admin
-export const getSidebarNotificationCounts = asyncHandler(async (req, res, next) => {
+export const clearSubscriberNotifications = asyncHandler(async (req, res, next) => {
   try {
-    // Unshipped orders count (for Orders sidebar)
-    const unshippedOrdersCount = await Order.countDocuments({
-      orderStatus: { $in: ['pending', 'confirmed'] }
-    });
-
-    // New inquiries count (for Inquiries sidebar)
-    const newInquiriesCount = await Inquiry.countDocuments({
-      status: 'new',
-      isRead: false
-    });
-
-    // Recent subscribers count (for Newsletter sidebar)
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentSubscribersCount = await Subscriber.countDocuments({
-      status: 'subscribed',
-      createdAt: { $gte: twentyFourHoursAgo }
-    });
+    
+    const result = await Subscriber.updateMany(
+      {
+        status: 'subscribed',
+        createdAt: { $gte: twentyFourHoursAgo },
+        notificationCleared: false
+      },
+      { 
+        $set: { 
+          notificationCleared: true,
+          notificationClearedAt: new Date()
+        } 
+      }
+    );
+
+    logger.info(`All subscriber notifications cleared by ${req.user.email}. Cleared: ${result.modifiedCount}`);
 
     res.status(200).json({
       success: true,
+      message: 'Subscriber notifications cleared',
+      data: { modifiedCount: result.modifiedCount },
+    });
+  } catch (error) {
+    logger.error(`Clear subscriber notifications error: ${error.message}`);
+    return next(new ErrorResponse('Failed to clear subscriber notifications', 500));
+  }
+});
+
+// @desc    Mark all notifications as viewed
+// @route   PUT /api/v1/notifications/view-all
+// @access  Private/Admin
+export const markAllNotificationsAsViewed = asyncHandler(async (req, res, next) => {
+  try {
+    let orderResult = { modifiedCount: 0 };
+    let inquiryResult = { modifiedCount: 0 };
+    let subscriberResult = { modifiedCount: 0 };
+
+    // Clear order notifications
+    orderResult = await Order.updateMany(
+      { 
+        orderStatus: { $in: ['pending', 'confirmed'] },
+        notificationCleared: false 
+      },
+      { 
+        $set: { 
+          notificationCleared: true,
+          notificationClearedAt: new Date()
+        } 
+      }
+    );
+
+    // Mark all inquiries as read
+    inquiryResult = await Inquiry.updateMany(
+      { status: 'new', isRead: false },
+      { $set: { isRead: true } }
+    );
+
+    // Clear subscriber notifications
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    subscriberResult = await Subscriber.updateMany(
+      {
+        status: 'subscribed',
+        createdAt: { $gte: twentyFourHoursAgo },
+        notificationCleared: false
+      },
+      { 
+        $set: { 
+          notificationCleared: true,
+          notificationClearedAt: new Date()
+        } 
+      }
+    );
+
+    const totalCleared = orderResult.modifiedCount + inquiryResult.modifiedCount + subscriberResult.modifiedCount;
+
+    logger.info(`All notifications marked as viewed by ${req.user.email}. Total cleared: ${totalCleared}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'All notifications marked as viewed',
       data: {
-        orders: unshippedOrdersCount,
-        inquiries: newInquiriesCount,
-        newsletter: recentSubscribersCount,
+        ordersCleared: orderResult.modifiedCount,
+        inquiriesMarkedAsRead: inquiryResult.modifiedCount,
+        subscribersCleared: subscriberResult.modifiedCount,
+        totalCleared: totalCleared,
       },
     });
   } catch (error) {
-    logger.error(`Sidebar notification counts error: ${error.message}`);
-    return next(new ErrorResponse('Failed to fetch sidebar notification counts', 500));
+    logger.error(`Mark all notifications as viewed error: ${error.message}`);
+    return next(new ErrorResponse('Failed to mark all notifications as viewed', 500));
   }
 });
