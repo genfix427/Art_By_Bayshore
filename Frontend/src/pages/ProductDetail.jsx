@@ -79,7 +79,9 @@ const ProductDetails = () => {
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [artistProducts, setArtistProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingArtistProducts, setLoadingArtistProducts] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
@@ -159,6 +161,27 @@ const ProductDetails = () => {
 
       const relatedResponse = await productService.getRelated(productResponse.data._id);
       setRelatedProducts(relatedResponse.data);
+
+      // Fetch products by the same artist
+      if (productResponse.data.artist?._id) {
+        setLoadingArtistProducts(true);
+        try {
+          const artistProductsResponse = await productService.getAll({
+            artist: productResponse.data.artist._id,
+            isActive: true,
+            limit: 8,
+          });
+          // Filter out the current product
+          const filteredArtistProducts = artistProductsResponse.data.filter(
+            p => p._id !== productResponse.data._id
+          );
+          setArtistProducts(filteredArtistProducts);
+        } catch (error) {
+          console.error('Error fetching artist products:', error);
+        } finally {
+          setLoadingArtistProducts(false);
+        }
+      }
     } catch (error) {
       console.error('Error fetching product details:', error);
       toast.error('Failed to load product details');
@@ -233,70 +256,70 @@ const ProductDetails = () => {
     setInquiryForm(prev => ({ ...prev, [name]: value }));
   };
 
- const handleSubmitInquiry = async (e) => {
-  e.preventDefault();
+  const handleSubmitInquiry = async (e) => {
+    e.preventDefault();
 
-  // Validate required fields
-  if (!inquiryForm.fullName.trim() || !inquiryForm.email.trim() || !inquiryForm.mobile.trim()) {
-    showFeedback('Please fill required fields', 'error');
-    return;
-  }
-
-  setSubmittingInquiry(true);
-  try {
-    console.log('=== SUBMITTING INQUIRY ===');
-    console.log('Product ID:', product._id);
-    console.log('Form Data:', inquiryForm);
-
-    // Split full name into first and last name
-    const nameParts = inquiryForm.fullName.trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || nameParts[0];
-
-    // Prepare the inquiry data according to your backend API
-    const inquiryData = {
-      productId: product._id,
-      firstName: firstName,
-      lastName: lastName,
-      email: inquiryForm.email,
-      phoneNumber: inquiryForm.mobile,
-      message: inquiryForm.message || `Interested in ${product.title}. Budget: ${inquiryForm.budget || 'Not specified'}. Purpose: ${inquiryForm.purpose}`
-    };
-
-    console.log('Inquiry payload:', inquiryData);
-
-    // Call the actual API
-    const response = await inquiryService.create(inquiryData);
-    
-    console.log('API Response:', response);
-    
-    if (response.success) {
-      showFeedback('Inquiry submitted successfully! We will contact you soon.');
-      setIsInquiryModalOpen(false);
-      // Reset form
-      setInquiryForm({
-        fullName: '', 
-        email: '', 
-        mobile: '', 
-        message: '', 
-        budget: '', 
-        purpose: 'personal'
-      });
-    } else {
-      showFeedback(response.message || 'Failed to submit inquiry', 'error');
+    // Validate required fields
+    if (!inquiryForm.fullName.trim() || !inquiryForm.email.trim() || !inquiryForm.mobile.trim()) {
+      showFeedback('Please fill required fields', 'error');
+      return;
     }
-  } catch (error) {
-    console.error('❌ Inquiry submission error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      response: error.response?.data,
-    });
-    
-    showFeedback(error.message || 'Failed to submit inquiry. Please try again.', 'error');
-  } finally {
-    setSubmittingInquiry(false);
-  }
-};
+
+    setSubmittingInquiry(true);
+    try {
+      console.log('=== SUBMITTING INQUIRY ===');
+      console.log('Product ID:', product._id);
+      console.log('Form Data:', inquiryForm);
+
+      // Split full name into first and last name
+      const nameParts = inquiryForm.fullName.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+
+      // Prepare the inquiry data according to your backend API
+      const inquiryData = {
+        productId: product._id,
+        firstName: firstName,
+        lastName: lastName,
+        email: inquiryForm.email,
+        phoneNumber: inquiryForm.mobile,
+        message: inquiryForm.message || `Interested in ${product.title}. Budget: ${inquiryForm.budget || 'Not specified'}. Purpose: ${inquiryForm.purpose}`
+      };
+
+      console.log('Inquiry payload:', inquiryData);
+
+      // Call the actual API
+      const response = await inquiryService.create(inquiryData);
+
+      console.log('API Response:', response);
+
+      if (response.success) {
+        showFeedback('Inquiry submitted successfully! We will contact you soon.');
+        setIsInquiryModalOpen(false);
+        // Reset form
+        setInquiryForm({
+          fullName: '',
+          email: '',
+          mobile: '',
+          message: '',
+          budget: '',
+          purpose: 'personal'
+        });
+      } else {
+        showFeedback(response.message || 'Failed to submit inquiry', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Inquiry submission error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+      });
+
+      showFeedback(error.message || 'Failed to submit inquiry. Please try again.', 'error');
+    } finally {
+      setSubmittingInquiry(false);
+    }
+  };
 
   // Image gallery functions
   const openLightbox = (index) => {
@@ -431,7 +454,7 @@ const ProductDetails = () => {
       <AnimatePresence>
         {isLightboxOpen && images.length > 0 && (
           <motion.div
-            className="fixed inset-0 bg-white z-50 flex items-center justify-center"
+            className="fixed inset-0 bg-white/60 backdrop-blur-2xl z-50 flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -439,59 +462,97 @@ const ProductDetails = () => {
             {/* Close button */}
             <motion.button
               onClick={closeLightbox}
-              className="absolute top-6 right-6 w-12 h-12 border border-gray-900/20 flex items-center justify-center hover:border-gray-900 transition-colors z-20 cursor-pointer"
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors z-20 cursor-pointer rounded-full shadow-lg border border-gray-200/50"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
             </motion.button>
 
-            {/* Navigation */}
+            {/* Desktop Navigation (hidden on mobile) */}
             {images.length > 1 && (
               <>
                 <motion.button
                   onClick={() => navigateImage('prev')}
-                  className="absolute left-6 w-12 h-12 border border-gray-900/20 flex items-center justify-center hover:border-gray-900 transition-colors z-20 cursor-pointer"
+                  className="hidden md:flex absolute left-4 lg:left-6 w-12 h-12 bg-white/80 backdrop-blur-sm items-center justify-center hover:bg-white transition-colors z-20 cursor-pointer rounded-full shadow-lg border border-gray-200/50"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-6 h-6 lg:w-7 lg:h-7 text-gray-700" />
                 </motion.button>
 
                 <motion.button
                   onClick={() => navigateImage('next')}
-                  className="absolute right-6 w-12 h-12 border border-gray-900/20 flex items-center justify-center hover:border-gray-900 transition-colors z-20 cursor-pointer"
+                  className="hidden md:flex absolute right-4 lg:right-6 w-12 h-12 bg-white/80 backdrop-blur-sm items-center justify-center hover:bg-white transition-colors z-20 cursor-pointer rounded-full shadow-lg border border-gray-200/50"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-6 h-6 lg:w-7 lg:h-7 text-gray-700" />
                 </motion.button>
               </>
             )}
 
-            {/* Image */}
-            <AnimatePresence initial={false} custom={slideDirection} mode="wait">
-              <motion.div
-                key={selectedImageIndex}
-                className="max-w-[85vw] max-h-[85vh] relative"
-                variants={lightboxVariants}
-                custom={slideDirection}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-              >
-                <img
+            {/* Image with Swipe Support */}
+            <div className="relative max-w-[85vw] max-h-[70vh] sm:max-h-[85vh] overflow-hidden touch-none">
+              <AnimatePresence initial={false} custom={slideDirection} mode="wait">
+                <motion.img
+                  key={selectedImageIndex}
                   src={images[selectedImageIndex]}
                   alt={`${product.title} - ${selectedImageIndex + 1}`}
-                  className="max-w-full max-h-[85vh] object-contain"
+                  custom={slideDirection}
+                  variants={{
+                    enter: (direction) => ({
+                      x: direction > 0 ? 300 : -300,
+                      opacity: 0,
+                    }),
+                    center: {
+                      x: 0,
+                      opacity: 1,
+                    },
+                    exit: (direction) => ({
+                      x: direction < 0 ? 300 : -300,
+                      opacity: 0,
+                    }),
+                  }}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    x: { type: "spring", stiffness: 300, damping: 30 },
+                    opacity: { duration: 0.2 }
+                  }}
+                  drag={images.length > 1 ? "x" : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(event, info) => {
+                    const swipeThreshold = 50;
+                    if (info.offset.x > swipeThreshold) {
+                      navigateImage('prev');
+                    } else if (info.offset.x < -swipeThreshold) {
+                      navigateImage('next');
+                    }
+                  }}
+                  className="max-w-full max-h-[60vh] sm:max-h-[85vh] object-contain cursor-grab active:cursor-grabbing select-none rounded-lg shadow-2xl"
                 />
-              </motion.div>
-            </AnimatePresence>
+              </AnimatePresence>
+            </div>
+
+            {/* Swipe Indicator (mobile only) */}
+            {images.length > 1 && (
+              <div className="md:hidden absolute bottom-20 left-1/2 -translate-x-1/2 z-10">
+                <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-gray-200/50">
+                  <p className="text-xs text-gray-600 flex items-center gap-2">
+                    <span>←</span>
+                    <span>Swipe to browse</span>
+                    <span>→</span>
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Image counter */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
-              <span className="text-sm text-gray-900/60">
+            <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
+              <span className="text-sm text-gray-700 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-gray-200/50 font-medium">
                 {selectedImageIndex + 1} / {images.length}
               </span>
             </div>
@@ -733,35 +794,6 @@ const ProductDetails = () => {
                   <Maximize2 className="w-5 h-5 text-gray-900" />
                 </div>
               </motion.div>
-
-              {/* Badges */}
-              <div className="absolute top-6 left-6 flex flex-col gap-2">
-                {discountPercentage > 0 && !isAskForPrice && (
-                  <span className="bg-gray-900 text-white px-3 py-1 text-xs font-medium">
-                    {discountPercentage}% OFF
-                  </span>
-                )}
-                {isAskForPrice && (
-                  <span className="bg-gray-900 text-white px-3 py-1 text-xs font-medium">
-                    Price Upon Request
-                  </span>
-                )}
-                {isSoldOut && (
-                  <span className="bg-white text-gray-900 px-3 py-1 text-xs font-medium border border-gray-900">
-                    Sold Out
-                  </span>
-                )}
-                {product.isFeatured && (
-                  <span className="bg-gray-900 text-white px-3 py-1 text-xs font-medium">
-                    Featured
-                  </span>
-                )}
-                {product.isOriginal && (
-                  <span className="bg-gray-900 text-white px-3 py-1 text-xs font-medium">
-                    Original
-                  </span>
-                )}
-              </div>
             </div>
 
             {/* Thumbnails */}
@@ -773,8 +805,8 @@ const ProductDetails = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className={`aspect-square border cursor-pointer overflow-hidden transition-all ${selectedImageIndex === index
-                        ? 'border-gray-900'
-                        : 'border-gray-900/10 opacity-60 hover:opacity-100'
+                      ? 'border-gray-900'
+                      : 'border-gray-900/10 opacity-60 hover:opacity-100'
                       }`}
                     onClick={() => setSelectedImageIndex(index)}
                   >
@@ -795,7 +827,11 @@ const ProductDetails = () => {
             animate="visible"
             className="space-y-8"
           >
+
             <div>
+              <div className="">
+                <h1 className='text-4xl font-bold tect-gray-900'>{product.title}</h1>
+              </div>
               {/* Artist */}
               {product.artist && (
                 <motion.div custom={2} variants={textReveal}>
@@ -996,8 +1032,8 @@ const ProductDetails = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className={`w-14 h-14 border flex items-center justify-center transition-all cursor-pointer ${isWishlisted(product._id)
-                          ? 'border-gray-900 bg-gray-900 text-white'
-                          : 'border-gray-900/20 hover:border-gray-900'
+                        ? 'border-gray-900 bg-gray-900 text-white'
+                        : 'border-gray-900/20 hover:border-gray-900'
                         }`}
                     >
                       {addingToWishlist ? (
@@ -1022,26 +1058,6 @@ const ProductDetails = () => {
                 </div>
               )}
             </motion.div>
-
-            {/* Benefits */}
-            <motion.div
-              custom={8}
-              variants={textReveal}
-              className="space-y-3 pt-6 border-t border-gray-900/10"
-            >
-              <div className="flex items-center gap-3 text-sm text-gray-900/60">
-                <ShieldCheck className="w-4 h-4" strokeWidth={1.5} />
-                <span>Free worldwide shipping</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-900/60">
-                <Undo2 className="w-4 h-4" strokeWidth={1.5} />
-                <span>30-day return policy</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-900/60">
-                <Gift className="w-4 h-4" strokeWidth={1.5} />
-                <span>Certificate of authenticity included</span>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
 
@@ -1061,7 +1077,7 @@ const ProductDetails = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
               {product.artist.profileImage && (
                 <div className="lg:col-span-3">
-                  <div className="aspect-square border border-gray-900/10 overflow-hidden">
+                  <div className="aspect-rectangle border border-gray-900/10 overflow-hidden">
                     <img
                       src={product.artist.profileImage}
                       alt={product.artist.name}
@@ -1113,10 +1129,10 @@ const ProductDetails = () => {
                 className="w-16 h-px bg-gray-900 mx-auto mb-6"
               />
               <span className="text-xs tracking-[0.3em] text-gray-900/50 uppercase block mb-3">
-                You May Also Like
+                Related Artworks
               </span>
               <h2 className="font-playfair text-3xl font-bold text-gray-900">
-                Related Artworks
+                You May Also Like
               </h2>
             </div>
 

@@ -18,26 +18,41 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
-import ProductQuickView from './ProductQuickView'; // Your original QuickView
+import ProductQuickView from './ProductQuickView';
 import { formatCurrency } from '../../utils/formatters';
+import toast from 'react-hot-toast';
 
 // ============================================
-// IMAGE GALLERY MODAL COMPONENT (White + Blur)
+// IMAGE GALLERY MODAL COMPONENT (Glass Effect with Swipe)
 // ============================================
 const ImageGalleryModal = ({ images, isOpen, onClose, productTitle }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
 
   const allImages = images?.length > 0 
     ? images.map(img => img.url) 
     : ['https://via.placeholder.com/800x800?text=No+Image'];
 
   const goToPrevious = useCallback(() => {
+    setDirection(-1);
     setCurrentIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
   }, [allImages.length]);
 
   const goToNext = useCallback(() => {
+    setDirection(1);
     setCurrentIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
   }, [allImages.length]);
+
+  // Handle swipe
+  const handleDragEnd = (event, info) => {
+    const swipeThreshold = 50;
+    
+    if (info.offset.x > swipeThreshold) {
+      goToPrevious();
+    } else if (info.offset.x < -swipeThreshold) {
+      goToNext();
+    }
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -65,13 +80,28 @@ const ImageGalleryModal = ({ images, isOpen, onClose, productTitle }) => {
 
   if (!isOpen) return null;
 
+  const slideVariants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction) => ({
+      x: direction < 0 ? 300 : -300,
+      opacity: 0,
+    }),
+  };
+
   const modalContent = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-[9999] bg-white/90 backdrop-blur-xl flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] bg-white/60 backdrop-blur-2xl flex items-center justify-center p-4"
       onClick={onClose}
     >
       {/* Close Button */}
@@ -80,89 +110,107 @@ const ImageGalleryModal = ({ images, isOpen, onClose, productTitle }) => {
           e.stopPropagation();
           onClose();
         }}
-        className="absolute top-6 right-6 z-10 p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors cursor-pointer shadow-sm"
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 p-2 sm:p-3 bg-white/80 backdrop-blur-sm hover:bg-white rounded-full transition-all duration-200 cursor-pointer shadow-lg border border-gray-200/50"
       >
-        <X className="w-6 h-6 text-gray-700" />
+        <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
       </button>
 
       {/* Image Counter */}
-      <div className="absolute top-6 left-6 z-10">
-        <span className="text-gray-700 text-sm font-medium bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-gray-200">
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
+        <span className="text-gray-700 text-xs sm:text-sm font-medium bg-white/80 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg border border-gray-200/50">
           {currentIndex + 1} / {allImages.length}
         </span>
       </div>
 
       {/* Product Title */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 max-w-md">
-        <h3 className="text-gray-900 font-medium text-center text-sm sm:text-base truncate bg-white/80 backdrop-blur-sm px-6 py-2 rounded-full shadow-sm border border-gray-200">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 max-w-[60%] sm:max-w-md hidden sm:block">
+        <h3 className="text-gray-900 font-medium text-center text-sm sm:text-base truncate bg-white/80 backdrop-blur-sm px-6 py-2 rounded-full shadow-lg border border-gray-200/50">
           {productTitle}
         </h3>
       </div>
 
-      {/* Previous Button */}
+      {/* Desktop Navigation Buttons (hidden on mobile) */}
       {allImages.length > 1 && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            goToPrevious();
-          }}
-          className="absolute left-4 sm:left-8 z-10 p-3 sm:p-4 bg-white hover:bg-gray-100 rounded-full transition-colors cursor-pointer shadow-lg border border-gray-200"
-        >
-          <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700" />
-        </button>
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToPrevious();
+            }}
+            className="hidden md:flex absolute left-4 lg:left-8 z-10 p-3 lg:p-4 bg-white/80 backdrop-blur-sm hover:bg-white rounded-full transition-all duration-200 cursor-pointer shadow-lg border border-gray-200/50 items-center justify-center"
+          >
+            <ChevronLeft className="w-6 h-6 lg:w-8 lg:h-8 text-gray-700" />
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToNext();
+            }}
+            className="hidden md:flex absolute right-4 lg:right-8 z-10 p-3 lg:p-4 bg-white/80 backdrop-blur-sm hover:bg-white rounded-full transition-all duration-200 cursor-pointer shadow-lg border border-gray-200/50 items-center justify-center"
+          >
+            <ChevronRight className="w-6 h-6 lg:w-8 lg:h-8 text-gray-700" />
+          </button>
+        </>
       )}
 
-      {/* Main Image Container */}
+      {/* Main Image Container with Swipe Support */}
       <div 
-        className="relative max-w-5xl max-h-[80vh] w-full flex items-center justify-center"
+        className="relative max-w-5xl max-h-[70vh] sm:max-h-[80vh] w-full flex items-center justify-center overflow-hidden touch-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <AnimatePresence mode="wait">
-          <motion.div
+        <AnimatePresence initial={false} custom={direction} mode="wait">
+          <motion.img
             key={currentIndex}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white rounded-2xl shadow-2xl p-4 border border-gray-100"
-          >
-            <img
-              src={allImages[currentIndex]}
-              alt={`${productTitle} - Image ${currentIndex + 1}`}
-              className="max-w-full max-h-[70vh] object-contain rounded-lg"
-              onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/800x800?text=Image+Not+Found';
-              }}
-            />
-          </motion.div>
+            src={allImages[currentIndex]}
+            alt={`${productTitle} - Image ${currentIndex + 1}`}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: "spring", stiffness: 300, damping: 30 },
+              opacity: { duration: 0.2 }
+            }}
+            drag={allImages.length > 1 ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={handleDragEnd}
+            className="max-w-full max-h-[60vh] sm:max-h-[70vh] object-contain rounded-lg shadow-2xl cursor-grab active:cursor-grabbing select-none"
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/800x800?text=Image+Not+Found';
+            }}
+          />
         </AnimatePresence>
       </div>
 
-      {/* Next Button */}
+      {/* Swipe Indicator (mobile only) */}
       {allImages.length > 1 && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            goToNext();
-          }}
-          className="absolute right-4 sm:right-8 z-10 p-3 sm:p-4 bg-white hover:bg-gray-100 rounded-full transition-colors cursor-pointer shadow-lg border border-gray-200"
-        >
-          <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700" />
-        </button>
+        <div className="md:hidden absolute bottom-24 left-1/2 -translate-x-1/2 z-10">
+          <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-gray-200/50">
+            <p className="text-xs text-gray-600 flex items-center gap-2">
+              <span>←</span>
+              <span>Swipe to browse</span>
+              <span>→</span>
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Thumbnail Strip */}
       {allImages.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 max-w-full px-4">
-          <div className="flex items-center gap-3 bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-lg border border-gray-200">
+        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-10 max-w-full px-4">
+          <div className="flex items-center gap-2 sm:gap-3 bg-white/90 backdrop-blur-sm p-2 sm:p-3 rounded-2xl shadow-lg border border-gray-200/50 overflow-x-auto max-w-[90vw] scrollbar-hide">
             {allImages.map((img, idx) => (
               <button
                 key={idx}
                 onClick={(e) => {
                   e.stopPropagation();
+                  setDirection(idx > currentIndex ? 1 : -1);
                   setCurrentIndex(idx);
                 }}
-                className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                className={`flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                   currentIndex === idx 
                     ? 'border-gray-900 shadow-md scale-105' 
                     : 'border-gray-200 opacity-60 hover:opacity-100 hover:border-gray-400'
@@ -256,7 +304,7 @@ const ProductCard = ({ product, index = 0 }) => {
   const isOutOfStock = product.productType === 'price-based' && product.stockQuantity <= 0;
   const isAskForPrice = product.productType === 'ask-for-price';
 
-  // Show feedback message
+  // Show feedback message (for success messages)
   const showFeedback = (message) => {
     setFeedback({ active: true, message });
     setTimeout(() => {
@@ -269,7 +317,17 @@ const ProductCard = ({ product, index = 0 }) => {
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      showFeedback('Please login first');
+      toast.error('Please login to add items to cart', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '10px',
+        },
+        icon: '🔒',
+      });
       return;
     }
 
@@ -279,17 +337,46 @@ const ProductCard = ({ product, index = 0 }) => {
     }
 
     if (isOutOfStock) {
-      showFeedback('This item is out of stock');
+      toast.error('This item is out of stock', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '10px',
+        },
+        icon: '⚠️',
+      });
       return;
     }
 
     setAddingToCart(true);
     try {
       await addToCart(product._id, 1);
-      showFeedback('Added to Cart!');
+      toast.success('Added to Cart!', {
+        duration: 2500,
+        position: 'top-center',
+        style: {
+          background: '#10b981',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '10px',
+        },
+        icon: '🛒',
+      });
     } catch (error) {
       console.error('Error adding to cart:', error);
-      showFeedback('Failed to add to cart');
+      toast.error('Failed to add to cart', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '10px',
+        },
+      });
     } finally {
       setAddingToCart(false);
     }
@@ -300,7 +387,17 @@ const ProductCard = ({ product, index = 0 }) => {
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      showFeedback('Please login first');
+      toast.error('Please login to manage your wishlist', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '10px',
+        },
+        icon: '🔒',
+      });
       return;
     }
 
@@ -308,14 +405,43 @@ const ProductCard = ({ product, index = 0 }) => {
     try {
       if (isWishlisted(product._id)) {
         await removeFromWishlist(product._id);
-        showFeedback('Removed from Wishlist');
+        toast.success('Removed from Wishlist', {
+          duration: 2500,
+          position: 'top-center',
+          style: {
+            background: '#6b7280',
+            color: '#fff',
+            fontWeight: '500',
+            borderRadius: '10px',
+          },
+          icon: '💔',
+        });
       } else {
         await addToWishlist(product._id);
-        showFeedback('Added to Wishlist!');
+        toast.success('Added to Wishlist!', {
+          duration: 2500,
+          position: 'top-center',
+          style: {
+            background: '#ec4899',
+            color: '#fff',
+            fontWeight: '500',
+            borderRadius: '10px',
+          },
+          icon: '❤️',
+        });
       }
     } catch (error) {
       console.error('Wishlist error:', error);
-      showFeedback('Failed to update wishlist');
+      toast.error('Failed to update wishlist', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '10px',
+        },
+      });
     } finally {
       setAddingToWishlist(false);
     }
@@ -366,7 +492,7 @@ const ProductCard = ({ product, index = 0 }) => {
             )}
 
             {/* Main Image */}
-            <div className="aspect-[3/4] overflow-hidden">
+            <div className="aspect-[3/4] overflow-hidden border border-gray-100 p-2">
               <img
                 src={mainImage}
                 alt={product.title}
@@ -500,24 +626,7 @@ const ProductCard = ({ product, index = 0 }) => {
         </div>
       </motion.div>
 
-      {/* Feedback Toast */}
-      <AnimatePresence>
-        {feedback.active && createPortal(
-          <motion.div
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full flex items-center gap-2 z-[9999] shadow-lg"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ ease: "easeInOut", duration: 0.3 }}
-          >
-            <CheckCircle size={18} />
-            <span className="font-medium text-sm">{feedback.message}</span>
-          </motion.div>,
-          document.body
-        )}
-      </AnimatePresence>
-
-      {/* Quick View Modal - Conditionally render */}
+      {/* Quick View Modal */}
       {showQuickView && (
         <ProductQuickView
           product={product}

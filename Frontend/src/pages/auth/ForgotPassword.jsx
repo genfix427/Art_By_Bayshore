@@ -288,9 +288,9 @@ const ForgotPassword = () => {
                     damping: 15,
                     delay: 0.2 
                   }}
-                  className="w-20 h-20 mx-auto mb-6 border border-green-500/20 bg-green-50 flex items-center justify-center"
+                  className="w-20 h-20 mx-auto mb-6 border border-gray-500/20 bg-gray-50 flex items-center justify-center"
                 >
-                  <Mail className="w-10 h-10 text-green-600" />
+                  <Mail className="w-10 h-10 text-gray-600" />
                 </motion.div>
 
                 <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-3">
@@ -315,7 +315,7 @@ const ForgotPassword = () => {
                     }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full border border-gray-900/20 text-gray-900 py-4 font-medium hover:bg-gray-50 transition-all duration-300"
+                    className="w-full border border-gray-900/20 text-gray-900 py-4 font-medium hover:bg-gray-50 transition-all duration-300 cursor-pointer"
                   >
                     Try Another Email
                   </motion.button>
@@ -324,7 +324,7 @@ const ForgotPassword = () => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 flex items-center justify-center gap-3 group"
+                      className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-all duration-300 flex items-center justify-center gap-3 group cursor-pointer"
                     >
                       <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                       <span>Back to Login</span>

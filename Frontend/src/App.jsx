@@ -31,6 +31,7 @@ import ResendVerification from './pages/auth/ResendVerification.jsx';
 import ForgotPassword from './pages/auth/ForgotPassword.jsx';
 import ResetPassword from './pages/auth/ResetPassword.jsx';
 import VerifyEmailPending from './pages/auth/VerifyEmailPending.jsx';
+import VirtualGallery from './pages/VirtualGallery.jsx';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
             <Route path="/" element={<Layout />}>
               {/* Public Routes */}
               <Route index element={<Home />} />
+              <Route path="virtual-gallery" element={<VirtualGallery />} />
               <Route path="products" element={<Products />} />
               <Route path="products/:slug" element={<ProductDetail />} />
               <Route path="artists" element={<Artists />} />

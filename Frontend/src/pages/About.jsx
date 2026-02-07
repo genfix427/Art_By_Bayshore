@@ -21,6 +21,11 @@ import {
   Play,
   CheckCircle
 } from 'lucide-react';
+import AboutImg01 from "../assets/about1.jpeg"
+import AboutImg02 from "../assets/about2.jpeg"
+import AboutImg03 from "../assets/about3.jpeg"
+import AboutImg04 from "../assets/about4.jpeg"
+import AboutImg05 from "../assets/about5.jpeg"
 
 // Floating petal component
 const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
@@ -417,12 +422,12 @@ const About = () => {
                 <div className="space-y-4">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className="relative aspect-[4/5] bg-gray-100 border border-gray-900/10 overflow-hidden group"
+                    className="relative aspect-[4/5] bg-transparent border border-gray-900/10 overflow-hidden group"
                   >
                     <img
-                      src="/about/gallery-1.jpg"
+                      src={AboutImg01}
                       alt="Gallery interior"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
@@ -434,12 +439,12 @@ const About = () => {
                   
                   <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className="relative aspect-square bg-gray-100 border border-gray-900/10 overflow-hidden group"
+                    className="relative aspect-square bg-transparent border border-gray-900/10 overflow-hidden group"
                   >
                     <img
-                      src="/about/gallery-2.jpg"
+                      src={AboutImg04}
                       alt="Art exhibition"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
@@ -453,12 +458,12 @@ const About = () => {
                 <div className="space-y-4 pt-8">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className="relative aspect-square bg-gray-100 border border-gray-900/10 overflow-hidden group"
+                    className="relative aspect-square bg-transparent border border-gray-900/10 overflow-hidden group"
                   >
                     <img
-                      src="/about/gallery-3.jpg"
+                      src={AboutImg03}
                       alt="Artist at work"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
@@ -470,12 +475,12 @@ const About = () => {
                   
                   <motion.div
                     whileHover={{ scale: 1.02 }}
-                    className="relative aspect-[4/5] bg-gray-100 border border-gray-900/10 overflow-hidden group"
+                    className="relative aspect-[4/5] bg-transparent border border-gray-900/10 overflow-hidden group"
                   >
                     <img
-                      src="/about/gallery-4.jpg"
+                      src={AboutImg02}
                       alt="Artwork detail"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
@@ -495,7 +500,7 @@ const About = () => {
                 transition={{ delay: 0.5 }}
                 className="absolute -bottom-8 -right-8 bg-gray-900 text-white p-8"
               >
-                <p className="font-playfair text-5xl font-bold">4+</p>
+                <p className="font-playfair text-5xl font-bold">30+</p>
                 <p className="text-xs tracking-[0.2em] uppercase mt-2 text-white/70">Years</p>
               </motion.div>
             </motion.div>
@@ -771,7 +776,7 @@ const About = () => {
             >
               <div className="relative aspect-square bg-gray-100 border border-gray-900/10 overflow-hidden">
                 <img
-                  src="/about/why-choose.jpg"
+                  src={AboutImg05}
                   alt="Art consultation"
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -782,26 +787,6 @@ const About = () => {
                   <FlowerDecor className="w-24 h-24 text-gray-900/5" />
                 </div>
               </div>
-
-              {/* Floating Review Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.5 }}
-                className="absolute -bottom-8 -left-8 bg-white p-8 border border-gray-900/10 max-w-xs"
-              >
-
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-gray-900 fill-gray-900" />
-                  ))}
-                </div>
-                <p className="text-gray-900/70 text-sm italic mb-4">
-                  "Exceptional service and stunning collection. A true gem for art lovers."
-                </p>
-                <p className="text-xs text-gray-900/40">— Verified Collector</p>
-              </motion.div>
             </motion.div>
           </div>
         </div>

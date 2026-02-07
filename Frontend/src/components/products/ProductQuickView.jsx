@@ -10,12 +10,14 @@ import {
   ChevronRight,
   Loader2,
   ExternalLink,
-  Star
+  Star,
+  MessageCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import InquiryForm from './InquiryForm';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -32,6 +34,7 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
   const [addingToCart, setAddingToCart] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
 
   const primaryImage = product?.images?.find(img => img.isPrimary) || product?.images?.[0];
   const mainImage = product?.images?.[selectedImage]?.url || primaryImage?.url || 'https://via.placeholder.com/600x600?text=Image+Not+Found';
@@ -47,7 +50,11 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
-        onClose();
+        if (showInquiryForm) {
+          setShowInquiryForm(false);
+        } else {
+          onClose();
+        }
       }
     };
     
@@ -60,7 +67,7 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, showInquiryForm, onClose]);
 
   // Reset selected image when product changes
   useEffect(() => {
@@ -76,8 +83,7 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
     }
 
     if (isAskForPrice) {
-      toast.success('We will contact you with pricing details');
-      onClose();
+      setShowInquiryForm(true);
       return;
     }
 
@@ -122,6 +128,9 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
         toast.success('Removed from wishlist');
       } else {
         await addToWishlist(product._id);
+        toast.success('Added to wishlist!', {
+          icon: '❤️',
+        });
       }
     } catch (error) {
       console.error('Wishlist error:', error);
@@ -143,6 +152,20 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
       setSelectedImage(prev => (prev === product.images.length - 1 ? 0 : prev + 1));
       setImageLoaded(false);
     }
+  };
+
+  const handleOpenInquiryForm = () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to submit an inquiry');
+      onClose();
+      return;
+    }
+    setShowInquiryForm(true);
+  };
+
+  const handleInquirySuccess = () => {
+    setShowInquiryForm(false);
+    onClose();
   };
 
   if (!isOpen || !product) return null;
@@ -436,11 +459,10 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
                   
                   {isAskForPrice && (
                     <button
-                      onClick={() => {
-                        toast.success('Contact form will appear here');
-                      }}
+                      onClick={handleOpenInquiryForm}
                       className="flex-1 bg-gradient-to-r from-gray-900 to-black text-white font-semibold py-3 px-6 rounded-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer"
                     >
+                      <MessageCircle size={18} className="mr-2" />
                       Request Price Quote
                     </button>
                   )}
@@ -487,6 +509,15 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
           </div>
         </motion.div>
       </div>
+
+      {/* Inquiry Form Modal */}
+      {showInquiryForm && (
+        <InquiryForm
+          product={product}
+          onClose={() => setShowInquiryForm(false)}
+          onSuccess={handleInquirySuccess}
+        />
+      )}
     </motion.div>
   );
 

@@ -974,34 +974,6 @@ const Products = () => {
 
         {/* Pagination */}
         {renderPagination()}
-
-        {/* Bottom Quote */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="mt-24 text-center"
-        >
-          <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 1.5 }}
-            className="w-32 h-px bg-gray-900/10 mx-auto mb-8"
-          />
-          
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="w-10 h-10 border border-gray-900/10 flex items-center justify-center mx-auto mb-4"
-          >
-            <FlowerDecor className="w-5 h-5 text-gray-900/20" />
-          </motion.div>
-          
-          <p className="font-playfair text-lg text-gray-900/40 italic max-w-xl mx-auto">
-            "Every artist dips his brush in his own soul, and paints his own nature into his pictures."
-          </p>
-          <p className="text-sm text-gray-900/30 mt-2">— Henry Ward Beecher</p>
-        </motion.div>
       </div>
 
       {/* Scroll to Top Button */}
