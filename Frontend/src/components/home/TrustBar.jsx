@@ -1,27 +1,27 @@
 // src/components/home/TrustBar.jsx
 import { motion } from "framer-motion";
-import { BadgeCheck, Lock, Truck, Undo2, Sparkles, Shield } from "lucide-react";
+import { BadgeCheck, Lock, Truck, Undo2, Sparkles, Shield, Palette, Brush } from "lucide-react";
 
 const items = [
   { 
     icon: BadgeCheck, 
-    title: "Authenticity Guaranteed", 
-    desc: "Curated artists & verified originals",
+    title: "Certificate of Authenticity", 
+    desc: "Signed documentation with every artwork",
   },
   { 
-    icon: Truck, 
-    title: "Free US Shipping", 
-    desc: "Reliable delivery nationwide",
+    icon: Palette, 
+    title: "Curated Collection", 
+    desc: "Handpicked by art experts",
   },
   { 
-    icon: Lock, 
-    title: "Secure Checkout", 
-    desc: "Protected payment gateway",
+    icon: Shield, 
+    title: "Secure Purchase", 
+    desc: "Protected art transactions",
   },
   { 
-    icon: Undo2, 
-    title: "30-Day Returns", 
-    desc: "Hassle-free support",
+    icon: BadgeCheck, 
+    title: "Gallery Authenticity", 
+    desc: "Verified provenance & certificates",
   },
 ];
 

@@ -234,7 +234,7 @@ const OrderDetail = () => {
   const [tracking, setTracking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [trackingLoading, setTrackingLoading] = useState(false);
-  const [cancelLoading, setCancelLoading] = useState(false);
+  // const [cancelLoading, setCancelLoading] = useState(false);
   const [feedback, setFeedback] = useState({ show: false, message: '', type: 'success' });
 
   // Generate floating petals
@@ -330,25 +330,25 @@ const OrderDetail = () => {
     }
   };
 
-  const handleCancelOrder = async () => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) {
-      return;
-    }
+  // const handleCancelOrder = async () => {
+  //   if (!window.confirm('Are you sure you want to cancel this order?')) {
+  //     return;
+  //   }
 
-    const reason = window.prompt('Please provide a reason for cancellation:');
-    if (!reason) return;
+  //   const reason = window.prompt('Please provide a reason for cancellation:');
+  //   if (!reason) return;
 
-    try {
-      setCancelLoading(true);
-      await orderService.cancel(orderId, { reason });
-      showFeedback('Order cancelled successfully');
-      await fetchOrder();
-    } catch (error) {
-      showFeedback(error.message || 'Failed to cancel order', 'error');
-    } finally {
-      setCancelLoading(false);
-    }
-  };
+  //   try {
+  //     setCancelLoading(true);
+  //     await orderService.cancel(orderId, { reason });
+  //     showFeedback('Order cancelled successfully');
+  //     await fetchOrder();
+  //   } catch (error) {
+  //     showFeedback(error.message || 'Failed to cancel order', 'error');
+  //   } finally {
+  //     setCancelLoading(false);
+  //   }
+  // };
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
@@ -880,7 +880,7 @@ const OrderDetail = () => {
 
               {/* Actions */}
               <div className="p-6 border-t border-gray-900/10 space-y-3">
-                {['pending', 'confirmed'].includes(order.orderStatus) && (
+                {/* {['pending', 'confirmed'].includes(order.orderStatus) && (
                   <motion.button
                     onClick={handleCancelOrder}
                     disabled={cancelLoading}
@@ -895,7 +895,7 @@ const OrderDetail = () => {
                     )}
                     Cancel Order
                   </motion.button>
-                )}
+                )} */}
 
                 <Link to="/orders" className="block">
                   <motion.button

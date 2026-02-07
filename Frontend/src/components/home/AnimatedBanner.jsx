@@ -113,7 +113,7 @@ const AnimatedBanner = () => {
             </div>
             <div className="w-px h-8 bg-gray-300" />
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-semibold text-gray-900">12</span>
+              <span className="text-2xl font-semibold text-gray-900">10+</span>
               <span className="text-sm text-gray-600">Artists</span>
             </div>
             <div className="w-px h-8 bg-gray-300 hidden sm:block" />

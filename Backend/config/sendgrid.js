@@ -12,13 +12,13 @@ if (!process.env.SENDGRID_API_KEY) {
 class EmailService {
   constructor() {
     this.from = {
-      email: process.env.SENDGRID_FROM_EMAIL || 'liosam614@gmail.com',
+      email: process.env.SENDGRID_FROM_EMAIL || 'bayshoredesigncenter@gmail.com',
       name: process.env.SENDGRID_FROM_NAME || 'Art By Bayshore',
     };
-    this.ownerEmail = process.env.OWNER_EMAIL || 'liosam614@gmail.com';
+    this.ownerEmail = process.env.OWNER_EMAIL || 'bayshoredesigncenter@gmail.com';
     this.companyName = process.env.COMPANY_NAME || 'Art By Bayshore';
     this.companyAddress = process.env.COMPANY_ADDRESS || '1717 N Bayshore Dr 121, Miami, FL 33132';
-    this.supportEmail = process.env.SUPPORT_EMAIL || 'liosam614@gmail.com';
+    this.supportEmail = process.env.SUPPORT_EMAIL || 'bayshoredesigncenter@gmail.com';
     this.frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     this.adminUrl = process.env.ADMIN_URL || 'http://localhost:5173/admin';
   }
