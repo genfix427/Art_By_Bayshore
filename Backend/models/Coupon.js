@@ -66,7 +66,7 @@ const couponSchema = new mongoose.Schema({
   }],
   applicableCategories: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
+    ref: 'Artist',
   }],
   applicableProducts: [{
     type: mongoose.Schema.Types.ObjectId,

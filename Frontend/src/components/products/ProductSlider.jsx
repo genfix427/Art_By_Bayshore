@@ -173,7 +173,7 @@ const ProductSlider = ({
       } else if (width < 1024) {
         setSlidesPerView(3);
       } else {
-        setSlidesPerView(4);
+        setSlidesPerView(6);
       }
     };
 

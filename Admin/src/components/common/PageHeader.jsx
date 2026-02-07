@@ -1,18 +1,17 @@
-import { Link } from 'react-router-dom';
-
 const PageHeader = ({ title, subtitle, actions }) => {
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '2rem',
-    }}>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
       <div>
-        <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>{title}</h1>
-        {subtitle && <p style={{ margin: 0, color: '#666' }}>{subtitle}</p>}
+        <h1 className="text-2xl md:text-3xl font-bold text-black tracking-tight">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
+        )}
       </div>
-      {actions && <div style={{ display: 'flex', gap: '1rem' }}>{actions}</div>}
+      {actions && (
+        <div className="flex gap-3 flex-shrink-0">{actions}</div>
+      )}
     </div>
   );
 };

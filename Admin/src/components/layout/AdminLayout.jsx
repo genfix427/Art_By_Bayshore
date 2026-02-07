@@ -8,7 +8,7 @@ const AdminLayout = () => {
       <Sidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Header />
-        <main style={{ flex: 1, padding: '2rem', backgroundColor: '#f5f5f5' }}>
+        <main style={{ flex: 1, padding: '2rem', backgroundColor: '#ffffff' }}>
           <Outlet />
         </main>
       </div>

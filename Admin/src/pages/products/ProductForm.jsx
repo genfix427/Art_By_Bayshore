@@ -60,8 +60,8 @@ const ProductForm = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   // Check if form can be submitted
-  const canSubmit = isEdit 
-    ? (existingImages.length > 0 || selectedImages.length > 0) 
+  const canSubmit = isEdit
+    ? (existingImages.length > 0 || selectedImages.length > 0)
     : selectedImages.length > 0;
 
   useEffect(() => {
@@ -84,12 +84,66 @@ const ProductForm = () => {
 
   const fetchCategoriesAndArtists = async () => {
     try {
-      const [artistsRes] = await Promise.all([
-        artistService.getAll({ isActive: true }),
-      ]);
-      setArtists(artistsRes.data);
+      console.log('Fetching all artists...');
+
+      let allArtists = [];
+      let page = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        try {
+          const response = await artistService.getAll({
+            isActive: true,
+            page,
+            limit: 100 // Request a large limit
+          });
+
+          console.log(`Page ${page} response:`, response.data);
+
+          let pageArtists = [];
+
+          // Extract artists from response based on different possible structures
+          if (Array.isArray(response.data)) {
+            pageArtists = response.data;
+          } else if (response.data && Array.isArray(response.data.data)) {
+            pageArtists = response.data.data;
+          } else if (response.data && Array.isArray(response.data.artists)) {
+            pageArtists = response.data.artists;
+          } else if (response.data && Array.isArray(response.data.results)) {
+            pageArtists = response.data.results;
+          } else if (response.data && typeof response.data === 'object') {
+            // Try to find any array in the object
+            for (const key in response.data) {
+              if (Array.isArray(response.data[key])) {
+                pageArtists = response.data[key];
+                break;
+              }
+            }
+          }
+
+          if (pageArtists.length === 0) {
+            hasMore = false;
+          } else {
+            allArtists = [...allArtists, ...pageArtists];
+            page++;
+          }
+
+        } catch (error) {
+          console.error(`Error fetching page ${page}:`, error);
+          hasMore = false;
+        }
+      }
+
+      console.log(`Total artists fetched: ${allArtists.length}`);
+      console.log('Artists:', allArtists.map(a => a.name));
+
+      // Remove duplicates by ID
+      const uniqueArtists = Array.from(new Map(allArtists.map(artist => [artist._id, artist])).values());
+
+      setArtists(uniqueArtists);
+
     } catch (error) {
-      console.error(error);
+      console.error('Error in fetchCategoriesAndArtists:', error);
     }
   };
 
@@ -97,7 +151,7 @@ const ProductForm = () => {
     try {
       const response = await productService.getById(id);
       const product = response.data;
-      
+
       setFormData({
         title: product.title,
         description: product.description,
@@ -135,7 +189,7 @@ const ProductForm = () => {
   // Handle file selection with preview
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
-    
+
     if (files.length === 0) return;
 
     // Check max limit (10 images)
@@ -168,7 +222,7 @@ const ProductForm = () => {
     }));
 
     setSelectedImages(prev => [...prev, ...newImages]);
-    
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -236,10 +290,10 @@ const ProductForm = () => {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+
     if (imageFiles.length > 0) {
       const event = { target: { files: imageFiles } };
       handleFileSelect(event);
@@ -248,7 +302,7 @@ const ProductForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!canSubmit) {
       toast.error('Please upload at least one image');
       return;
@@ -260,13 +314,13 @@ const ProductForm = () => {
 
     try {
       const data = new FormData();
-      
+
       // Basic fields
       data.append('title', formData.title);
       data.append('description', formData.description);
       data.append('artist', formData.artist);
       data.append('productType', formData.productType);
-      
+
       // Price fields (only for price-based products)
       if (formData.productType === 'price-based') {
         if (formData.price) data.append('price', parseFloat(formData.price).toString());
@@ -278,17 +332,17 @@ const ProductForm = () => {
       if (formData.sku) data.append('sku', formData.sku);
       if (formData.medium) data.append('medium', formData.medium);
       if (formData.yearCreated) data.append('yearCreated', parseInt(formData.yearCreated).toString());
-      
+
       // Boolean fields
       data.append('isFramed', formData.isFramed.toString());
       data.append('isOriginal', formData.isOriginal.toString());
       data.append('isActive', formData.isActive.toString());
       data.append('isFeatured', formData.isFeatured.toString());
-      
+
       if (formData.lowStockThreshold) {
         data.append('lowStockThreshold', parseInt(formData.lowStockThreshold).toString());
       }
-      
+
       // Arrays
       if (formData.tags) {
         const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -296,7 +350,7 @@ const ProductForm = () => {
           data.append('tags', JSON.stringify(tagsArray));
         }
       }
-      
+
       // Dimensions
       const dimensionsData = {
         artwork: {
@@ -313,14 +367,14 @@ const ProductForm = () => {
         }
       };
       data.append('dimensions', JSON.stringify(dimensionsData));
-      
+
       // Weight
       const weightData = {
         value: parseFloat(formData.weight.value) || 0,
         unit: formData.weight.unit
       };
       data.append('weight', JSON.stringify(weightData));
-      
+
       // SEO fields
       if (formData.metaTitle) data.append('metaTitle', formData.metaTitle);
       if (formData.metaDescription) data.append('metaDescription', formData.metaDescription);
@@ -363,7 +417,7 @@ const ProductForm = () => {
     } catch (error) {
       console.error('Full error:', error);
       console.error('Error response:', error.response?.data);
-      
+
       if (error.response?.data?.errors) {
         console.error('Validation errors:', error.response.data.errors);
         const firstError = error.response.data.errors[0];
@@ -906,9 +960,9 @@ const ProductForm = () => {
             marginBottom: '1.5rem',
           }}>
             <h3 style={{ marginBottom: '1rem' }}>
-              Product Images 
-              <span style={{ 
-                color: canSubmit ? '#28a745' : '#dc3545', 
+              Product Images
+              <span style={{
+                color: canSubmit ? '#28a745' : '#dc3545',
                 fontSize: '0.875rem',
                 marginLeft: '0.5rem',
                 fontWeight: 'normal'
@@ -923,15 +977,15 @@ const ProductForm = () => {
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
                   Current Images ({existingImages.length})
                 </label>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
-                  gap: '1rem' 
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                  gap: '1rem'
                 }}>
                   {existingImages.map((img) => (
-                    <div 
-                      key={img._id} 
-                      style={{ 
+                    <div
+                      key={img._id}
+                      style={{
                         position: 'relative',
                         borderRadius: '8px',
                         overflow: 'hidden',
@@ -1026,9 +1080,9 @@ const ProductForm = () => {
             </div>
 
             {/* Image Count Info */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
               marginBottom: '1rem',
               padding: '0.5rem',
@@ -1071,15 +1125,15 @@ const ProductForm = () => {
                 <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
                   First image will be set as primary. Drag to reorder or click "Set as Primary" button.
                 </p>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
-                  gap: '1rem' 
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                  gap: '1rem'
                 }}>
                   {selectedImages.map((img, index) => (
-                    <div 
-                      key={img.id} 
-                      style={{ 
+                    <div
+                      key={img.id}
+                      style={{
                         position: 'relative',
                         borderRadius: '8px',
                         overflow: 'hidden',
@@ -1097,7 +1151,7 @@ const ProductForm = () => {
                           objectFit: 'cover',
                         }}
                       />
-                      
+
                       {/* Primary Badge */}
                       {index === 0 && (
                         <span style={{
@@ -1146,9 +1200,9 @@ const ProductForm = () => {
                         padding: '0.5rem',
                         backgroundColor: 'rgba(255,255,255,0.95)',
                       }}>
-                        <p style={{ 
-                          margin: 0, 
-                          fontSize: '0.75rem', 
+                        <p style={{
+                          margin: 0,
+                          fontSize: '0.75rem',
                           color: '#333',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -1156,14 +1210,14 @@ const ProductForm = () => {
                         }}>
                           {img.name}
                         </p>
-                        <p style={{ 
-                          margin: '0.25rem 0 0 0', 
-                          fontSize: '0.7rem', 
-                          color: '#666' 
+                        <p style={{
+                          margin: '0.25rem 0 0 0',
+                          fontSize: '0.7rem',
+                          color: '#666'
                         }}>
                           {formatFileSize(img.size)}
                         </p>
-                        
+
                         {/* Set as Primary Button */}
                         {index !== 0 && (
                           <button
@@ -1307,9 +1361,9 @@ const ProductForm = () => {
               borderRadius: '8px',
               border: '1px solid #007bff',
             }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
                 marginBottom: '0.5rem',
                 fontWeight: 'bold',
                 color: '#007bff',
@@ -1335,14 +1389,14 @@ const ProductForm = () => {
                   }}
                 />
               </div>
-              <p style={{ 
-                margin: '0.5rem 0 0 0', 
-                fontSize: '0.875rem', 
+              <p style={{
+                margin: '0.5rem 0 0 0',
+                fontSize: '0.875rem',
                 color: '#0056b3',
                 textAlign: 'center',
               }}>
-                {uploadProgress < 100 
-                  ? 'Please wait while your images are being uploaded...' 
+                {uploadProgress < 100
+                  ? 'Please wait while your images are being uploaded...'
                   : 'Processing complete!'}
               </p>
             </div>
@@ -1374,7 +1428,7 @@ const ProductForm = () => {
               style={{
                 flex: 1,
                 padding: '0.75rem',
-                backgroundColor: loading || !canSubmit ? '#ccc' : '#28a745',
+                backgroundColor: loading || !canSubmit ? '#ccc' : 'black',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',

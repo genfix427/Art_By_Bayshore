@@ -73,7 +73,10 @@ export const newsletterService = {
   getSubscribers: (params) => api.get('/newsletter/subscribers', { params }),
   addSubscriber: (data) => api.post('/newsletter/subscribers', data),
   bulkAddSubscribers: (data) => api.post('/newsletter/subscribers/bulk', data),
-  exportSubscribers: (params) => api.get('/newsletter/subscribers/export', { params }),
+  exportSubscribers: (params) => api.get('/newsletter/subscribers/export', { 
+    params,
+    responseType: 'blob' // Important: handle binary data
+  }),
   updateSubscriber: (id, data) => api.put(`/newsletter/subscribers/${id}`, data),
   deleteSubscriber: (id) => api.delete(`/newsletter/subscribers/${id}`),
   getCampaigns: (params) => api.get('/newsletter/campaigns', { params }),

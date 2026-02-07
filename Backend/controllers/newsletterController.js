@@ -454,77 +454,6 @@ export const addSubscriber = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Bulk add subscribers
-// @route   POST /api/v1/newsletter/subscribers/bulk
-// @access  Private/Admin
-export const bulkAddSubscribers = asyncHandler(async (req, res, next) => {
-  const { subscribers } = req.body; // Array of subscriber objects
-
-  if (!Array.isArray(subscribers) || subscribers.length === 0) {
-    return next(new ErrorResponse('Please provide an array of subscribers', 400));
-  }
-
-  const results = {
-    added: 0,
-    updated: 0,
-    skipped: 0,
-    errors: [],
-  };
-
-  for (const sub of subscribers) {
-    try {
-      const email = sub.email?.toLowerCase()?.trim();
-      
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        results.errors.push({ email: sub.email, error: 'Invalid email' });
-        results.skipped++;
-        continue;
-      }
-
-      let subscriber = await Subscriber.findOne({ email });
-
-      if (subscriber) {
-        if (subscriber.status === 'subscribed') {
-          results.skipped++;
-        } else {
-          subscriber.status = 'subscribed';
-          subscriber.firstName = sub.firstName || subscriber.firstName;
-          subscriber.lastName = sub.lastName || subscriber.lastName;
-          subscriber.subscribedAt = new Date();
-          subscriber.unsubscribedAt = undefined;
-          await subscriber.save();
-          results.updated++;
-        }
-      } else {
-        const unsubscribeToken = crypto.randomBytes(32).toString('hex');
-        await Subscriber.create({
-          email,
-          firstName: sub.firstName,
-          lastName: sub.lastName,
-          tags: sub.tags || [],
-          unsubscribeToken,
-          source: 'admin_bulk',
-          status: 'subscribed',
-        });
-        results.added++;
-      }
-    } catch (error) {
-      results.errors.push({ email: sub.email, error: error.message });
-      results.skipped++;
-    }
-  }
-
-  logger.info(
-    `Bulk subscribers import: ${results.added} added, ${results.updated} updated, ${results.skipped} skipped by ${req.user.email}`
-  );
-
-  res.status(200).json({
-    success: true,
-    message: 'Bulk import completed',
-    data: results,
-  });
-});
-
 // @desc    Export subscribers
 // @route   GET /api/v1/newsletter/subscribers/export
 // @access  Private/Admin
@@ -538,9 +467,110 @@ export const exportSubscribers = asyncHandler(async (req, res, next) => {
     .select('email firstName lastName status tags subscribedAt source')
     .sort({ subscribedAt: -1 });
 
+  // Convert to CSV format
+  const headers = ['Email', 'First Name', 'Last Name', 'Status', 'Subscribed At', 'Source', 'Tags'];
+  
+  const csvRows = subscribers.map(subscriber => {
+    const row = [
+      subscriber.email,
+      subscriber.firstName || '',
+      subscriber.lastName || '',
+      subscriber.status,
+      new Date(subscriber.subscribedAt).toISOString(),
+      subscriber.source || 'website',
+      (subscriber.tags || []).join(';')
+    ];
+    
+    // Escape commas and quotes
+    return row.map(field => {
+      const stringField = String(field);
+      if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+        return `"${stringField.replace(/"/g, '""')}"`;
+      }
+      return stringField;
+    }).join(',');
+  });
+
+  const csvContent = [headers.join(','), ...csvRows].join('\n');
+
+  // Set response headers for file download
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename=subscribers_export_${Date.now()}.csv`);
+  
+  res.send(csvContent);
+});
+
+// @desc    Bulk add subscribers
+// @route   POST /api/v1/newsletter/subscribers/bulk
+// @access  Private/Admin
+export const bulkAddSubscribers = asyncHandler(async (req, res, next) => {
+  const { subscribers } = req.body;
+
+  if (!Array.isArray(subscribers) || subscribers.length === 0) {
+    return next(new ErrorResponse('Please provide an array of subscribers', 400));
+  }
+
+  const results = {
+    added: 0,
+    updated: 0,
+    skipped: 0,
+    errors: []
+  };
+
+  for (const sub of subscribers) {
+    try {
+      const email = sub.email?.toLowerCase()?.trim();
+      
+      // Validate email
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        results.errors.push({ email: sub.email || 'unknown', error: 'Invalid email format' });
+        results.skipped++;
+        continue;
+      }
+
+      // Check if subscriber exists
+      let subscriber = await Subscriber.findOne({ email });
+
+      if (subscriber) {
+        if (subscriber.status === 'subscribed') {
+          results.skipped++;
+        } else {
+          // Reactivate unsubscribed user
+          subscriber.status = 'subscribed';
+          subscriber.firstName = sub.firstName || subscriber.firstName;
+          subscriber.lastName = sub.lastName || subscriber.lastName;
+          subscriber.subscribedAt = new Date();
+          subscriber.unsubscribedAt = undefined;
+          await subscriber.save();
+          results.updated++;
+        }
+      } else {
+        // Create new subscriber
+        const unsubscribeToken = crypto.randomBytes(32).toString('hex');
+        await Subscriber.create({
+          email,
+          firstName: sub.firstName || '',
+          lastName: sub.lastName || '',
+          tags: sub.tags || [],
+          unsubscribeToken,
+          source: sub.source || 'admin_bulk',
+          status: 'subscribed',
+        });
+        results.added++;
+      }
+    } catch (error) {
+      results.errors.push({ email: sub.email || 'unknown', error: error.message });
+      results.skipped++;
+    }
+  }
+
+  logger.info(
+    `Bulk subscribers import: ${results.added} added, ${results.updated} updated, ${results.skipped} skipped by ${req.user.email}`
+  );
+
   res.status(200).json({
     success: true,
-    data: subscribers,
-    count: subscribers.length,
+    message: 'Bulk import completed',
+    data: results,
   });
 });

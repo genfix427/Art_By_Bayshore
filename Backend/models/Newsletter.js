@@ -25,7 +25,7 @@ const subscriberSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['website', 'checkout', 'admin', 'import'],
+    enum: ['website', 'checkout', 'admin', 'import', 'bulk_import'],
     default: 'website',
   },
   subscribedAt: {
