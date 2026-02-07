@@ -185,10 +185,10 @@ class EmailService {
                   ${isOwnerCopy ? 'New Order Received!' : 'Thank You for Your Order!'}
                 </h2>
                 <p style="color: #6B7280; margin: 0; font-size: 16px;">
-                  ${isOwnerCopy 
-                    ? 'A new order has been placed and is ready for processing.'
-                    : 'Your order has been confirmed and is being processed.'
-                  }
+                  ${isOwnerCopy
+        ? 'A new order has been placed and is ready for processing.'
+        : 'Your order has been confirmed and is being processed.'
+      }
                 </p>
               </td>
             </tr>
@@ -432,13 +432,13 @@ class EmailService {
   async orderConfirmationEmail(order, user) {
     const subject = `Order Confirmation - ${order.orderNumber} | ${this.companyName}`;
     const html = this.generateInvoiceHtml(order, user, false);
-    
+
     const result = await this.send(user.email, subject, html);
-    
+
     if (result.success) {
       logger.info(`Order confirmation email sent to customer: ${user.email}`);
     }
-    
+
     return result;
   }
 
@@ -446,13 +446,13 @@ class EmailService {
   async orderNotificationToOwner(order, user) {
     const subject = `🛒 New Order - ${order.orderNumber} | ${this.formatCurrency(order.total)}`;
     const html = this.generateInvoiceHtml(order, user, true);
-    
+
     const result = await this.send(this.ownerEmail, subject, html);
-    
+
     if (result.success) {
       logger.info(`Order notification sent to owner: ${this.ownerEmail}`);
     }
-    
+
     return result;
   }
 
@@ -461,7 +461,7 @@ class EmailService {
     try {
       const customerEmailResult = await this.orderConfirmationEmail(order, user);
       const ownerEmailResult = await this.orderNotificationToOwner(order, user);
-      
+
       return {
         success: true,
         customerEmail: customerEmailResult,
@@ -478,12 +478,12 @@ class EmailService {
 
   // Shipping confirmation email
   async shippingConfirmationEmail(order, user) {
-    const trackingUrl = order.fedexShipment?.trackingNumber 
+    const trackingUrl = order.fedexShipment?.trackingNumber
       ? `https://www.fedex.com/fedextrack/?trknbr=${order.fedexShipment.trackingNumber}`
       : `${this.frontendUrl}/orders/${order._id}`;
 
     const subject = `Your Order Has Shipped! - ${order.orderNumber}`;
-    
+
     const content = `
       <!-- Header -->
       <tr>
@@ -607,7 +607,7 @@ class EmailService {
   // Owner shipment notification
   async ownerShipmentNotification(order) {
     const subject = `📦 Order Shipped - ${order.orderNumber}`;
-    
+
     const html = this.getEmailWrapper(`
       <tr>
         <td style="background-color: #111827; padding: 30px; text-align: center;">
@@ -639,7 +639,7 @@ class EmailService {
   // Delivery confirmation email
   async deliveryConfirmationEmail(order, user) {
     const subject = `Your Order Has Been Delivered! - ${order.orderNumber}`;
-    
+
     const content = `
       <!-- Header -->
       <tr>
@@ -700,7 +700,7 @@ class EmailService {
   // Owner delivery notification
   async ownerDeliveryNotification(order) {
     const subject = `✅ Order Delivered - ${order.orderNumber}`;
-    
+
     const html = this.getEmailWrapper(`
       <tr>
         <td style="background-color: #059669; padding: 30px; text-align: center;">
@@ -729,7 +729,7 @@ class EmailService {
   // Order cancellation email
   async orderCancellationEmail(order, user) {
     const subject = `Order Cancelled - ${order.orderNumber}`;
-    
+
     const content = `
       <!-- Header -->
       <tr>
@@ -835,13 +835,13 @@ class EmailService {
 
   // Email verification
   // In sendgrid.js - emailVerificationEmail method
-emailVerificationEmail(user, verificationUrl) {
-  console.log('📧 Sending verification email:');
-  console.log('To:', user.email);
-  console.log('URL:', verificationUrl);
-  
-  const subject = `Verify Your Email - ${process.env.COMPANY_NAME}`;
-  const html = `
+  emailVerificationEmail(user, verificationUrl) {
+    console.log('📧 Sending verification email:');
+    console.log('To:', user.email);
+    console.log('URL:', verificationUrl);
+
+    const subject = `Verify Your Email - ${process.env.COMPANY_NAME}`;
+    const html = `
     <!DOCTYPE html>
     <html>
       <head>
@@ -877,8 +877,8 @@ emailVerificationEmail(user, verificationUrl) {
       </body>
     </html>
   `;
-  return this.send(user.email, subject, html);
-}
+    return this.send(user.email, subject, html);
+  }
 
   // Password reset
   passwordResetEmail(user, resetUrl) {
@@ -913,7 +913,7 @@ emailVerificationEmail(user, verificationUrl) {
     return this.send(user.email, subject, html);
   }
 
-welcomeEmail(user) {
+  welcomeEmail(user) {
     const subject = `Welcome to ${process.env.COMPANY_NAME}!`;
     const html = `
       <!DOCTYPE html>
@@ -1084,94 +1084,94 @@ welcomeEmail(user) {
   }
 
   async sendNewsletterCampaign(campaign, subscribers) {
-  try {
-    const results = {
-      sentCount: 0,
-      failedCount: 0,
-      failedEmails: [],
-    };
+    try {
+      const results = {
+        sentCount: 0,
+        failedCount: 0,
+        failedEmails: [],
+      };
 
-    console.log(`📧 Starting to send campaign "${campaign.name}" to ${subscribers.length} subscribers`);
+      console.log(`📧 Starting to send campaign "${campaign.name}" to ${subscribers.length} subscribers`);
 
-    // Send emails in smaller batches to avoid rate limits
-    const batchSize = 10;
-    
-    for (let i = 0; i < subscribers.length; i += batchSize) {
-      const batch = subscribers.slice(i, i + batchSize);
-      console.log(`📦 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(subscribers.length/batchSize)}`);
-      
-      const batchPromises = batch.map(async (subscriber) => {
-        try {
-          // Generate beautiful black and white email
-          const emailContent = this.generateBlackWhiteNewsletter(
-            campaign, 
-            subscriber
-          );
+      // Send emails in smaller batches to avoid rate limits
+      const batchSize = 10;
 
-          console.log(`Sending to: ${subscriber.email}`);
-          
-          // Send email using the class method
-          const result = await this.send(
-            subscriber.email,
-            campaign.subject,
-            emailContent.html,
-            emailContent.text
-          );
+      for (let i = 0; i < subscribers.length; i += batchSize) {
+        const batch = subscribers.slice(i, i + batchSize);
+        console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(subscribers.length / batchSize)}`);
 
-          if (result.success) {
-            results.sentCount++;
-            console.log(`✓ Sent to ${subscriber.email}`);
-            return { success: true, email: subscriber.email };
-          } else {
+        const batchPromises = batch.map(async (subscriber) => {
+          try {
+            // Generate beautiful black and white email
+            const emailContent = this.generateBlackWhiteNewsletter(
+              campaign,
+              subscriber
+            );
+
+            console.log(`Sending to: ${subscriber.email}`);
+
+            // Send email using the class method
+            const result = await this.send(
+              subscriber.email,
+              campaign.subject,
+              emailContent.html,
+              emailContent.text
+            );
+
+            if (result.success) {
+              results.sentCount++;
+              console.log(`✓ Sent to ${subscriber.email}`);
+              return { success: true, email: subscriber.email };
+            } else {
+              results.failedCount++;
+              results.failedEmails.push({
+                email: subscriber.email,
+                error: result.error,
+              });
+              console.log(`✗ Failed to send to ${subscriber.email}: ${result.error}`);
+              return { success: false, email: subscriber.email, error: result.error };
+            }
+          } catch (error) {
             results.failedCount++;
             results.failedEmails.push({
               email: subscriber.email,
-              error: result.error,
+              error: error.message,
             });
-            console.log(`✗ Failed to send to ${subscriber.email}: ${result.error}`);
-            return { success: false, email: subscriber.email, error: result.error };
+            console.log(`✗ Error sending to ${subscriber.email}: ${error.message}`);
+            return { success: false, email: subscriber.email, error: error.message };
           }
-        } catch (error) {
-          results.failedCount++;
-          results.failedEmails.push({
-            email: subscriber.email,
-            error: error.message,
-          });
-          console.log(`✗ Error sending to ${subscriber.email}: ${error.message}`);
-          return { success: false, email: subscriber.email, error: error.message };
+        });
+
+        // Wait for current batch to complete
+        await Promise.all(batchPromises);
+
+        // Small delay between batches
+        if (i + batchSize < subscribers.length) {
+          console.log(`⏳ Waiting 2 seconds before next batch...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
-      });
-
-      // Wait for current batch to complete
-      await Promise.all(batchPromises);
-      
-      // Small delay between batches
-      if (i + batchSize < subscribers.length) {
-        console.log(`⏳ Waiting 2 seconds before next batch...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
       }
+
+      console.log(`📊 Campaign complete: ${results.sentCount} sent, ${results.failedCount} failed`);
+      return results;
+    } catch (error) {
+      console.error('Campaign sending error:', error);
+      throw error;
     }
-
-    console.log(`📊 Campaign complete: ${results.sentCount} sent, ${results.failedCount} failed`);
-    return results;
-  } catch (error) {
-    console.error('Campaign sending error:', error);
-    throw error;
   }
-}
 
-generateBlackWhiteNewsletter(campaign, subscriber) {
-  // Personalize the HTML content
-  let personalizedHtml = campaign.content.html
-    .replace(/\{\{firstName\}\}/g, subscriber.firstName || 'Subscriber')
-    .replace(/\{\{email\}\}/g, subscriber.email);
+  generateBlackWhiteNewsletter(campaign, subscriber) {
+    // Personalize the HTML content
+    let personalizedHtml = campaign.content.html
+      .replace(/\{\{firstName\}\}/g, subscriber.firstName || 'Subscriber')
+      .replace(/\{\{email\}\}/g, subscriber.email);
 
-  // Generate unsubscribe URL
-  const unsubscribeUrl = `${this.frontendUrl}/newsletter/unsubscribe/${subscriber.unsubscribeToken}`;
-  const viewInBrowserUrl = `${this.frontendUrl}/newsletter/campaign/${campaign._id}`;
-  
-  // Create beautiful black and white template wrapper
-  const wrappedHtml = `
+    // Generate unsubscribe URL
+    const unsubscribeUrl = `${this.frontendUrl}/newsletter/unsubscribe/${subscriber.unsubscribeToken}`;
+    const viewInBrowserUrl = `${this.frontendUrl}/newsletter/campaign/${campaign._id}`;
+
+    // Create beautiful black and white template wrapper
+    const wrappedHtml = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -1517,8 +1517,8 @@ generateBlackWhiteNewsletter(campaign, subscriber) {
     </html>
   `;
 
-  // Generate plain text version
-  const plainText = `
+    // Generate plain text version
+    const plainText = `
 ${campaign.subject}
 
 Dear ${subscriber.firstName || 'Art Enthusiast'},
@@ -1554,11 +1554,11 @@ Update preferences: ${this.frontendUrl}/preferences
 © ${new Date().getFullYear()} ${this.companyName}. All rights reserved.
   `;
 
-  return {
-    html: wrappedHtml,
-    text: plainText
-  };
-}
+    return {
+      html: wrappedHtml,
+      text: plainText
+    };
+  }
 
 }
 

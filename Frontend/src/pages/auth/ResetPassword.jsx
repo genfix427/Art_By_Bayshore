@@ -352,9 +352,9 @@ const ResetPassword = () => {
                     damping: 15,
                     delay: 0.2 
                   }}
-                  className="w-20 h-20 mx-auto mb-6 border border-green-500/20 bg-green-50 flex items-center justify-center"
+                  className="w-20 h-20 mx-auto mb-6 border border-gray-500/20 bg-gray-50 flex items-center justify-center"
                 >
-                  <CheckCircle2 className="w-10 h-10 text-green-600" />
+                  <CheckCircle2 className="w-10 h-10 text-gray-600" />
                 </motion.div>
 
                 <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-3">

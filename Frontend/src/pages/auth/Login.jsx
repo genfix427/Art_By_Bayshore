@@ -316,6 +316,16 @@ const Login = () => {
               </Link>
             </motion.div>
 
+            <motion.div variants={itemVariants} className="flex justify-end">
+              <Link
+                to="/resend-verification"
+                className="text-sm text-gray-900/50 hover:text-gray-900 transition-colors relative group"
+              >
+                Pending Varification?
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-300" />
+              </Link>
+            </motion.div>
+
             {/* Submit Button */}
             <motion.div variants={itemVariants}>
               <motion.button
