@@ -12,7 +12,7 @@ if (!process.env.SENDGRID_API_KEY) {
 class EmailService {
   constructor() {
     this.from = {
-      email: process.env.SENDGRID_FROM_EMAIL || 'bayshoredesigncenter@gmail.com',
+      email: process.env.SENDGRID_FROM_EMAIL || 'hello@em7143.artbybayshore.com',
       name: process.env.SENDGRID_FROM_NAME || 'Art By Bayshore',
     };
     this.ownerEmail = process.env.OWNER_EMAIL || 'bayshoredesigncenter@gmail.com';
