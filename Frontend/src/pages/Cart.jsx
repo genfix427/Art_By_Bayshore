@@ -145,7 +145,7 @@ const Cart = () => {
   };
 
   const handleClearCart = async () => {
-    if (!window.confirm('Are you sure you want to clear your cart?')) return;
+    // if (!window.confirm('Are you sure you want to clear your cart?')) return;
     
     setClearing(true);
     try {
@@ -155,21 +155,6 @@ const Cart = () => {
       showFeedback('Failed to clear cart', 'error');
     } finally {
       setClearing(false);
-    }
-  };
-
-  const handleApplyPromo = async () => {
-    if (!promoCode.trim()) return;
-    
-    setApplyingPromo(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      showFeedback('Promo code applied!');
-      setPromoCode('');
-    } catch (error) {
-      showFeedback('Invalid promo code', 'error');
-    } finally {
-      setApplyingPromo(false);
     }
   };
 
@@ -622,11 +607,6 @@ const Cart = () => {
 
                   <div className="flex justify-between text-gray-900/50 text-xs sm:text-sm">
                     <span>Shipping</span>
-                    <span>Calculated at checkout</span>
-                  </div>
-
-                  <div className="flex justify-between text-gray-900/50 text-xs sm:text-sm">
-                    <span>Tax</span>
                     <span>Calculated at checkout</span>
                   </div>
                 </div>

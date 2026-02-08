@@ -13,7 +13,10 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  Package
+  Package,
+  AlertCircle,
+  Lock,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
@@ -21,6 +24,41 @@ import { useWishlist } from '../../context/WishlistContext';
 import ProductQuickView from './ProductQuickView';
 import { formatCurrency } from '../../utils/formatters';
 import toast from 'react-hot-toast';
+
+// ============================================
+// CUSTOM TOAST STYLES (Black & White)
+// ============================================
+const toastStyles = {
+  style: {
+    background: '#111827',
+    color: '#ffffff',
+    fontWeight: '500',
+    borderRadius: '8px',
+    padding: '12px 16px',
+    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+  },
+  duration: 2500,
+  position: 'top-center',
+};
+
+const showToast = {
+  success: (message, icon = <Check className="w-5 h-5" />) => {
+    toast.success(message, {
+      ...toastStyles,
+      icon: icon,
+    });
+  },
+  error: (message, icon = <AlertCircle className="w-5 h-5" />) => {
+    toast.error(message, {
+      ...toastStyles,
+      style: {
+        ...toastStyles.style,
+        background: '#1f2937',
+      },
+      icon: icon,
+    });
+  },
+};
 
 // ============================================
 // IMAGE GALLERY MODAL COMPONENT (Glass Effect with Swipe)
@@ -292,7 +330,6 @@ const ProductCard = ({ product, index = 0 }) => {
   const [addingToCart, setAddingToCart] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [feedback, setFeedback] = useState({ active: false, message: '' });
 
   const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
   const mainImage = primaryImage?.url || 'https://via.placeholder.com/600x600?text=Image+Not+Found';
@@ -304,30 +341,12 @@ const ProductCard = ({ product, index = 0 }) => {
   const isOutOfStock = product.productType === 'price-based' && product.stockQuantity <= 0;
   const isAskForPrice = product.productType === 'ask-for-price';
 
-  // Show feedback message (for success messages)
-  const showFeedback = (message) => {
-    setFeedback({ active: true, message });
-    setTimeout(() => {
-      setFeedback({ active: false, message: '' });
-    }, 2500);
-  };
-
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      toast.error('Please login to add items to cart', {
-        duration: 3000,
-        position: 'top-center',
-        style: {
-          background: '#ef4444',
-          color: '#fff',
-          fontWeight: '500',
-          borderRadius: '10px',
-        },
-        icon: '🔒',
-      });
+      showToast.error('Please login to add items to cart', <Lock className="w-5 h-5" />);
       return;
     }
 
@@ -337,46 +356,17 @@ const ProductCard = ({ product, index = 0 }) => {
     }
 
     if (isOutOfStock) {
-      toast.error('This item is out of stock', {
-        duration: 3000,
-        position: 'top-center',
-        style: {
-          background: '#ef4444',
-          color: '#fff',
-          fontWeight: '500',
-          borderRadius: '10px',
-        },
-        icon: '⚠️',
-      });
+      showToast.error('This item is out of stock', <Package className="w-5 h-5" />);
       return;
     }
 
     setAddingToCart(true);
     try {
       await addToCart(product._id, 1);
-      toast.success('Added to Cart!', {
-        duration: 2500,
-        position: 'top-center',
-        style: {
-          background: '#10b981',
-          color: '#fff',
-          fontWeight: '500',
-          borderRadius: '10px',
-        },
-        icon: '🛒',
-      });
+      // showToast.success('Added to Cart', <ShoppingCart className="w-5 h-5" />);
     } catch (error) {
       console.error('Error adding to cart:', error);
-      toast.error('Failed to add to cart', {
-        duration: 3000,
-        position: 'top-center',
-        style: {
-          background: '#ef4444',
-          color: '#fff',
-          fontWeight: '500',
-          borderRadius: '10px',
-        },
-      });
+      showToast.error('Failed to add to cart');
     } finally {
       setAddingToCart(false);
     }
@@ -387,17 +377,7 @@ const ProductCard = ({ product, index = 0 }) => {
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      toast.error('Please login to manage your wishlist', {
-        duration: 3000,
-        position: 'top-center',
-        style: {
-          background: '#ef4444',
-          color: '#fff',
-          fontWeight: '500',
-          borderRadius: '10px',
-        },
-        icon: '🔒',
-      });
+      showToast.error('Please login to manage wishlist', <Lock className="w-5 h-5" />);
       return;
     }
 
@@ -405,43 +385,14 @@ const ProductCard = ({ product, index = 0 }) => {
     try {
       if (isWishlisted(product._id)) {
         await removeFromWishlist(product._id);
-        toast.success('Removed from Wishlist', {
-          duration: 2500,
-          position: 'top-center',
-          style: {
-            background: '#6b7280',
-            color: '#fff',
-            fontWeight: '500',
-            borderRadius: '10px',
-          },
-          icon: '💔',
-        });
+        // Don't show toast here - context handles it
       } else {
         await addToWishlist(product._id);
-        toast.success('Added to Wishlist!', {
-          duration: 2500,
-          position: 'top-center',
-          style: {
-            background: '#ec4899',
-            color: '#fff',
-            fontWeight: '500',
-            borderRadius: '10px',
-          },
-          icon: '❤️',
-        });
+        // Don't show toast here - context handles it
       }
     } catch (error) {
       console.error('Wishlist error:', error);
-      toast.error('Failed to update wishlist', {
-        duration: 3000,
-        position: 'top-center',
-        style: {
-          background: '#ef4444',
-          color: '#fff',
-          fontWeight: '500',
-          borderRadius: '10px',
-        },
-      });
+      showToast.error('Failed to update wishlist');
     } finally {
       setAddingToWishlist(false);
     }
