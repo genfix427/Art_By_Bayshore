@@ -335,7 +335,7 @@ const ArtistSlider = ({
               <motion.h2 
                 custom={0}
                 variants={textReveal}
-                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900"
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-primary"
               >
                 {title}
               </motion.h2>
@@ -356,15 +356,15 @@ const ArtistSlider = ({
                 className="flex items-center gap-4 sm:gap-6 lg:gap-8 mt-4 sm:mt-6 ml-14 sm:ml-16 lg:ml-20"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xl sm:text-2xl font-bold text-gray-900">
+                  <span className="text-xl sm:text-2xl font-bold text-primary">
                     {artists.length}
                   </span>
-                  <span className="text-xs sm:text-sm text-gray-900/50">
+                  <span className="text-xs sm:text-sm text-accent">
                     {artists.length === 1 ? 'Artist' : 'Artists'}
                   </span>
                 </div>
                 <div className="w-px h-4 sm:h-6 bg-gray-900/10" />
-                <span className="text-xs sm:text-sm text-gray-900/50">Verified & Curated</span>
+                <span className="text-xs sm:text-sm text-accent">Verified & Curated</span>
               </motion.div>
             )}
           </motion.div>
@@ -394,7 +394,7 @@ const ArtistSlider = ({
 
               <Link to={viewAllHref} className="group">
                 <motion.div
-                  className="flex items-center gap-3 text-gray-900"
+                  className="flex items-center gap-3 text-primary"
                   whileHover={{ x: 5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >

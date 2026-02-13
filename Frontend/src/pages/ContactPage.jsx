@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import emailjs from '@emailjs/browser';
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Send, 
-  User, 
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  User,
   MessageSquare,
   Facebook,
   Instagram,
@@ -109,9 +109,9 @@ const ContactPage = () => {
 
   const lineAnimation = {
     hidden: { scaleX: 0 },
-    visible: { 
-      scaleX: 1, 
-      transition: { duration: 1, ease: "easeInOut" } 
+    visible: {
+      scaleX: 1,
+      transition: { duration: 1, ease: "easeInOut" }
     }
   };
 
@@ -211,7 +211,7 @@ const ContactPage = () => {
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
       {/* Background Pattern */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.02] pointer-events-none"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
@@ -251,9 +251,8 @@ const ContactPage = () => {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 shadow-lg ${
-              feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
-            } text-white`}
+            className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 shadow-lg ${feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
+              } text-white`}
           >
             {feedback.type === 'error' ? (
               <AlertCircle className="w-4 h-4" />
@@ -267,7 +266,7 @@ const ContactPage = () => {
 
       {/* Main Content */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
-        
+
         {/* Breadcrumb */}
         <motion.nav
           initial={{ opacity: 0, y: -10 }}
@@ -322,7 +321,7 @@ const ContactPage = () => {
             variants={itemVariants}
             className="text-gray-900/60 max-w-2xl mx-auto leading-relaxed"
           >
-            Located in The Grand Retail Plaza, Miami. Experience art in person at our 
+            Located in The Grand Retail Plaza, Miami. Experience art in person at our
             beautiful gallery space or reach out to us for any inquiries.
           </motion.p>
         </motion.div>
@@ -367,7 +366,7 @@ const ContactPage = () => {
 
         {/* Main Contact Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-          
+
           {/* Contact Form */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -445,9 +444,8 @@ const ContactPage = () => {
                         Your Name <span className="text-gray-900/30">*</span>
                       </label>
                       <div className="relative">
-                        <User className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${
-                          focused.name ? 'text-gray-900' : 'text-gray-900/30'
-                        }`} />
+                        <User className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focused.name ? 'text-gray-900' : 'text-gray-900/30'
+                          }`} />
                         <input
                           type="text"
                           name="name"
@@ -475,9 +473,8 @@ const ContactPage = () => {
                           Phone <span className="text-gray-900/20">(Optional)</span>
                         </label>
                         <div className="relative">
-                          <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${
-                            focused.phone ? 'text-gray-900' : 'text-gray-900/30'
-                          }`} />
+                          <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focused.phone ? 'text-gray-900' : 'text-gray-900/30'
+                            }`} />
                           <input
                             type="tel"
                             name="phone"
@@ -502,9 +499,8 @@ const ContactPage = () => {
                           Email <span className="text-gray-900/30">*</span>
                         </label>
                         <div className="relative">
-                          <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${
-                            focused.email ? 'text-gray-900' : 'text-gray-900/30'
-                          }`} />
+                          <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focused.email ? 'text-gray-900' : 'text-gray-900/30'
+                            }`} />
                           <input
                             type="email"
                             name="email"
@@ -656,36 +652,27 @@ const ContactPage = () => {
 
             {/* Quick Contact */}
             <div className="relative bg-gray-900 text-white p-8">
-
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-5 h-5" />
                 <h3 className="font-playfair text-xl font-bold">
-                  Need Immediate Assistance?
+                  Visiting Hours
                 </h3>
               </div>
-              
-              <p className="text-white/70 mb-6">
-                For urgent inquiries during business hours, contact us directly:
-              </p>
 
               <div className="space-y-3">
-                <motion.a
-                  href="tel:+13053713060"
-                  whileHover={{ x: 5 }}
-                  className="flex items-center gap-3 p-4 bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
-                >
-                  <Phone className="w-5 h-5" />
-                  <span className="font-medium">+1 305-371-3060</span>
-                </motion.a>
+                <div className="flex items-start gap-3 p-4 bg-white/10">
+                  <div className="flex flex-col">
+                    <span className="font-medium mb-2">Monday - Saturday</span>
+                    <span className="text-white/70">10 AM - 7 PM</span>
+                  </div>
+                </div>
 
-                <motion.a
-                  href="mailto:bayshoreart@gmail.com"
-                  whileHover={{ x: 5 }}
-                  className="flex items-center gap-3 p-4 bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
-                >
-                  <Mail className="w-5 h-5" />
-                  <span className="font-medium">bayshoreart@gmail.com</span>
-                </motion.a>
+                <div className="flex items-start gap-3 p-4 bg-white/10">
+                  <div className="flex flex-col">
+                    <span className="font-medium mb-2">Sunday</span>
+                    <span className="text-white/70">10 AM - 3 PM</span>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -727,7 +714,7 @@ const ContactPage = () => {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               title="Gallery Location"
-              className="absolute inset-0 grayscale contrast-125"
+              className="absolute inset-0"
             />
           </div>
 
@@ -774,7 +761,7 @@ const ContactPage = () => {
             >
               <FlowerDecor className="w-6 h-6 text-gray-900/20" />
             </motion.div>
-            
+
             <p className="font-playfair text-xl text-gray-900/70 italic mb-4">
               "Art enables us to find ourselves and lose ourselves at the same time."
             </p>

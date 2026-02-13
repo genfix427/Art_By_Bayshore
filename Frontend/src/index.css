@@ -4,6 +4,14 @@
 
 @import "tailwindcss";
 
+@theme {
+  --color-primary:  rgb(5 150 105);
+  --color-secondary: #2d6a4f;
+  --color-accent: #52b788;
+  --color-success: #95d5b2;
+  --color-danger: #ef4444;
+}
+
 .font-playfair {
   font-family: 'Playfair Display', serif;
 }

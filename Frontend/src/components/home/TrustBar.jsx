@@ -102,7 +102,7 @@ const TrustBar = () => {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-gray-900 font-playfair text-2xl sm:text-3xl font-light"
+            className="text-primary font-playfair text-2xl sm:text-3xl font-light"
           >
             Art collecting made simple, secure & enjoyable
           </motion.h2>
@@ -144,16 +144,16 @@ const TrustBar = () => {
                     }}
                   >
                     {/* Icon background */}
-                    <div className="absolute inset-0 bg-gray-900/5 rounded-xl group-hover:bg-gray-900/10 transition-colors" />
-                    <div className="absolute inset-1 border border-gray-300 rounded-lg group-hover:border-gray-400 transition-colors" />
-                    <item.icon className="w-6 h-6 text-gray-900 relative z-10" />
+                    <div className="absolute inset-0 rounded-xl" />
+                    <div className="absolute inset-1 border border-primary rounded-lg group-hover:border-secondary transition-colors" />
+                    <item.icon className="w-6 h-6 text-primary relative z-10" />
                   </motion.div>
                 </motion.div>
 
                 {/* Content */}
                 <div className="text-center">
                   <motion.h3 
-                    className="text-gray-900 font-medium text-base mb-2"
+                    className="text-primary font-medium text-base mb-2"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
@@ -231,7 +231,7 @@ const TrustBar = () => {
               <Sparkles className="w-4 h-4 text-gray-700" />
             </motion.div>
             <span className="text-gray-700 text-sm">
-              Trusted by over <span className="text-gray-900 font-semibold">10,000+</span> art collectors worldwide
+              Trusted by over <span className="text-primary font-semibold">10,000+</span> art collectors worldwide
             </span>
             <motion.div
               animate={{ rotate: -360 }}

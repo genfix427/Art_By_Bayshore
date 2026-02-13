@@ -218,8 +218,6 @@ const About = () => {
   const features = [
     { icon: Palette, title: 'Expert Curation', desc: 'Every piece is hand-selected by our team of art historians and curators.' },
     { icon: Shield, title: 'Authenticated Works', desc: 'Full provenance documentation and certificates of authenticity included.' },
-    { icon: Truck, title: 'White Glove Delivery', desc: 'Professional handling and climate-controlled shipping nationwide.' },
-    { icon: Clock, title: '30-Day Returns', desc: 'Not completely satisfied? Return any piece within 30 days.' },
     { icon: Users, title: 'Personal Consultation', desc: 'One-on-one guidance from our art advisors for every purchase.' }
   ];
 

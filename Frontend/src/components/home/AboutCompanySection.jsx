@@ -12,6 +12,7 @@ import {
   Sparkles,
   CheckCircle2
 } from "lucide-react";
+import HomeBanner from '../../assets/home1.jpeg'
 
 const AboutCompanySection = () => {
   const sectionRef = useRef(null);
@@ -95,7 +96,7 @@ const AboutCompanySection = () => {
           <motion.span
             custom={0}
             variants={textReveal}
-            className="inline-block text-sm font-medium tracking-[0.3em] text-gray-900 uppercase mb-6"
+            className="inline-block text-sm font-medium tracking-[0.3em] text-secondary uppercase mb-6"
           >
             About Us
           </motion.span>
@@ -103,7 +104,7 @@ const AboutCompanySection = () => {
           <motion.h2 
             custom={1}
             variants={textReveal}
-            className="font-playfair text-5xl lg:text-6xl font-bold text-gray-900 mb-6"
+            className="font-playfair text-5xl lg:text-6xl font-bold text-primary mb-6"
           >
             Where Art Meets
           </motion.h2>
@@ -111,7 +112,7 @@ const AboutCompanySection = () => {
           <motion.h2 
             custom={2}
             variants={textReveal}
-            className="font-playfair text-5xl lg:text-6xl font-bold text-gray-900 mb-8"
+            className="font-playfair text-5xl lg:text-6xl font-bold text-primary mb-8"
           >
             Passion & Purpose
           </motion.h2>
@@ -119,7 +120,7 @@ const AboutCompanySection = () => {
           <motion.p 
             custom={3}
             variants={textReveal}
-            className="text-lg text-gray-900/70 leading-relaxed"
+            className="text-lg text-gray-400 leading-relaxed"
           >
             We bridge the gap between extraordinary artists and discerning collectors, 
             creating meaningful connections through carefully curated artwork.
@@ -156,9 +157,9 @@ const AboutCompanySection = () => {
                 className="aspect-[4/5] overflow-hidden"
               >
                 <img
-                  src="https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&q=80"
+                  src={HomeBanner}
                   alt="Art Gallery"
-                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                  className="w-full h-full object-cover transition-all duration-700"
                 />
               </motion.div>
 
@@ -246,7 +247,7 @@ const AboutCompanySection = () => {
                   className="group"
                 >
                   <motion.div 
-                    className="text-3xl font-playfair font-bold text-gray-900"
+                    className="text-3xl font-playfair font-bold text-primary"
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
@@ -263,7 +264,7 @@ const AboutCompanySection = () => {
               variants={textReveal}
               className="flex flex-col sm:flex-row gap-6"
             >
-              <Link to="/store" className="group">
+              <Link to="/products" className="group">
                 <motion.div
                   className="inline-flex items-center gap-3 text-gray-900 font-medium"
                   whileHover={{ x: 5 }}
@@ -312,7 +313,7 @@ const AboutCompanySection = () => {
             <motion.h3 
               custom={0}
               variants={textReveal}
-              className="font-playfair text-4xl lg:text-5xl font-bold text-gray-900 mb-4"
+              className="font-playfair text-4xl lg:text-5xl font-bold text-primary mb-4"
             >
               Our Guiding Principles
             </motion.h3>
@@ -345,7 +346,7 @@ const AboutCompanySection = () => {
                   <value.icon className="w-5 h-5" strokeWidth={1.5} />
                 </motion.div>
 
-                <h4 className="font-playfair text-xl font-bold text-gray-900 mb-3">
+                <h4 className="font-playfair text-xl font-bold text-primary mb-3">
                   {value.title}
                 </h4>
                 

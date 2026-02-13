@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Palette, Sparkles } from "lucide-react";
+import Home2 from '../../assets/home2.jpeg'
 
 const AnimatedBanner = () => {
   return (
@@ -24,7 +25,7 @@ const AnimatedBanner = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full bg-gray-900/10 backdrop-blur-sm px-4 py-2 border border-gray-900/10"
+            className="inline-flex items-center gap-2 rounded-full bg-success backdrop-blur-sm px-4 py-2 border border-accent"
           >
             <motion.div
               animate={{ rotate: 360 }}
@@ -32,7 +33,7 @@ const AnimatedBanner = () => {
             >
               <Palette className="h-4 w-4 text-gray-900" />
             </motion.div>
-            <span className="text-sm font-medium text-gray-900">New Collection</span>
+            <span className="text-sm font-medium text-secondary">New Collection</span>
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -47,7 +48,7 @@ const AnimatedBanner = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="mt-6 text-2xl sm:text-3xl lg:text-4xl font-light text-gray-900 leading-tight"
+            className="mt-6 text-2xl sm:text-3xl lg:text-4xl font-light text-primary leading-tight"
           >
             Nature & Landscape Collection
             <span className="block text-gray-600 mt-1">— curated for calm spaces.</span>
@@ -77,7 +78,7 @@ const AnimatedBanner = () => {
               <motion.button
                 whileHover={{ scale: 1.02, x: 5 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center justify-center gap-2 bg-gray-900 px-8 py-4 font-medium text-white hover:bg-gray-800 transition-colors cursor-pointer group"
+                className="inline-flex items-center justify-center gap-2 bg-primary px-8 py-4 font-medium text-white hover:bg-gray-800 transition-colors cursor-pointer group"
               >
                 Shop the Collection 
                 <motion.span
@@ -92,7 +93,7 @@ const AnimatedBanner = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center justify-center border-2 border-gray-900/20 bg-white/50 backdrop-blur-sm px-8 py-4 font-medium text-gray-900 hover:bg-white hover:border-gray-900/40 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center border-2 border-primary bg-white/50 backdrop-blur-sm px-8 py-4 font-medium text-gray-900 hover:bg-white hover:border-gray-900/40 transition-all cursor-pointer"
               >
                 Meet the Artists
               </motion.button>
@@ -138,7 +139,7 @@ const AnimatedBanner = () => {
             <div className="relative rounded-xl border-2 border-gray-300 bg-white p-3 shadow-lg">
               <div className="relative overflow-hidden rounded-lg">
                 <motion.img
-                  src="https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=2000&q=80"
+                  src={Home2}
                   alt="Collection highlight"
                   className="h-72 lg:h-80 w-full object-cover"
                   animate={{ scale: [1, 1.05, 1] }}

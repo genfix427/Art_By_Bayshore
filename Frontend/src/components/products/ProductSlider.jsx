@@ -371,7 +371,7 @@ const ProductSlider = ({
               <motion.h2 
                 custom={0}
                 variants={textReveal}
-                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900"
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-primary"
               >
                 {title}
               </motion.h2>
@@ -382,7 +382,7 @@ const ProductSlider = ({
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5, type: "spring" }}
-                className="hidden sm:inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold"
+                className="hidden sm:inline-flex items-center gap-1 bg-gray-100 text-primary px-3 py-1 rounded-full text-xs font-semibold"
               >
                 <Sparkles className="w-3 h-3" />
                 {getBadgeText()}
@@ -405,15 +405,15 @@ const ProductSlider = ({
               >
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-gray-900/50" />
-                  <span className="text-xl sm:text-2xl font-bold text-gray-900">
+                  <span className="text-xl sm:text-2xl font-bold text-primary">
                     {products.length}
                   </span>
-                  <span className="text-xs sm:text-sm text-gray-900/50">
+                  <span className="text-xs sm:text-sm text-accent">
                     {products.length === 1 ? 'Artwork' : 'Artworks'}
                   </span>
                 </div>
                 <div className="w-px h-4 sm:h-6 bg-gray-900/10" />
-                <span className="text-xs sm:text-sm text-gray-900/50">Handpicked Collection</span>
+                <span className="text-xs sm:text-sm text-accent">Handpicked Collection</span>
               </motion.div>
             )}
           </motion.div>
@@ -443,7 +443,7 @@ const ProductSlider = ({
 
               <Link to={viewAllHref} className="group">
                 <motion.div
-                  className="flex items-center gap-3 text-gray-900"
+                  className="flex items-center gap-3 text-primary"
                   whileHover={{ x: 5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
