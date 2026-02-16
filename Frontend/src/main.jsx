@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronUp } from 'lucide-react';
 import App from './App';
 import './index.css';
+import './assets/fonts/fonts.css'
 
 // Scroll to top on route change component
 const ScrollToTopOnRouteChange = () => {

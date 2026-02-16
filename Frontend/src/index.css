@@ -1,19 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Lobster&family=Manrope:wght@200..800&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&family=Parisienne&family=Playwrite+AU+TAS+Guides&family=Roboto+Slab:wght@100..900&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Manrope:wght@200..800&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&family=Parisienne&family=Playwrite+AU+TAS+Guides&family=Roboto+Slab:wght@100..900&display=swap'); */
 /* In your main index.css or equivalent global stylesheet */
-@import url('https://fonts.googleapis.com/css2?family=Parisienne&family=Playfair+Display:wght@400;700&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Parisienne&family=Playfair+Display:wght@400;700&display=swap'); */
 
 @import "tailwindcss";
 
 @theme {
-  --color-primary:  rgb(5 150 105);
+  --color-primary:  #4169E1;
   --color-secondary: #2d6a4f;
   --color-accent: #52b788;
   --color-success: #95d5b2;
   --color-danger: #ef4444;
 }
 
+@font-face {
+    /* font-family: 'Times New Roman', Times, serif; */
+    font-family: 'Times New Roman', Times, serif;
+    src: url("./assets//fonts/Times\ New\ Roman.ttf");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 .font-playfair {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.body{
+  font-family: 'Times New Roman', Times, serif;
 }
 
 /* Add to your global CSS if not using Tailwind plugin */
