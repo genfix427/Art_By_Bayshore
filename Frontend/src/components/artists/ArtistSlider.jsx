@@ -39,7 +39,7 @@ const FlowerPetal = ({ delay, duration, startX, startY, size, rotation }) => (
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      className="text-gray-900/10"
+      className="text-primary/10"
     >
       <path d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z" fill="currentColor" />
       <path d="M12 12C12 12 16 10 18 10C20 10 22 12 22 12C22 12 20 14 18 14C16 14 12 12 12 12Z" fill="currentColor" />
@@ -67,7 +67,7 @@ const FloatingLeaf = ({ delay, startX }) => (
       ease: "linear",
     }}
   >
-    <svg width="20" height="20" viewBox="0 0 24 24" className="text-gray-900/10">
+    <svg width="20" height="20" viewBox="0 0 24 24" className="text-primary/10">
       <path d="M17 8C17 8 12 2 6 2C6 8 12 14 12 14C12 14 18 8 17 8Z" fill="currentColor" />
       <path d="M12 14L12 22" stroke="currentColor" strokeWidth="1" />
     </svg>
@@ -83,26 +83,26 @@ const ArtistCardSkeleton = ({ index }) => (
     transition={{ duration: 0.5, delay: index * 0.1 }}
     className="w-full"
   >
-    <div className="relative overflow-hidden border border-gray-900/10 bg-white mb-6">
-      <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
+    <div className="relative overflow-hidden border border-black/10 bg-white mb-6">
+      <div className="aspect-[4/3] relative overflow-hidden bg-accent/20">
         <motion.div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
           animate={{ x: ['-100%', '100%'] }}
           transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: index * 0.2 }}
         />
       </div>
-      <div className="absolute top-3 left-3 w-4 h-4 bg-gray-100" />
-      <div className="absolute top-3 right-3 w-4 h-4 bg-gray-100" />
-      <div className="absolute bottom-3 left-3 w-4 h-4 bg-gray-100" />
-      <div className="absolute bottom-3 right-3 w-4 h-4 bg-gray-100" />
+      <div className="absolute top-3 left-3 w-4 h-4 bg-accent/20" />
+      <div className="absolute top-3 right-3 w-4 h-4 bg-accent/20" />
+      <div className="absolute bottom-3 left-3 w-4 h-4 bg-accent/20" />
+      <div className="absolute bottom-3 right-3 w-4 h-4 bg-accent/20" />
     </div>
     <div className="text-center space-y-3">
-      <div className="w-8 h-px bg-gray-200 mx-auto" />
-      <div className="h-6 bg-gray-100 w-32 mx-auto rounded" />
-      <div className="h-4 bg-gray-100 w-24 mx-auto rounded" />
+      <div className="w-8 h-px bg-black/10 mx-auto" />
+      <div className="h-6 bg-accent/20 w-32 mx-auto rounded" />
+      <div className="h-4 bg-accent/20 w-24 mx-auto rounded" />
       <div className="flex justify-center gap-2">
-        <div className="h-6 bg-gray-100 w-16 rounded-full" />
-        <div className="h-6 bg-gray-100 w-20 rounded-full" />
+        <div className="h-6 bg-accent/20 w-16 rounded-full" />
+        <div className="h-6 bg-accent/20 w-20 rounded-full" />
       </div>
     </div>
   </motion.div>
@@ -119,17 +119,17 @@ const EmptyState = () => (
     <motion.div
       animate={{ rotate: 360 }}
       transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-      className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 border border-gray-900/10 mb-6"
+      className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 border border-primary/20 mb-6"
     >
-      <Users className="text-gray-900/40 w-6 h-6 sm:w-8 sm:h-8" strokeWidth={1} />
+      <Users className="text-primary/40 w-6 h-6 sm:w-8 sm:h-8" strokeWidth={1} />
     </motion.div>
-    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No Artists Yet</h3>
-    <p className="text-gray-900/50 text-sm sm:text-base">Amazing artists are coming soon.</p>
+    <h3 className="text-lg sm:text-xl font-bold text-secondary mb-2">No Artists Yet</h3>
+    <p className="text-black/60 text-sm sm:text-base">Amazing artists are coming soon.</p>
     <motion.div
       initial={{ scaleX: 0 }}
       animate={{ scaleX: 1 }}
       transition={{ duration: 1, delay: 0.5 }}
-      className="w-16 h-px bg-gray-900/20 mx-auto mt-6"
+      className="w-16 h-px bg-primary/30 mx-auto mt-6"
     />
   </motion.div>
 );
@@ -154,7 +154,6 @@ const ArtistSlider = ({
   const containerRef = useRef(null);
   const autoPlayRef = useRef(null);
 
-  // Calculate slides per view based on screen size
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
@@ -243,7 +242,6 @@ const ArtistSlider = ({
     return artists.slice(startIndex, startIndex + slidesPerView);
   };
 
-  // Decorative elements
   const petals = Array.from({ length: 8 }).map((_, i) => ({
     delay: i * 2,
     duration: 12 + Math.random() * 5,
@@ -257,6 +255,28 @@ const ArtistSlider = ({
     delay: i * 3,
     startX: 10 + i * 15,
   }));
+
+  // Background animation data
+  const floatingDots = [
+    { top: "8%", left: "6%", size: 5, duration: 10, delay: 0 },
+    { top: "18%", left: "88%", size: 4, duration: 12, delay: 1.5 },
+    { top: "35%", left: "4%", size: 7, duration: 9, delay: 0.8 },
+    { top: "48%", left: "94%", size: 5, duration: 11, delay: 2.2 },
+    { top: "62%", left: "2%", size: 6, duration: 10, delay: 1.4 },
+    { top: "75%", left: "80%", size: 4, duration: 13, delay: 3.2 },
+  ];
+
+  const pulsingRings = [
+    { top: "12%", right: "5%", size: 50, duration: 11, delay: 0 },
+    { top: "55%", left: "3%", size: 40, duration: 13, delay: 2.5 },
+    { top: "82%", right: "12%", size: 45, duration: 10, delay: 1 },
+  ];
+
+  const floatingLines = [
+    { top: "22%", left: "92%", width: 35, duration: 15, delay: 0.5 },
+    { top: "50%", left: "3%", width: 28, duration: 17, delay: 1.2 },
+    { top: "78%", left: "65%", width: 32, duration: 13, delay: 2.8 },
+  ];
 
   const textReveal = {
     hidden: { opacity: 0, y: 20 },
@@ -287,9 +307,82 @@ const ArtistSlider = ({
       <div 
         className="absolute inset-0 opacity-[0.02]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231E3A5F' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       />
+
+      {/* Animated Background: Floating Dots */}
+      {floatingDots.map((dot, i) => (
+        <motion.span
+          key={`bg-dot-${i}`}
+          className="absolute rounded-full bg-primary pointer-events-none"
+          style={{
+            width: dot.size,
+            height: dot.size,
+            top: dot.top,
+            left: dot.left,
+          }}
+          animate={{
+            y: [0, -25, 0],
+            opacity: [0.04, 0.1, 0.04],
+          }}
+          transition={{
+            duration: dot.duration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: dot.delay,
+          }}
+        />
+      ))}
+
+      {/* Animated Background: Pulsing Rings */}
+      {pulsingRings.map((ring, i) => (
+        <motion.span
+          key={`bg-ring-${i}`}
+          className="absolute rounded-full border border-primary pointer-events-none"
+          style={{
+            width: ring.size,
+            height: ring.size,
+            top: ring.top,
+            left: ring.left,
+            right: ring.right,
+          }}
+          animate={{
+            scale: [1, 1.4, 1],
+            opacity: [0.04, 0.09, 0.04],
+          }}
+          transition={{
+            duration: ring.duration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: ring.delay,
+          }}
+        />
+      ))}
+
+      {/* Animated Background: Floating Lines */}
+      {floatingLines.map((line, i) => (
+        <motion.span
+          key={`bg-line-${i}`}
+          className="absolute h-px bg-secondary pointer-events-none"
+          style={{
+            width: line.width,
+            top: line.top,
+            left: line.left,
+          }}
+          animate={{
+            x: [0, 20, 0],
+            opacity: [0.05, 0.12, 0.05],
+            rotate: [0, 5, 0],
+          }}
+          transition={{
+            duration: line.duration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: line.delay,
+          }}
+        />
+      ))}
 
       {/* Floating Decorations - Hidden on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
@@ -313,7 +406,7 @@ const ArtistSlider = ({
           >
             <motion.div
               variants={lineAnimation}
-              className="w-12 sm:w-16 h-px bg-gray-900 mb-6 sm:mb-8 origin-left"
+              className="w-12 sm:w-16 h-px bg-primary mb-6 sm:mb-8 origin-left"
             />
 
             <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
@@ -322,13 +415,13 @@ const ArtistSlider = ({
                 whileInView={{ scale: 1, rotate: 0 }}
                 viewport={{ once: true }}
                 transition={{ type: "spring", duration: 1 }}
-                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/10 flex items-center justify-center flex-shrink-0"
+                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-primary/20 flex items-center justify-center flex-shrink-0"
               >
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                 >
-                  <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-900" strokeWidth={1.5} />
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-primary" strokeWidth={1.5} />
                 </motion.div>
               </motion.div>
 
@@ -344,7 +437,7 @@ const ArtistSlider = ({
             <motion.p 
               custom={1}
               variants={textReveal}
-              className="text-gray-900/60 text-sm sm:text-base lg:text-lg ml-14 sm:ml-16 lg:ml-20"
+              className="text-black/70 text-sm sm:text-base lg:text-lg ml-14 sm:ml-16 lg:ml-20"
             >
               {subtitle}
             </motion.p>
@@ -359,12 +452,12 @@ const ArtistSlider = ({
                   <span className="text-xl sm:text-2xl font-bold text-primary">
                     {artists.length}
                   </span>
-                  <span className="text-xs sm:text-sm text-accent">
+                  <span className="text-xs sm:text-sm text-black/60">
                     {artists.length === 1 ? 'Artist' : 'Artists'}
                   </span>
                 </div>
-                <div className="w-px h-4 sm:h-6 bg-gray-900/10" />
-                <span className="text-xs sm:text-sm text-accent">Verified & Curated</span>
+                <div className="w-px h-4 sm:h-6 bg-black/10" />
+                <span className="text-xs sm:text-sm text-black/60">Verified & Curated</span>
               </motion.div>
             )}
           </motion.div>
@@ -381,13 +474,13 @@ const ArtistSlider = ({
               {totalSlides > 1 && (
                 <button
                   onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-                  className="p-2 border border-gray-900/20 hover:border-gray-900 transition-colors"
+                  className="p-2 border border-black/20 hover:border-primary hover:text-primary transition-colors"
                   title={isAutoPlaying ? 'Pause' : 'Play'}
                 >
                   {isAutoPlaying ? (
-                    <Pause className="w-4 h-4 text-gray-900" />
+                    <Pause className="w-4 h-4 text-black" />
                   ) : (
-                    <Play className="w-4 h-4 text-gray-900" />
+                    <Play className="w-4 h-4 text-black" />
                   )}
                 </button>
               )}
@@ -401,7 +494,7 @@ const ArtistSlider = ({
                   <span className="relative text-base lg:text-lg font-medium">
                     View All Artists
                     <motion.span
-                      className="absolute bottom-0 left-0 w-full h-px bg-gray-900 origin-left"
+                      className="absolute bottom-0 left-0 w-full h-px bg-primary origin-left"
                       initial={{ scaleX: 0 }}
                       whileHover={{ scaleX: 1 }}
                       transition={{ duration: 0.3 }}
@@ -416,7 +509,7 @@ const ArtistSlider = ({
 
         {/* Carousel */}
         <div className="relative">
-          {/* Navigation Arrows - Hidden on small screens */}
+          {/* Navigation Arrows */}
           {!loading && artists.length > slidesPerView && !isMobile && (
             <>
               <motion.button
@@ -427,8 +520,8 @@ const ArtistSlider = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/20 bg-white flex items-center justify-center shadow-lg hover:border-gray-900 hover:bg-gray-900 transition-all duration-300 group-hover:shadow-xl cursor-pointer">
-                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 group-hover:text-white transition-colors" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-black/20 bg-white flex items-center justify-center shadow-lg hover:border-primary hover:bg-primary transition-all duration-300 group-hover:shadow-xl cursor-pointer">
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-black group-hover:text-white transition-colors" />
                 </div>
               </motion.button>
 
@@ -440,8 +533,8 @@ const ArtistSlider = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/20 bg-white flex items-center justify-center shadow-lg hover:border-gray-900 hover:bg-gray-900 transition-all duration-300 group-hover:shadow-xl cursor-pointer">
-                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 group-hover:text-white transition-colors" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-black/20 bg-white flex items-center justify-center shadow-lg hover:border-primary hover:bg-primary transition-all duration-300 group-hover:shadow-xl cursor-pointer">
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-black group-hover:text-white transition-colors" />
                 </div>
               </motion.button>
             </>
@@ -510,15 +603,15 @@ const ArtistSlider = ({
                     <motion.div
                       className={`h-1.5 rounded-full transition-all duration-300 ${
                         currentSlide === index 
-                          ? 'w-10 bg-gray-900' 
-                          : 'w-5 bg-gray-300 hover:bg-gray-400'
+                          ? 'w-10 bg-primary' 
+                          : 'w-5 bg-accent hover:bg-primary/40'
                       }`}
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.9 }}
                     />
                     {currentSlide === index && isAutoPlaying && (
                       <motion.div
-                        className="absolute top-0 left-0 h-1.5 bg-gray-600 rounded-full"
+                        className="absolute top-0 left-0 h-1.5 bg-secondary rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: '100%' }}
                         transition={{ 
@@ -543,8 +636,8 @@ const ArtistSlider = ({
                     <motion.div
                       className={`w-3 h-3 rounded-full transition-all duration-300 ${
                         currentSlide === index 
-                          ? 'bg-gray-900 scale-125' 
-                          : 'bg-gray-300'
+                          ? 'bg-primary scale-125' 
+                          : 'bg-accent'
                       }`}
                       whileTap={{ scale: 0.9 }}
                     />
@@ -553,8 +646,8 @@ const ArtistSlider = ({
               </div>
 
               {/* Slide Counter */}
-              <div className="hidden sm:flex items-center gap-2 ml-4 text-sm text-gray-500">
-                <span className="font-bold text-gray-900">{currentSlide + 1}</span>
+              <div className="hidden sm:flex items-center gap-2 ml-4 text-sm text-black/50">
+                <span className="font-bold text-primary">{currentSlide + 1}</span>
                 <span>/</span>
                 <span>{totalSlides}</span>
               </div>
@@ -570,7 +663,7 @@ const ArtistSlider = ({
               transition={{ delay: 1 }}
             >
               <motion.div
-                className="flex items-center gap-1 text-gray-400 text-xs"
+                className="flex items-center gap-1 text-black/40 text-xs"
                 animate={{ x: [0, 5, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
@@ -593,7 +686,7 @@ const ArtistSlider = ({
           >
             <Link 
               to={viewAllHref} 
-              className="group inline-flex items-center gap-3 text-gray-900 px-6 py-3 border border-gray-900/20 hover:border-gray-900 hover:bg-gray-900 hover:text-white transition-all duration-300"
+              className="group inline-flex items-center gap-3 text-black px-6 py-3 border border-black/20 hover:border-primary hover:bg-primary hover:text-white transition-all duration-300"
             >
               <span className="font-medium text-sm sm:text-base">View All Artists</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -607,7 +700,7 @@ const ArtistSlider = ({
           whileInView={{ scaleX: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 1.5, delay: 0.5 }}
-          className="w-full h-px bg-gray-900/5 mt-12 sm:mt-16 lg:mt-20 origin-center"
+          className="w-full h-px bg-black/5 mt-12 sm:mt-16 lg:mt-20 origin-center"
         />
       </div>
     </motion.section>

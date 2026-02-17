@@ -78,7 +78,7 @@ const AnimatedBanner = () => {
               <motion.button
                 whileHover={{ scale: 1.02, x: 5 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center justify-center gap-2 bg-primary px-8 py-4 font-medium text-white hover:bg-gray-800 transition-colors cursor-pointer group"
+                className="inline-flex items-center justify-center gap-2 bg-primary px-8 py-4 font-medium text-white hover:bg-secondary transition-colors cursor-pointer group"
               >
                 Shop the Collection 
                 <motion.span
@@ -93,7 +93,7 @@ const AnimatedBanner = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center justify-center border-2 border-primary bg-white/50 backdrop-blur-sm px-8 py-4 font-medium text-gray-900 hover:bg-white hover:border-gray-900/40 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center border-2 border-primary bg-white/50 backdrop-blur-sm px-8 py-4 font-medium text-gray-900 hover:bg-white hover:border-secondary transition-all cursor-pointer"
               >
                 Meet the Artists
               </motion.button>
@@ -109,17 +109,17 @@ const AnimatedBanner = () => {
             className="mt-8 flex items-center gap-8"
           >
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-semibold text-gray-900">50+</span>
+              <span className="text-2xl font-semibold text-primary">50+</span>
               <span className="text-sm text-gray-600">New Works</span>
             </div>
             <div className="w-px h-8 bg-gray-300" />
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-semibold text-gray-900">10+</span>
+              <span className="text-2xl font-semibold text-primary">10+</span>
               <span className="text-sm text-gray-600">Artists</span>
             </div>
             <div className="w-px h-8 bg-gray-300 hidden sm:block" />
             <div className="hidden sm:flex items-center gap-2">
-              <span className="text-2xl font-semibold text-gray-900">Limited</span>
+              <span className="text-2xl font-semibold text-primary">Limited</span>
               <span className="text-sm text-gray-600">Edition</span>
             </div>
           </motion.div>

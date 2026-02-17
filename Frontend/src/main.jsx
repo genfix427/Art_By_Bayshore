@@ -114,7 +114,7 @@ const ScrollToTopButton = () => {
           </svg>
 
           {/* Button Background */}
-          <div className="relative w-14 h-14 bg-white border border-gray-900/20 flex items-center justify-center shadow-lg group-hover:border-gray-900 group-hover:bg-gray-900 transition-all duration-300">
+          <div className="relative w-14 h-14 bg-white border border-gray-900/20 flex items-center justify-center shadow-lg group-hover:border-secondary group-hover:bg-primary transition-all duration-300">
             {/* Animated Icon */}
             <AnimatePresence mode="wait">
               {isHovered ? (

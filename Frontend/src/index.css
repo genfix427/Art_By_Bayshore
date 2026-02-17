@@ -5,11 +5,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary:  #4169E1;
-  --color-secondary: #2d6a4f;
-  --color-accent: #52b788;
-  --color-success: #95d5b2;
-  --color-danger: #ef4444;
+  --color-primary: #4169E1;    /* Royal Blue */
+  --color-secondary: #1E3A5F;  /* Deep Navy */
+  --color-accent: #B0C4DE;     /* Light Steel Blue */
+  --color-black: #111111;
+  --color-white: #FFFFFF;
 }
 
 @font-face {

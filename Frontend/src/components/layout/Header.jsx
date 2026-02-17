@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext'; // Use this for cart count
+import { useCart } from '../../context/CartContext';
 import {
   ShoppingCart,
   Heart,
@@ -15,6 +15,15 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CompanyLogo from '../../assets/ABBS_LOGO_O.png';
+
+// Theme Colors
+const theme = {
+  primary: '#4169E1',    // Royal Blue
+  secondary: '#1E3A5F',  // Deep Navy
+  accent: '#B0C4DE',     // Light Steel Blue
+  black: '#111111',
+  white: '#FFFFFF',
+};
 
 // Custom hook (no changes)
 const useClickOutside = (ref, handler) => {
@@ -35,9 +44,8 @@ const useClickOutside = (ref, handler) => {
 };
 
 const Header = () => {
-  // Use `wishlistCount` from auth, but `cartItemsCount` from useCart
   const { isAuthenticated, user, logout, wishlistCount } = useAuth();
-  const { cartItemsCount } = useCart(); // This is the source of truth for cart
+  const { cartItemsCount } = useCart();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
@@ -46,7 +54,6 @@ const Header = () => {
 
   useClickOutside(avatarMenuRef, () => setIsAvatarMenuOpen(false));
 
-  // Close menus on navigation
   useEffect(() => {
     if (isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
@@ -56,7 +63,6 @@ const Header = () => {
     }
   }, [navigate]);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -85,7 +91,13 @@ const Header = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-lg border-b border-neutral-200 shadow-sm font-playfair">
+      <header 
+        className="sticky top-0 z-50 w-full backdrop-blur-lg border-b shadow-sm font-playfair"
+        style={{ 
+          backgroundColor: `${theme.white}f0`,
+          borderColor: `${theme.accent}50`
+        }}
+      >
         <nav className="max-w-7xl !mx-auto !px-4 sm:!px-6 lg:!px-8">
           <div className="flex justify-between items-center h-20">
 
@@ -96,8 +108,7 @@ const Header = () => {
                 className="flex items-center !space-x-2 group"
                 title="ArtByBayshore Home"
               >
-                {/*  */}
-                <span className="font-parisienne text-4xl font-bold text-gray-700 group-hover:opacity-80 transition-opacity">
+                <span className="font-parisienne text-4xl font-bold group-hover:opacity-80 transition-opacity">
                   <img src={CompanyLogo} alt="ArtByBayshore Logo" className="h-16 w-auto" />
                 </span>
               </Link>
@@ -111,18 +122,23 @@ const Header = () => {
                   to={link.href}
                   end={link.end}
                   className={({ isActive }) =>
-                    `relative !py-2 text-base font-medium transition-all duration-200 ${isActive
-                      ? 'text-gray-800'
-                      : 'text-gray-600 hover:text-gray-900'
-                    }`
+                    `relative !py-2 text-base font-medium transition-all duration-200`
                   }
+                  style={({ isActive }) => ({
+                    color: isActive ? theme.primary : theme.secondary
+                  })}
                 >
                   {({ isActive }) => (
                     <>
-                      <span className="relative z-10">{link.name}</span>
+                      <span 
+                        className="relative z-10 hover:opacity-80 transition-opacity"
+                      >
+                        {link.name}
+                      </span>
                       {isActive && (
                         <motion.div
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-700 rounded-full"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                          style={{ backgroundColor: theme.primary }}
                           layoutId="activeNav"
                           transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
@@ -139,18 +155,22 @@ const Header = () => {
               {/* Wishlist Icon */}
               <Link
                 to="/wishlist"
-                className="relative !p-2 text-gray-600 hover:text-red-500 transition-all duration-200 hover:scale-110 group"
+                className="relative !p-2 transition-all duration-200 hover:scale-110 group"
+                style={{ color: theme.secondary }}
                 aria-label="Wishlist"
+                onMouseEnter={(e) => e.currentTarget.style.color = '#EF4444'}
+                onMouseLeave={(e) => e.currentTarget.style.color = theme.secondary}
               >
                 <Heart
                   size={24}
-                  className="group-hover:fill-red-100 transition-all duration-200"
+                  className="transition-all duration-200"
                 />
                 {wishlistCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg"
+                    className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-white text-xs font-bold rounded-full shadow-lg"
+                    style={{ backgroundColor: '#EF4444' }}
                   >
                     {wishlistCount > 99 ? '99+' : wishlistCount}
                   </motion.span>
@@ -160,19 +180,22 @@ const Header = () => {
               {/* Cart Icon */}
               <Link
                 to="/cart"
-                className="relative !p-2 text-gray-600 hover:text-gray-700 transition-all duration-200 hover:scale-110 group"
+                className="relative !p-2 transition-all duration-200 hover:scale-110 group"
+                style={{ color: theme.secondary }}
                 aria-label="Cart"
+                onMouseEnter={(e) => e.currentTarget.style.color = theme.primary}
+                onMouseLeave={(e) => e.currentTarget.style.color = theme.secondary}
               >
                 <ShoppingCart
                   size={24}
                   className="transition-all duration-200"
                 />
-                {/* Use cartItemsCount from useCart */}
                 {cartItemsCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-gray-700 text-white text-xs font-bold rounded-full shadow-lg"
+                    className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-white text-xs font-bold rounded-full shadow-lg"
+                    style={{ backgroundColor: theme.primary }}
                   >
                     {cartItemsCount > 99 ? '99+' : cartItemsCount}
                   </motion.span>
@@ -185,16 +208,28 @@ const Header = () => {
                   <div className="relative" ref={avatarMenuRef}>
                     <button
                       onClick={() => setIsAvatarMenuOpen(!isAvatarMenuOpen)}
-                      className="flex items-center !space-x-2 !p-1 rounded-full hover:bg-neutral-100 transition-all duration-200 border border-transparent hover:border-neutral-200 cursor-pointer"
+                      className="flex items-center !space-x-2 !p-1 rounded-full transition-all duration-200 border border-transparent cursor-pointer"
+                      style={{ backgroundColor: 'transparent' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = `${theme.accent}30`;
+                        e.currentTarget.style.borderColor = `${theme.accent}50`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.borderColor = 'transparent';
+                      }}
                       aria-label="User menu"
                     >
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-700 text-white rounded-full font-semibold shadow-lg cursor-pointer text-lg !p-4">
+                      <div 
+                        className="flex items-center justify-center w-10 h-10 text-white rounded-full font-semibold shadow-lg cursor-pointer text-lg !p-4"
+                        style={{ backgroundColor: theme.primary }}
+                      >
                         {user?.name ? user.name[0].toUpperCase() : <User size={18} />}
                       </div>
                       <ChevronDown
                         size={18}
-                        className={`text-gray-500 transition-transform duration-200 ${isAvatarMenuOpen ? 'rotate-180' : ''
-                          }`}
+                        className={`transition-transform duration-200 ${isAvatarMenuOpen ? 'rotate-180' : ''}`}
+                        style={{ color: theme.secondary }}
                       />
                     </button>
                     <AvatarDropdown
@@ -208,13 +243,19 @@ const Header = () => {
                   <div className="flex items-center !space-x-3">
                     <Link
                       to="/login"
-                      className="!px-4 !py-2 text-base font-medium text-gray-700 hover:text-gray-700 transition-colors duration-200 cursor-pointer"
+                      className="!px-4 !py-2 text-base font-medium transition-colors duration-200 cursor-pointer"
+                      style={{ color: theme.secondary }}
+                      onMouseEnter={(e) => e.target.style.color = theme.primary}
+                      onMouseLeave={(e) => e.target.style.color = theme.secondary}
                     >
                       Sign In
                     </Link>
                     <Link
                       to="/register"
-                      className="!px-6 !py-2 text-base font-medium text-white bg-gray-700 rounded-full hover:bg-gray-800 transition-all duration-200 shadow-lg hover:shadow-gray-100 cursor-pointer"
+                      className="!px-6 !py-2 text-base font-medium text-white rounded-full transition-all duration-200 shadow-lg cursor-pointer"
+                      style={{ backgroundColor: theme.primary }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = theme.secondary}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = theme.primary}
                     >
                       Join Now
                     </Link>
@@ -224,9 +265,12 @@ const Header = () => {
 
               {/* Mobile Menu Button */}
               <button
-                className="lg:hidden !p-2 text-gray-700 hover:text-gray-700 transition-colors duration-200 cursor-pointer"
+                className="lg:hidden !p-2 transition-colors duration-200 cursor-pointer"
+                style={{ color: theme.secondary }}
                 onClick={() => setIsMobileMenuOpen(true)}
                 aria-label="Toggle mobile menu"
+                onMouseEnter={(e) => e.target.style.color = theme.primary}
+                onMouseLeave={(e) => e.target.style.color = theme.secondary}
               >
                 <Menu size={26} />
               </button>
@@ -241,7 +285,7 @@ const Header = () => {
         navLinks={navLinks}
         isAuthenticated={isAuthenticated}
         user={user}
-        cartCount={cartItemsCount} // Pass the number from useCart
+        cartCount={cartItemsCount}
         wishlistCount={wishlistCount}
         onLogout={handleLogout}
         onClose={() => setIsMobileMenuOpen(false)}
@@ -250,7 +294,7 @@ const Header = () => {
   );
 };
 
-// Avatar Dropdown Component (Re-themed)
+// Avatar Dropdown Component
 const AvatarDropdown = ({ isOpen, user, onLogout, onClose }) => (
   <AnimatePresence>
     {isOpen && (
@@ -259,16 +303,39 @@ const AvatarDropdown = ({ isOpen, user, onLogout, onClose }) => (
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.95 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="absolute right-0 top-14 w-72 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+        className="absolute right-0 top-14 w-72 rounded-2xl shadow-xl overflow-hidden border"
+        style={{ 
+          backgroundColor: theme.white,
+          borderColor: `${theme.accent}50`
+        }}
       >
-        <div className="!p-6 bg-gray-50 border-b border-gray-100">
+        <div 
+          className="!p-6 border-b"
+          style={{ 
+            backgroundColor: `${theme.accent}20`,
+            borderColor: `${theme.accent}40`
+          }}
+        >
           <div className="flex items-center !space-x-4">
-            <div className="flex items-center justify-center w-14 h-14 bg-gray-700 text-white rounded-2xl font-semibold text-xl shadow-lg">
+            <div 
+              className="flex items-center justify-center w-14 h-14 text-white rounded-2xl font-semibold text-xl shadow-lg"
+              style={{ backgroundColor: theme.primary }}
+            >
               {user?.name ? user.name[0].toUpperCase() : <User size={20} />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900 text-lg truncate">{user?.name}</p>
-              <p className="text-sm text-gray-500 truncate !mt-1">{user?.email}</p>
+              <p 
+                className="font-bold text-lg truncate"
+                style={{ color: theme.secondary }}
+              >
+                {user?.name}
+              </p>
+              <p 
+                className="text-sm truncate !mt-1"
+                style={{ color: `${theme.secondary}99` }}
+              >
+                {user?.email}
+              </p>
             </div>
           </div>
         </div>
@@ -276,25 +343,45 @@ const AvatarDropdown = ({ isOpen, user, onLogout, onClose }) => (
           <Link
             to="/profile"
             onClick={onClose}
-            className="flex items-center w-full !px-4 !py-3 text-gray-700 hover:bg-gray-50 rounded-xl transition-all duration-200 group"
+            className="flex items-center w-full !px-4 !py-3 rounded-xl transition-all duration-200 group"
+            style={{ color: theme.secondary }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${theme.accent}30`}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
-            <User size={18} className="!mr-3 text-gray-400 group-hover:text-gray-700" />
+            <User 
+              size={18} 
+              className="!mr-3 transition-colors"
+              style={{ color: `${theme.primary}80` }}
+            />
             <span className="font-medium">My Profile</span>
           </Link>
 
           <Link
             to="/orders"
             onClick={onClose}
-            className="flex items-center w-full !px-4 !py-3 text-gray-700 hover:bg-gray-50 rounded-xl transition-all duration-200 group"
+            className="flex items-center w-full !px-4 !py-3 rounded-xl transition-all duration-200 group"
+            style={{ color: theme.secondary }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${theme.accent}30`}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
-            <Package size={18} className="!mr-3 text-gray-400 group-hover:text-gray-700" />
+            <Package 
+              size={18} 
+              className="!mr-3 transition-colors"
+              style={{ color: `${theme.primary}80` }}
+            />
             <span className="font-medium">My Orders</span>
           </Link>
         </div>
-        <div className="border-t border-neutral-100 !p-2">
+        <div 
+          className="border-t !p-2"
+          style={{ borderColor: `${theme.accent}40` }}
+        >
           <button
             onClick={onLogout}
-            className="flex items-center w-full !px-4 !py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 group cursor-pointer"
+            className="flex items-center w-full !px-4 !py-3 rounded-xl transition-all duration-200 group cursor-pointer"
+            style={{ color: '#EF4444' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             <LogOut size={18} className="!mr-3" />
             <span className="font-medium">Logout</span>
@@ -305,7 +392,7 @@ const AvatarDropdown = ({ isOpen, user, onLogout, onClose }) => (
   </AnimatePresence>
 );
 
-// Mobile Menu Component (Redesigned as a Slide-in Panel)
+// Mobile Menu Component
 const MobileMenu = ({
   isOpen,
   navLinks,
@@ -321,7 +408,8 @@ const MobileMenu = ({
       <>
         {/* Backdrop */}
         <motion.div
-          className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+          className="fixed inset-0 z-50 lg:hidden"
+          style={{ backgroundColor: `${theme.black}80` }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -331,17 +419,35 @@ const MobileMenu = ({
 
         {/* Panel */}
         <motion.div
-          className="fixed inset-y-0 right-0 w-80 max-w-[calc(100%-4rem)] bg-white z-50 lg:hidden flex flex-col"
+          className="fixed inset-y-0 right-0 w-80 max-w-[calc(100%-4rem)] z-50 lg:hidden flex flex-col"
+          style={{ backgroundColor: theme.white }}
           initial={{ x: '100%' }}
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="flex items-center justify-between !p-6 border-b border-neutral-200">
-            <span className="font-parisienne text-2xl font-bold text-gray-700">Menu</span>
+          <div 
+            className="flex items-center justify-between !p-6 border-b"
+            style={{ borderColor: `${theme.accent}50` }}
+          >
+            <span 
+              className="font-parisienne text-2xl font-bold"
+              style={{ color: theme.primary }}
+            >
+              Menu
+            </span>
             <button
               onClick={onClose}
-              className="!p-2 text-gray-600 hover:text-gray-900 hover:bg-neutral-100 rounded-lg"
+              className="!p-2 rounded-lg transition-colors"
+              style={{ color: theme.secondary }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${theme.accent}30`;
+                e.currentTarget.style.color = theme.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = theme.secondary;
+              }}
             >
               <X size={24} />
             </button>
@@ -355,12 +461,11 @@ const MobileMenu = ({
                 to={link.href}
                 end={link.end}
                 onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center !px-4 !py-3 text-lg font-medium rounded-xl transition-all duration-200 ${isActive
-                    ? 'bg-gray-50 text-gray-700'
-                    : 'text-gray-700 hover:bg-neutral-50'
-                  }`
-                }
+                className="flex items-center !px-4 !py-3 text-lg font-medium rounded-xl transition-all duration-200"
+                style={({ isActive }) => ({
+                  backgroundColor: isActive ? `${theme.accent}30` : 'transparent',
+                  color: isActive ? theme.primary : theme.secondary
+                })}
               >
                 {link.name}
               </NavLink>
@@ -368,16 +473,32 @@ const MobileMenu = ({
           </div>
 
           {/* Auth & Actions Section */}
-          <div className="!p-6 border-t border-neutral-200 !space-y-4">
+          <div 
+            className="!p-6 border-t !space-y-4"
+            style={{ borderColor: `${theme.accent}50` }}
+          >
             {isAuthenticated ? (
               <>
                 <div className="flex items-center !space-x-3">
-                  <div className="flex items-center justify-center w-12 h-12 bg-gray-700 text-white rounded-full font-semibold text-lg shadow-md">
+                  <div 
+                    className="flex items-center justify-center w-12 h-12 text-white rounded-full font-semibold text-lg shadow-md"
+                    style={{ backgroundColor: theme.primary }}
+                  >
                     {user?.name ? user.name[0].toUpperCase() : <User size={20} />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 truncate">{user?.name}</p>
-                    <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+                    <p 
+                      className="font-semibold truncate"
+                      style={{ color: theme.secondary }}
+                    >
+                      {user?.name}
+                    </p>
+                    <p 
+                      className="text-sm truncate"
+                      style={{ color: `${theme.secondary}80` }}
+                    >
+                      {user?.email}
+                    </p>
                   </div>
                 </div>
 
@@ -385,14 +506,26 @@ const MobileMenu = ({
                   <Link
                     to="/profile"
                     onClick={onClose}
-                    className="flex items-center justify-center gap-2 !p-3 bg-neutral-100 text-gray-700 rounded-lg hover:bg-neutral-200 transition-colors font-medium"
+                    className="flex items-center justify-center gap-2 !p-3 rounded-lg transition-colors font-medium"
+                    style={{ 
+                      backgroundColor: `${theme.accent}30`,
+                      color: theme.secondary
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${theme.accent}50`}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${theme.accent}30`}
                   >
                     <User size={18} /> Profile
                   </Link>
                   <Link
                     to="/orders"
                     onClick={onClose}
-                    className="flex items-center justify-center gap-2 !p-3 bg-neutral-100 text-gray-700 rounded-lg hover:bg-neutral-200 transition-colors font-medium"
+                    className="flex items-center justify-center gap-2 !p-3 rounded-lg transition-colors font-medium"
+                    style={{ 
+                      backgroundColor: `${theme.accent}30`,
+                      color: theme.secondary
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${theme.accent}50`}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${theme.accent}30`}
                   >
                     <Package size={18} /> Orders
                   </Link>
@@ -403,7 +536,10 @@ const MobileMenu = ({
                     onLogout();
                     onClose();
                   }}
-                  className="flex items-center justify-center w-full !px-4 !py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium"
+                  className="flex items-center justify-center w-full !px-4 !py-3 rounded-xl transition-colors font-medium"
+                  style={{ color: '#EF4444' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   <LogOut size={20} className="mr-3" />
                   Logout
@@ -414,14 +550,29 @@ const MobileMenu = ({
                 <Link
                   to="/login"
                   onClick={onClose}
-                  className="flex items-center justify-center w-full !px-4 !py-3 text-gray-700 hover:bg-neutral-50 rounded-xl border border-neutral-200 transition-colors font-medium"
+                  className="flex items-center justify-center w-full !px-4 !py-3 rounded-xl border transition-colors font-medium"
+                  style={{ 
+                    borderColor: `${theme.primary}40`,
+                    color: theme.secondary
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = `${theme.accent}20`;
+                    e.currentTarget.style.borderColor = theme.primary;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = `${theme.primary}40`;
+                  }}
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
                   onClick={onClose}
-                  className="flex items-center justify-center w-full !px-4 !py-3 text-white bg-gray-700 rounded-xl hover:bg-gray-800 transition-all shadow-lg font-medium"
+                  className="flex items-center justify-center w-full !px-4 !py-3 text-white rounded-xl transition-all shadow-lg font-medium"
+                  style={{ backgroundColor: theme.primary }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = theme.secondary}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = theme.primary}
                 >
                   Create Account
                 </Link>

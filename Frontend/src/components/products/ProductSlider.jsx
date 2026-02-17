@@ -349,7 +349,7 @@ const ProductSlider = ({
           >
             <motion.div
               variants={lineAnimation}
-              className="w-12 sm:w-16 h-px bg-gray-900 mb-6 sm:mb-8 origin-left"
+              className="w-12 sm:w-16 h-px bg-primary mb-6 sm:mb-8 origin-left"
             />
 
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
@@ -358,13 +358,13 @@ const ProductSlider = ({
                 whileInView={{ scale: 1, rotate: 0 }}
                 viewport={{ once: true }}
                 transition={{ type: "spring", duration: 1 }}
-                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/10 flex items-center justify-center flex-shrink-0"
+                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-primary flex items-center justify-center flex-shrink-0"
               >
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                 >
-                  <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-900" strokeWidth={1.5} />
+                  <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-primary" strokeWidth={1.5} />
                 </motion.div>
               </motion.div>
 
@@ -408,12 +408,12 @@ const ProductSlider = ({
                   <span className="text-xl sm:text-2xl font-bold text-primary">
                     {products.length}
                   </span>
-                  <span className="text-xs sm:text-sm text-accent">
+                  <span className="text-xs sm:text-sm text-gray-800">
                     {products.length === 1 ? 'Artwork' : 'Artworks'}
                   </span>
                 </div>
                 <div className="w-px h-4 sm:h-6 bg-gray-900/10" />
-                <span className="text-xs sm:text-sm text-accent">Handpicked Collection</span>
+                <span className="text-xs sm:text-sm text-gray-800">Handpicked Collection</span>
               </motion.div>
             )}
           </motion.div>
@@ -476,7 +476,7 @@ const ProductSlider = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/20 bg-white flex items-center justify-center shadow-lg hover:border-gray-900 hover:bg-gray-900 transition-all duration-300 group-hover:shadow-xl cursor-pointer">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/20 bg-white flex items-center justify-center shadow-lg hover:border-gray-900 hover:bg-primary transition-all duration-300 group-hover:shadow-xl cursor-pointer">
                   <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 group-hover:text-white transition-colors" />
                 </div>
               </motion.button>
@@ -489,7 +489,7 @@ const ProductSlider = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/20 bg-white flex items-center justify-center shadow-lg hover:border-gray-900 hover:bg-gray-900 transition-all duration-300 group-hover:shadow-xl cursor-pointer">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 border border-gray-900/20 bg-white flex items-center justify-center shadow-lg hover:border-gray-900 hover:bg-primary transition-all duration-300 group-hover:shadow-xl cursor-pointer">
                   <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 group-hover:text-white transition-colors" />
                 </div>
               </motion.button>
@@ -557,17 +557,17 @@ const ProductSlider = ({
                     aria-label={`Go to slide ${index + 1}`}
                   >
                     <motion.div
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                      className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                         currentSlide === index 
-                          ? 'w-10 bg-gray-900' 
-                          : 'w-5 bg-gray-300 hover:bg-gray-400'
+                          ? 'w-10 bg-secondary' 
+                          : 'w-5 bg-accent hover:bg-gray-300'
                       }`}
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.9 }}
                     />
                     {currentSlide === index && isAutoPlaying && (
                       <motion.div
-                        className="absolute top-0 left-0 h-1.5 bg-emerald-600 rounded-full"
+                        className="absolute top-0 left-0 h-1.5 bg-primary rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: '100%' }}
                         transition={{ 
@@ -603,7 +603,7 @@ const ProductSlider = ({
 
               {/* Slide Counter */}
               <div className="hidden sm:flex items-center gap-2 ml-4 text-sm text-gray-500">
-                <span className="font-bold text-gray-900">{currentSlide + 1}</span>
+                <span className="font-bold text-primary">{currentSlide + 1}</span>
                 <span>/</span>
                 <span>{totalSlides}</span>
               </div>
@@ -642,7 +642,7 @@ const ProductSlider = ({
           >
             <Link 
               to={viewAllHref} 
-              className="group inline-flex items-center gap-3 text-gray-900 px-6 py-3 border border-gray-900/20 hover:border-gray-900 hover:bg-gray-900 hover:text-white transition-all duration-300"
+              className="group inline-flex items-center gap-3 text-gray-900 px-6 py-3 border border-primary hover:border-secondary hover:bg-primary hover:text-white transition-all duration-300"
             >
               <span className="font-medium text-sm sm:text-base">View All Artworks</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

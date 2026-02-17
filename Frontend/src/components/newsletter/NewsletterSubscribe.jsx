@@ -156,7 +156,7 @@ const NewsletterSubscribe = ({
 
           <motion.h3
             variants={itemVariants}
-            className="font-playfair text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+            className="font-playfair text-3xl md:text-4xl font-bold text-primary mb-4"
           >
             Join Our Art Community
           </motion.h3>
@@ -179,7 +179,7 @@ const NewsletterSubscribe = ({
       >
         <div className="flex-1 relative group">
           <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
-            focused ? 'text-gray-900' : 'text-gray-900/30'
+            focused ? 'text-primary' : 'text-gray-900/30'
           }`} />
           <input
             type="email"
@@ -190,7 +190,7 @@ const NewsletterSubscribe = ({
             onBlur={() => setFocused(false)}
             required
             disabled={loading || subscribed}
-            className="w-full pl-12 pr-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-all duration-300 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full pl-12 pr-4 py-4 border border-gray-900/30 focus:border-primary outline-none transition-all duration-300 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <motion.div
             className="absolute bottom-0 left-0 h-px bg-gray-900"
@@ -206,7 +206,7 @@ const NewsletterSubscribe = ({
           disabled={loading || subscribed || !email}
           whileHover={{ scale: loading || subscribed ? 1 : 1.02 }}
           whileTap={{ scale: loading || subscribed ? 1 : 0.98 }}
-          className="px-8 py-4 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer min-w-[160px]"
+          className="px-8 py-4 bg-primary text-white font-medium hover:bg-secondary transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer min-w-[160px]"
         >
           <AnimatePresence mode="wait">
             {subscribed ? (

@@ -246,7 +246,7 @@ const VirtualGallery = () => {
 
           {/* Badge */}
           <motion.div variants={itemVariants} className="mb-6">
-            <span className="inline-flex items-center gap-2 px-4 py-2 border border-gray-900 text-gray-900 text-sm font-medium">
+            <span className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary text-sm font-medium">
               <Zap className="w-4 h-4" />
               <span className="tracking-wider">Art By Bayshore</span>
             </span>
@@ -255,14 +255,14 @@ const VirtualGallery = () => {
           {/* Main Heading */}
           <motion.h1 
             variants={itemVariants}
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight"
+            className="text-5xl sm:text-6xl lg:text-7xl font-bold text-primary mb-6 leading-tight"
           >
             Virtual Gallery
             <br />
             <span className="relative inline-block mt-2">
               Coming Soon
               <motion.div
-                className="absolute -bottom-2 left-0 w-full h-1 bg-gray-900"
+                className="absolute -bottom-2 left-0 w-full h-1 bg-primary"
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 1, delay: 1.5 }}
@@ -294,8 +294,8 @@ const VirtualGallery = () => {
                 whileHover={{ y: -5, scale: 1.02 }}
                 className="p-6 border border-gray-900/10 hover:border-gray-900 transition-all duration-300 bg-white/50 backdrop-blur-sm"
               >
-                <feature.icon className="w-8 h-8 text-gray-900 mx-auto mb-3" strokeWidth={1.5} />
-                <h3 className="font-bold text-gray-900 mb-1">{feature.label}</h3>
+                <feature.icon className="w-8 h-8 text-primary mx-auto mb-3" strokeWidth={1.5} />
+                <h3 className="font-bold text-primary mb-1">{feature.label}</h3>
                 <p className="text-sm text-gray-600">{feature.desc}</p>
               </motion.div>
             ))}
@@ -305,7 +305,7 @@ const VirtualGallery = () => {
           <motion.div variants={itemVariants}>
             <Link
               to="/"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors group"
+              className="inline-flex items-center gap-2 text-primary hover:text-secondaru transition-colors group"
             >
               <span className="relative">
                 Back to Home

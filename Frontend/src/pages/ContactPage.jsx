@@ -8,10 +8,6 @@ import {
   Send,
   User,
   MessageSquare,
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
   Check,
   Clock,
   Globe,
@@ -25,15 +21,26 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa'
+import { FaXTwitter } from "react-icons/fa6";
 
-// Floating petal component
+// Theme Colors
+const theme = {
+  primary: '#4169E1',    // Royal Blue
+  secondary: '#1E3A5F',  // Deep Navy
+  accent: '#B0C4DE',     // Light Steel Blue
+  black: '#111111',
+  white: '#FFFFFF',
+};
+
+// Floating petal component with theme colors
 const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
   <motion.div
     className="absolute pointer-events-none z-0"
     style={{ left: `${startX}%`, top: "-5%" }}
     initial={{ opacity: 0, y: -20, rotate: 0 }}
     animate={{
-      opacity: [0, 0.08, 0.08, 0],
+      opacity: [0, 0.15, 0.15, 0],
       y: [-20, 400, 800],
       rotate: [0, 180, 360],
       x: [0, 30, -20],
@@ -45,7 +52,7 @@ const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
       ease: "linear",
     }}
   >
-    <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-900">
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ color: theme.primary }}>
       <path
         d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z"
         fill="currentColor"
@@ -54,14 +61,100 @@ const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
   </motion.div>
 );
 
+// Floating geometric shapes for background
+const FloatingShape = ({ delay, startX, duration, type = 'circle' }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0"
+    style={{ left: `${startX}%`, bottom: "-5%" }}
+    initial={{ opacity: 0, y: 20, rotate: 0, scale: 0.5 }}
+    animate={{
+      opacity: [0, 0.1, 0.1, 0],
+      y: [20, -400, -800],
+      rotate: [0, 90, 180],
+      scale: [0.5, 1, 0.5],
+    }}
+    transition={{
+      duration: duration,
+      delay: delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    {type === 'circle' ? (
+      <div
+        className="w-4 h-4 rounded-full border-2"
+        style={{ borderColor: theme.accent }}
+      />
+    ) : type === 'square' ? (
+      <div
+        className="w-3 h-3 border-2 rotate-45"
+        style={{ borderColor: theme.primary }}
+      />
+    ) : (
+      <div
+        className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent"
+        style={{ borderBottomColor: theme.accent }}
+      />
+    )}
+  </motion.div>
+);
+
+// Pulsing dot decoration
+const PulsingDot = ({ delay, position, size = 8 }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0 rounded-full"
+    style={{
+      ...position,
+      width: size,
+      height: size,
+      backgroundColor: theme.accent
+    }}
+    initial={{ opacity: 0, scale: 0 }}
+    animate={{
+      opacity: [0, 0.3, 0],
+      scale: [0.5, 1.5, 0.5],
+    }}
+    transition={{
+      duration: 4,
+      delay: delay,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  />
+);
+
+// Animated line decoration
+const AnimatedLine = ({ delay, vertical = false, position }) => (
+  <motion.div
+    className="absolute pointer-events-none z-0"
+    style={position}
+    initial={{ opacity: 0, scale: 0 }}
+    animate={{
+      opacity: [0, 0.08, 0.08, 0],
+      scale: [0, 1, 1, 0],
+    }}
+    transition={{
+      duration: 8,
+      delay: delay,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  >
+    <div
+      className={vertical ? "w-px h-32" : "w-32 h-px"}
+      style={{ backgroundColor: theme.primary }}
+    />
+  </motion.div>
+);
+
 // Flower decoration component
-const FlowerDecor = ({ className }) => (
+const FlowerDecor = ({ className, color = theme.primary }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className}>
-    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
-    <ellipse cx="12" cy="5" rx="2" ry="4" fill="currentColor" opacity="0.5" />
-    <ellipse cx="12" cy="19" rx="2" ry="4" fill="currentColor" opacity="0.5" />
-    <ellipse cx="5" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
-    <ellipse cx="19" cy="12" rx="4" ry="2" fill="currentColor" opacity="0.5" />
+    <circle cx="12" cy="12" r="2.5" fill={color} />
+    <ellipse cx="12" cy="5" rx="2" ry="4" fill={color} opacity="0.5" />
+    <ellipse cx="12" cy="19" rx="2" ry="4" fill={color} opacity="0.5" />
+    <ellipse cx="5" cy="12" rx="4" ry="2" fill={color} opacity="0.5" />
+    <ellipse cx="19" cy="12" rx="4" ry="2" fill={color} opacity="0.5" />
   </svg>
 );
 
@@ -84,6 +177,34 @@ const ContactPage = () => {
     startX: 5 + i * 10,
     duration: 15 + Math.random() * 8,
     size: 12 + Math.random() * 8,
+  }));
+
+  // Generate floating shapes
+  const shapes = Array.from({ length: 8 }).map((_, i) => ({
+    delay: i * 2,
+    startX: 10 + i * 12,
+    duration: 20 + Math.random() * 10,
+    type: ['circle', 'square', 'triangle'][i % 3],
+  }));
+
+  // Generate pulsing dots
+  const dots = Array.from({ length: 6 }).map((_, i) => ({
+    delay: i * 1.5,
+    position: {
+      top: `${15 + i * 15}%`,
+      left: i % 2 === 0 ? '5%' : '95%',
+    },
+    size: 6 + Math.random() * 6,
+  }));
+
+  // Generate animated lines
+  const lines = Array.from({ length: 4 }).map((_, i) => ({
+    delay: i * 3,
+    vertical: i % 2 === 0,
+    position: {
+      top: `${20 + i * 20}%`,
+      [i % 2 === 0 ? 'right' : 'left']: '10%',
+    },
   }));
 
   // Animation variants
@@ -187,8 +308,8 @@ const ContactPage = () => {
       icon: Phone,
       title: "Call Us",
       primary: "+1 305-371-3060",
-      secondary: "Mon-Fri: 10am-8pm EST",
-      tertiary: "Sat-Sun: 11am-6pm EST"
+      secondary: "Mon-Sat: 10am-7pm",
+      tertiary: "Sunday: 10am-3pm EST"
     },
     {
       icon: Mail,
@@ -200,49 +321,116 @@ const ContactPage = () => {
   ];
 
   const socialLinks = [
-    { icon: Facebook, name: "Facebook", url: "#" },
-    { icon: Instagram, name: "Instagram", url: "#" },
-    { icon: Twitter, name: "Twitter", url: "#" },
-    { icon: Linkedin, name: "LinkedIn", url: "#" }
+    {
+      icon: FaFacebook,
+      name: "Facebook",
+      url: "#",
+      color: "#1877F2" // Facebook blue
+    },
+    {
+      icon: FaInstagram,
+      name: "Instagram",
+      url: "#",
+      color: "#E4405F" // Instagram pink/red
+    },
+    {
+      icon: FaXTwitter,
+      name: "X",
+      url: "#",
+      color: "#111111" // Twitter blue
+    },
+    {
+      icon: FaLinkedin,
+      name: "LinkedIn",
+      url: "#",
+      color: "#0A66C2" // LinkedIn blue
+    }
   ];
 
   const googleMapsUrl = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.883147443072!2d-80.18739172422224!3d25.78618917737203!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88d9b6823bcf83f7%3A0xef6b2824b4e9f65f!2s1717%20N%20Bayshore%20Dr%20%23121%2C%20Miami%2C%20FL%2033132%2C%20USA!5e0!3m2!1sen!2s!4v1701200000000!5m2!1sen!2s";
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: theme.white }}>
       {/* Background Pattern */}
       <div
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234169E1' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       />
 
       {/* Floating Petals */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {petals.map((petal, i) => (
-          <FloatingPetal key={i} {...petal} />
+          <FloatingPetal key={`petal-${i}`} {...petal} />
+        ))}
+      </div>
+
+      {/* Floating Shapes */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {shapes.map((shape, i) => (
+          <FloatingShape key={`shape-${i}`} {...shape} />
+        ))}
+      </div>
+
+      {/* Pulsing Dots */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {dots.map((dot, i) => (
+          <PulsingDot key={`dot-${i}`} {...dot} />
+        ))}
+      </div>
+
+      {/* Animated Lines */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {lines.map((line, i) => (
+          <AnimatedLine key={`line-${i}`} {...line} />
         ))}
       </div>
 
       {/* Decorative Elements */}
       <motion.div
         initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 0.03, scale: 1 }}
+        animate={{ opacity: 0.08, scale: 1 }}
         transition={{ duration: 1, delay: 0.5 }}
         className="absolute top-40 left-10 w-64 h-64 pointer-events-none hidden lg:block"
       >
-        <FlowerDecor className="w-full h-full text-gray-900" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+        >
+          <FlowerDecor className="w-full h-full" color={theme.primary} />
+        </motion.div>
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 0.03, scale: 1 }}
+        animate={{ opacity: 0.08, scale: 1 }}
         transition={{ duration: 1, delay: 0.7 }}
         className="absolute bottom-40 right-10 w-48 h-48 pointer-events-none hidden lg:block"
       >
-        <FlowerDecor className="w-full h-full text-gray-900" />
+        <motion.div
+          animate={{ rotate: -360 }}
+          transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
+        >
+          <FlowerDecor className="w-full h-full" color={theme.accent} />
+        </motion.div>
       </motion.div>
+
+      {/* Decorative Circles */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 0.05, scale: 1 }}
+        transition={{ duration: 1.5 }}
+        className="absolute top-20 right-20 w-72 h-72 rounded-full border hidden lg:block"
+        style={{ borderColor: theme.primary }}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 0.05, scale: 1 }}
+        transition={{ duration: 1.5, delay: 0.3 }}
+        className="absolute bottom-32 left-20 w-56 h-56 rounded-full border hidden lg:block"
+        style={{ borderColor: theme.accent }}
+      />
 
       {/* Feedback Toast */}
       <AnimatePresence>
@@ -251,8 +439,8 @@ const ContactPage = () => {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 shadow-lg ${feedback.type === 'error' ? 'bg-red-600' : 'bg-gray-900'
-              } text-white`}
+            className="fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 flex items-center gap-2 shadow-lg text-white"
+            style={{ backgroundColor: feedback.type === 'error' ? '#DC2626' : theme.primary }}
           >
             {feedback.type === 'error' ? (
               <AlertCircle className="w-4 h-4" />
@@ -271,11 +459,18 @@ const ContactPage = () => {
         <motion.nav
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-gray-900/50 mb-12"
+          className="flex items-center gap-2 text-sm mb-12"
+          style={{ color: `${theme.primary}80` }}
         >
-          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
+          <Link
+            to="/"
+            className="transition-colors hover:opacity-100"
+            style={{ color: theme.primary }}
+          >
+            Home
+          </Link>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-gray-900">Contact</span>
+          <span style={{ color: theme.secondary }}>Contact</span>
         </motion.nav>
 
         {/* Page Header */}
@@ -287,7 +482,8 @@ const ContactPage = () => {
         >
           <motion.div
             variants={lineAnimation}
-            className="w-16 h-px bg-gray-900 mx-auto mb-8 origin-center"
+            className="w-16 h-px mx-auto mb-8 origin-center"
+            style={{ backgroundColor: theme.primary }}
           />
 
           <motion.div
@@ -297,29 +493,33 @@ const ContactPage = () => {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="w-10 h-10 border border-gray-900/10 flex items-center justify-center"
+              className="w-10 h-10 flex items-center justify-center border"
+              style={{ borderColor: `${theme.primary}20` }}
             >
-              <FlowerDecor className="w-5 h-5 text-gray-900/20" />
+              <FlowerDecor className="w-5 h-5" color={`${theme.primary}40`} />
             </motion.div>
           </motion.div>
 
           <motion.span
             variants={itemVariants}
-            className="text-xs tracking-[0.3em] text-gray-900/50 uppercase block mb-4"
+            className="text-xs tracking-[0.3em] uppercase block mb-4"
+            style={{ color: theme.secondary }}
           >
             Get in Touch
           </motion.span>
 
           <motion.h1
             variants={itemVariants}
-            className="font-playfair text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6"
+            className="font-playfair text-4xl sm:text-5xl lg:text-6xl font-bold mb-6"
+            style={{ color: theme.primary }}
           >
             Contact Our Gallery
           </motion.h1>
 
           <motion.p
             variants={itemVariants}
-            className="text-gray-900/60 max-w-2xl mx-auto leading-relaxed"
+            className="max-w-2xl mx-auto leading-relaxed"
+            style={{ color: `${theme.secondary}cc` }}
           >
             Located in The Grand Retail Plaza, Miami. Experience art in person at our
             beautiful gallery space or reach out to us for any inquiries.
@@ -338,26 +538,44 @@ const ContactPage = () => {
               key={info.title}
               variants={itemVariants}
               whileHover={{ y: -5 }}
-              className="relative bg-white border border-gray-900/10 p-8 text-center group hover:border-gray-900/30 transition-colors"
+              className="relative p-8 text-center group transition-colors border"
+              style={{
+                backgroundColor: theme.white,
+                borderColor: `${theme.primary}20`
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = `${theme.primary}60`}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = `${theme.primary}20`}
             >
-
               <motion.div
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className="w-14 h-14 border border-gray-900/10 flex items-center justify-center mx-auto mb-6 group-hover:border-gray-900/30 transition-colors"
+                className="w-14 h-14 flex items-center justify-center mx-auto mb-6 transition-colors border"
+                style={{ borderColor: `${theme.primary}30` }}
               >
-                <info.icon className="w-6 h-6 text-gray-900" />
+                <info.icon className="w-6 h-6" style={{ color: theme.primary }} />
               </motion.div>
 
-              <h3 className="text-xs tracking-[0.2em] text-gray-900/50 uppercase mb-3">
+              <h3
+                className="text-xs tracking-[0.2em] uppercase mb-3"
+                style={{ color: theme.primary }}
+              >
                 {info.title}
               </h3>
-              <p className="font-playfair text-lg font-bold text-gray-900 mb-2">
+              <p
+                className="font-playfair text-lg font-bold mb-2"
+                style={{ color: theme.secondary }}
+              >
                 {info.primary}
               </p>
-              <p className="text-sm text-gray-900/60 mb-1">
+              <p
+                className="text-sm mb-1"
+                style={{ color: `${theme.secondary}b3` }}
+              >
                 {info.secondary}
               </p>
-              <p className="text-sm text-gray-900/40">
+              <p
+                className="text-sm"
+                style={{ color: `${theme.secondary}80` }}
+              >
                 {info.tertiary}
               </p>
             </motion.div>
@@ -373,18 +591,29 @@ const ContactPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <div className="relative bg-white border border-gray-900/10 p-8">
-
+            <div
+              className="relative p-8 border"
+              style={{ backgroundColor: theme.white, borderColor: `${theme.primary}20` }}
+            >
               {/* Form Header */}
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 border border-gray-900/10 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-gray-900" />
+                <div
+                  className="w-10 h-10 flex items-center justify-center border"
+                  style={{ borderColor: `${theme.primary}30` }}
+                >
+                  <MessageSquare className="w-5 h-5" style={{ color: theme.primary }} />
                 </div>
                 <div>
-                  <h2 className="font-playfair text-2xl font-bold text-gray-900">
+                  <h2
+                    className="font-playfair text-2xl font-bold"
+                    style={{ color: theme.primary }}
+                  >
                     Send a Message
                   </h2>
-                  <p className="text-sm text-gray-900/50">
+                  <p
+                    className="text-sm"
+                    style={{ color: `${theme.secondary}` }}
+                  >
                     We'll respond within 24 hours
                   </p>
                 </div>
@@ -403,22 +632,30 @@ const ContactPage = () => {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", delay: 0.2 }}
-                      className="w-20 h-20 bg-gray-900 flex items-center justify-center mx-auto mb-6"
+                      className="w-20 h-20 flex items-center justify-center mx-auto mb-6"
+                      style={{ backgroundColor: theme.primary }}
                     >
-                      <Check className="w-10 h-10 text-white" />
+                      <Check className="w-10 h-10" style={{ color: theme.white }} />
                     </motion.div>
 
                     <motion.div
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{ delay: 0.4 }}
-                      className="w-12 h-px bg-gray-900 mx-auto mb-6"
+                      className="w-12 h-px mx-auto mb-6"
+                      style={{ backgroundColor: theme.primary }}
                     />
 
-                    <h3 className="font-playfair text-2xl font-bold text-gray-900 mb-3">
+                    <h3
+                      className="font-playfair text-2xl font-bold mb-3"
+                      style={{ color: theme.secondary }}
+                    >
                       Message Sent
                     </h3>
-                    <p className="text-gray-900/60 mb-6">
+                    <p
+                      className="mb-6"
+                      style={{ color: `${theme.secondary}b3` }}
+                    >
                       Thank you for reaching out. We'll get back to you soon!
                     </p>
 
@@ -426,7 +663,19 @@ const ContactPage = () => {
                       onClick={() => setIsSubmitted(false)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="inline-flex items-center gap-2 border border-gray-900 text-gray-900 px-6 py-3 font-medium hover:bg-gray-900 hover:text-white transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-2 px-6 py-3 font-medium transition-colors cursor-pointer border-2"
+                      style={{
+                        borderColor: theme.primary,
+                        color: theme.primary
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = theme.primary;
+                        e.target.style.color = theme.white;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = 'transparent';
+                        e.target.style.color = theme.primary;
+                      }}
                     >
                       <Send className="w-4 h-4" />
                       Send Another Message
@@ -440,12 +689,17 @@ const ContactPage = () => {
                   >
                     {/* Name */}
                     <div>
-                      <label className="block text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-2">
-                        Your Name <span className="text-gray-900/30">*</span>
+                      <label
+                        className="block text-xs tracking-[0.15em] uppercase mb-2"
+                        style={{ color: `${theme.secondary}80` }}
+                      >
+                        Your Name <span style={{ color: `${theme.primary}60` }}>*</span>
                       </label>
                       <div className="relative">
-                        <User className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focused.name ? 'text-gray-900' : 'text-gray-900/30'
-                          }`} />
+                        <User
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors"
+                          style={{ color: focused.name ? theme.primary : `${theme.primary}50` }}
+                        />
                         <input
                           type="text"
                           name="name"
@@ -454,14 +708,20 @@ const ContactPage = () => {
                           onFocus={() => handleFocus('name')}
                           onBlur={() => handleBlur('name')}
                           required
-                          className="w-full pl-12 pr-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-4 outline-none transition-colors"
+                          style={{
+                            borderWidth: 1,
+                            borderStyle: 'solid',
+                            borderColor: focused.name ? theme.primary : `${theme.primary}20`,
+                            color: theme.secondary
+                          }}
                           placeholder="John Doe"
                         />
                         <motion.div
-                          className="absolute bottom-0 left-0 h-px bg-gray-900"
+                          className="absolute bottom-0 left-0 h-px"
+                          style={{ backgroundColor: theme.primary }}
                           initial={{ scaleX: 0 }}
                           animate={{ scaleX: focused.name ? 1 : 0 }}
-                          style={{ originX: 0 }}
                         />
                       </div>
                     </div>
@@ -469,12 +729,17 @@ const ContactPage = () => {
                     {/* Phone & Email Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-2">
-                          Phone <span className="text-gray-900/20">(Optional)</span>
+                        <label
+                          className="block text-xs tracking-[0.15em] uppercase mb-2"
+                          style={{ color: `${theme.secondary}80` }}
+                        >
+                          Phone <span style={{ color: `${theme.primary}40` }}>(Optional)</span>
                         </label>
                         <div className="relative">
-                          <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focused.phone ? 'text-gray-900' : 'text-gray-900/30'
-                            }`} />
+                          <Phone
+                            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors"
+                            style={{ color: focused.phone ? theme.primary : `${theme.primary}50` }}
+                          />
                           <input
                             type="tel"
                             name="phone"
@@ -482,25 +747,36 @@ const ContactPage = () => {
                             onChange={handleChange}
                             onFocus={() => handleFocus('phone')}
                             onBlur={() => handleBlur('phone')}
-                            className="w-full pl-12 pr-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+                            className="w-full pl-12 pr-4 py-4 outline-none transition-colors"
+                            style={{
+                              borderWidth: 1,
+                              borderStyle: 'solid',
+                              borderColor: focused.phone ? theme.primary : `${theme.primary}20`,
+                              color: theme.secondary
+                            }}
                             placeholder="+1 (555) 000-0000"
                           />
                           <motion.div
-                            className="absolute bottom-0 left-0 h-px bg-gray-900"
+                            className="absolute bottom-0 left-0 h-px"
+                            style={{ backgroundColor: theme.primary }}
                             initial={{ scaleX: 0 }}
                             animate={{ scaleX: focused.phone ? 1 : 0 }}
-                            style={{ originX: 0 }}
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-2">
-                          Email <span className="text-gray-900/30">*</span>
+                        <label
+                          className="block text-xs tracking-[0.15em] uppercase mb-2"
+                          style={{ color: `${theme.secondary}80` }}
+                        >
+                          Email <span style={{ color: `${theme.primary}60` }}>*</span>
                         </label>
                         <div className="relative">
-                          <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${focused.email ? 'text-gray-900' : 'text-gray-900/30'
-                            }`} />
+                          <Mail
+                            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors"
+                            style={{ color: focused.email ? theme.primary : `${theme.primary}50` }}
+                          />
                           <input
                             type="email"
                             name="email"
@@ -509,14 +785,20 @@ const ContactPage = () => {
                             onFocus={() => handleFocus('email')}
                             onBlur={() => handleBlur('email')}
                             required
-                            className="w-full pl-12 pr-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+                            className="w-full pl-12 pr-4 py-4 outline-none transition-colors"
+                            style={{
+                              borderWidth: 1,
+                              borderStyle: 'solid',
+                              borderColor: focused.email ? theme.primary : `${theme.primary}20`,
+                              color: theme.secondary
+                            }}
                             placeholder="john@example.com"
                           />
                           <motion.div
-                            className="absolute bottom-0 left-0 h-px bg-gray-900"
+                            className="absolute bottom-0 left-0 h-px"
+                            style={{ backgroundColor: theme.primary }}
                             initial={{ scaleX: 0 }}
                             animate={{ scaleX: focused.email ? 1 : 0 }}
-                            style={{ originX: 0 }}
                           />
                         </div>
                       </div>
@@ -524,8 +806,11 @@ const ContactPage = () => {
 
                     {/* Subject */}
                     <div>
-                      <label className="block text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-2">
-                        Subject <span className="text-gray-900/30">*</span>
+                      <label
+                        className="block text-xs tracking-[0.15em] uppercase mb-2"
+                        style={{ color: `${theme.secondary}80` }}
+                      >
+                        Subject <span style={{ color: `${theme.primary}60` }}>*</span>
                       </label>
                       <div className="relative">
                         <input
@@ -536,22 +821,31 @@ const ContactPage = () => {
                           onFocus={() => handleFocus('subject')}
                           onBlur={() => handleBlur('subject')}
                           required
-                          className="w-full px-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors"
+                          className="w-full px-4 py-4 outline-none transition-colors"
+                          style={{
+                            borderWidth: 1,
+                            borderStyle: 'solid',
+                            borderColor: focused.subject ? theme.primary : `${theme.primary}20`,
+                            color: theme.secondary
+                          }}
                           placeholder="How can we help you?"
                         />
                         <motion.div
-                          className="absolute bottom-0 left-0 h-px bg-gray-900"
+                          className="absolute bottom-0 left-0 h-px"
+                          style={{ backgroundColor: theme.primary }}
                           initial={{ scaleX: 0 }}
                           animate={{ scaleX: focused.subject ? 1 : 0 }}
-                          style={{ originX: 0 }}
                         />
                       </div>
                     </div>
 
                     {/* Message */}
                     <div>
-                      <label className="block text-xs tracking-[0.15em] text-gray-900/50 uppercase mb-2">
-                        Message <span className="text-gray-900/30">*</span>
+                      <label
+                        className="block text-xs tracking-[0.15em] uppercase mb-2"
+                        style={{ color: `${theme.secondary}80` }}
+                      >
+                        Message <span style={{ color: `${theme.primary}60` }}>*</span>
                       </label>
                       <div className="relative">
                         <textarea
@@ -562,14 +856,20 @@ const ContactPage = () => {
                           onBlur={() => handleBlur('message')}
                           required
                           rows="5"
-                          className="w-full px-4 py-4 border border-gray-900/10 focus:border-gray-900 outline-none transition-colors resize-none"
+                          className="w-full px-4 py-4 outline-none transition-colors resize-none"
+                          style={{
+                            borderWidth: 1,
+                            borderStyle: 'solid',
+                            borderColor: focused.message ? theme.primary : `${theme.primary}20`,
+                            color: theme.secondary
+                          }}
                           placeholder="Tell us about your inquiry..."
                         />
                         <motion.div
-                          className="absolute bottom-0 left-0 h-px bg-gray-900"
+                          className="absolute bottom-0 left-0 h-px"
+                          style={{ backgroundColor: theme.primary }}
                           initial={{ scaleX: 0 }}
                           animate={{ scaleX: focused.message ? 1 : 0 }}
-                          style={{ originX: 0 }}
                         />
                       </div>
                     </div>
@@ -580,7 +880,17 @@ const ContactPage = () => {
                       disabled={isSubmitting}
                       whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
                       whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-                      className="w-full bg-gray-900 text-white py-4 font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 cursor-pointer"
+                      className="w-full py-4 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 cursor-pointer"
+                      style={{
+                        backgroundColor: theme.primary,
+                        color: theme.white
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSubmitting) e.target.style.backgroundColor = theme.secondary;
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSubmitting) e.target.style.backgroundColor = theme.primary;
+                      }}
                     >
                       {isSubmitting ? (
                         <>
@@ -610,68 +920,125 @@ const ContactPage = () => {
           >
 
             {/* Social Media */}
-            <div className="relative bg-white border border-gray-900/10 p-8">
-
+            {/* Social Media */}
+            <div
+              className="relative p-8 border"
+              style={{ backgroundColor: theme.white, borderColor: `${theme.primary}20` }}
+            >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 border border-gray-900/10 flex items-center justify-center">
-                  <Globe className="w-5 h-5 text-gray-900" />
+                <div
+                  className="w-10 h-10 flex items-center justify-center border"
+                  style={{ borderColor: `${theme.primary}30` }}
+                >
+                  <Globe className="w-5 h-5" style={{ color: theme.primary }} />
                 </div>
                 <div>
-                  <h3 className="font-playfair text-xl font-bold text-gray-900">
+                  <h3
+                    className="font-playfair text-xl font-bold"
+                    style={{ color: theme.primary }}
+                  >
                     Connect With Us
                   </h3>
-                  <p className="text-sm text-gray-900/50">
+                  <p
+                    className="text-sm"
+                    style={{ color: `${theme.secondary}` }}
+                  >
                     Follow our journey
                   </p>
                 </div>
               </div>
 
-              <p className="text-gray-900/60 mb-6">
+              <p
+                className="mb-6"
+                style={{ color: `${theme.secondary}b3` }}
+              >
                 Stay updated with our latest exhibitions, artist features, and gallery events.
               </p>
 
               <div className="grid grid-cols-2 gap-3">
-                {socialLinks.map((social, index) => (
-                  <motion.a
-                    key={social.name}
-                    href={social.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8 + index * 0.1 }}
-                    whileHover={{ y: -3 }}
-                    className="flex items-center gap-3 p-4 border border-gray-900/10 hover:border-gray-900 transition-colors group cursor-pointer"
-                  >
-                    <social.icon className="w-5 h-5 text-gray-900/50 group-hover:text-gray-900 transition-colors" />
-                    <span className="font-medium text-gray-900">{social.name}</span>
-                  </motion.a>
-                ))}
+                {socialLinks.map((social, index) => {
+                  const IconComponent = social.icon;
+                  return (
+                    <motion.a
+                      key={social.name}
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.8 + index * 0.1 }}
+                      whileHover={{ y: -3 }}
+                      className="flex items-center gap-3 p-4 transition-all duration-300 group cursor-pointer border"
+                      style={{
+                        borderColor: `${theme.primary}20`,
+                        backgroundColor: 'transparent'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = social.color;
+                        e.currentTarget.style.backgroundColor = `${social.color}10`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = `${theme.primary}20`;
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <IconComponent
+                        className="w-5 h-5 transition-colors"
+                        style={{ color: social.color }}
+                      />
+                      <span
+                        className="font-medium transition-colors"
+                        style={{ color: theme.secondary }}
+                        onMouseEnter={(e) => e.target.style.color = social.color}
+                        onMouseLeave={(e) => e.target.style.color = theme.secondary}
+                      >
+                        {social.name}
+                      </span>
+                    </motion.a>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Quick Contact */}
-            <div className="relative bg-gray-900 text-white p-8">
+            {/* Quick Contact / Visiting Hours */}
+            <div
+              className="relative p-8 bg-gray-100"
+            >
               <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5" />
-                <h3 className="font-playfair text-xl font-bold">
+                <Sparkles className="w-5 h-5" style={{ color: theme.primary }} />
+                <h3
+                  className="font-playfair text-xl font-bold"
+                  style={{ color: theme.primary }}
+                >
                   Visiting Hours
                 </h3>
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-start gap-3 p-4 bg-white/10">
-                  <div className="flex flex-col">
-                    <span className="font-medium mb-2">Monday - Saturday</span>
-                    <span className="text-white/70">10 AM - 7 PM</span>
-                  </div>
+                <div
+                  className="flex flex-col p-4"
+                  style={{ backgroundColor: `${theme.white}` }}
+                >
+                  <span
+                    className="font-medium mb-2"
+                    style={{ color: theme.secondary }}
+                  >
+                    Monday - Saturday
+                  </span>
+                  <span style={{ color: `${theme.primary}` }}>10 AM - 7 PM</span>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 bg-white/10">
-                  <div className="flex flex-col">
-                    <span className="font-medium mb-2">Sunday</span>
-                    <span className="text-white/70">10 AM - 3 PM</span>
-                  </div>
+                <div
+                  className="flex flex-col p-4"
+                  style={{ backgroundColor: `${theme.white}` }}
+                >
+                  <span
+                    className="font-medium mb-2"
+                    style={{ color: theme.secondary }}
+                  >
+                    Sunday
+                  </span>
+                  <span style={{ color: `${theme.primary}` }}>10 AM - 3 PM</span>
                 </div>
               </div>
             </div>
@@ -683,20 +1050,32 @@ const ContactPage = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="relative bg-white border border-gray-900/10 mb-16 overflow-hidden"
+          className="relative mb-16 overflow-hidden border"
+          style={{ backgroundColor: theme.white, borderColor: `${theme.primary}20` }}
         >
-
           {/* Map Header */}
-          <div className="p-6 border-b border-gray-900/10">
+          <div
+            className="p-6 border-b"
+            style={{ borderColor: `${theme.primary}20` }}
+          >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 border border-gray-900/10 flex items-center justify-center">
-                <Navigation className="w-5 h-5 text-gray-900" />
+              <div
+                className="w-10 h-10 flex items-center justify-center border"
+                style={{ borderColor: `${theme.primary}30` }}
+              >
+                <Navigation className="w-5 h-5" style={{ color: theme.primary }} />
               </div>
               <div>
-                <h2 className="font-playfair text-xl font-bold text-gray-900">
+                <h2
+                  className="font-playfair text-xl font-bold"
+                  style={{ color: theme.primary }}
+                >
                   Find Us
                 </h2>
-                <p className="text-sm text-gray-900/50">
+                <p
+                  className="text-sm"
+                  style={{ color: `${theme.secondary}` }}
+                >
                   Visit our gallery in Miami
                 </p>
               </div>
@@ -704,7 +1083,10 @@ const ContactPage = () => {
           </div>
 
           {/* Google Maps */}
-          <div className="relative h-80 sm:h-96 bg-gray-100">
+          <div
+            className="relative h-80 sm:h-96"
+            style={{ backgroundColor: `${theme.accent}30` }}
+          >
             <iframe
               src={googleMapsUrl}
               width="100%"
@@ -719,13 +1101,22 @@ const ContactPage = () => {
           </div>
 
           {/* Map Footer */}
-          <div className="p-6 border-t border-gray-900/10 bg-gray-50/50">
+          <div
+            className="p-6 border-t"
+            style={{ borderColor: `${theme.primary}20`, backgroundColor: `${theme.accent}10` }}
+          >
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <p className="text-xs text-gray-900/40 uppercase tracking-wide mb-1">
+                <p
+                  className="text-xs uppercase tracking-wide mb-1"
+                  style={{ color: `${theme.primary}` }}
+                >
                   Address
                 </p>
-                <p className="font-medium text-gray-900">
+                <p
+                  className="font-medium"
+                  style={{ color: theme.secondary }}
+                >
                   1717 N Bayshore Dr #121, Miami, FL 33132
                 </p>
               </div>
@@ -735,7 +1126,10 @@ const ContactPage = () => {
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-3 font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-6 py-3 font-medium transition-colors cursor-pointer"
+                style={{ backgroundColor: theme.primary, color: theme.white }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = theme.secondary}
+                onMouseLeave={(e) => e.target.style.backgroundColor = theme.primary}
               >
                 <Navigation className="w-4 h-4" />
                 Get Directions
@@ -752,20 +1146,31 @@ const ContactPage = () => {
           transition={{ delay: 0.8 }}
           className="mt-20 text-center"
         >
-          <div className="relative max-w-2xl mx-auto bg-white border border-gray-900/10 p-10">
-
+          <div
+            className="relative max-w-2xl mx-auto p-10 border"
+            style={{ backgroundColor: theme.white, borderColor: `${theme.primary}20` }}
+          >
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border border-gray-900/10 flex items-center justify-center mx-auto mb-6"
+              className="w-12 h-12 flex items-center justify-center mx-auto mb-6 border"
+              style={{ borderColor: `${theme.primary}20` }}
             >
-              <FlowerDecor className="w-6 h-6 text-gray-900/20" />
+              <FlowerDecor className="w-6 h-6" color={`${theme.primary}40`} />
             </motion.div>
 
-            <p className="font-playfair text-xl text-gray-900/70 italic mb-4">
+            <p
+              className="font-playfair text-xl italic mb-4"
+              style={{ color: `${theme.secondary}b3` }}
+            >
               "Art enables us to find ourselves and lose ourselves at the same time."
             </p>
-            <p className="text-gray-900 font-medium">— Thomas Merton</p>
+            <p
+              className="font-medium"
+              style={{ color: theme.primary }}
+            >
+              — Thomas Merton
+            </p>
           </div>
         </motion.div>
       </div>
@@ -775,7 +1180,8 @@ const ContactPage = () => {
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
         transition={{ duration: 1.5 }}
-        className="w-32 h-px bg-gray-900/10 mx-auto my-16"
+        className="w-32 h-px mx-auto my-16"
+        style={{ backgroundColor: `${theme.primary}30` }}
       />
 
       {/* Floating Call Button */}
@@ -786,7 +1192,10 @@ const ContactPage = () => {
         transition={{ delay: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-8 right-8 z-40 w-14 h-14 bg-gray-900 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors cursor-pointer"
+        className="fixed bottom-8 right-8 z-40 w-14 h-14 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+        style={{ backgroundColor: theme.primary, color: theme.white }}
+        onMouseEnter={(e) => e.target.style.backgroundColor = theme.secondary}
+        onMouseLeave={(e) => e.target.style.backgroundColor = theme.primary}
       >
         <Phone className="w-6 h-6" />
       </motion.a>
