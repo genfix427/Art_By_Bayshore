@@ -378,10 +378,10 @@ const Artists = () => {
           
           {/* Subtitle */}
           <p 
-            className="text-lg sm:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
+            className="text-lg sm:text-xl max-w-3xl mx-auto mb-12 leading-relaxed"
             style={{ color: `${theme.secondary}cc` }}
           >
-            Discover the talented individuals behind the stunning artworks in our collection.
+            Talented artists pour passion and dedication into every stunning piece they create.
           </p>
 
           {/* Search Bar */}

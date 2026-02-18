@@ -9,7 +9,7 @@ import Slider5 from '../../assets/heroSlider/slider5.jpeg'
 import Slider6 from '../../assets/heroSlider/slider6.jpeg'
 import Slider7 from '../../assets/heroSlider/slider7.jpeg'
 import Slider8 from '../../assets/heroSlider/slider8.jpeg'
-import Banner from '../../assets/banner1.png'
+import Banner from '../../assets/heroBanner.mp4'
 
 // Replace these with your actual painting images
 const paintings = [
@@ -88,19 +88,23 @@ const HeroSlider = () => {
   const isWelcomeSlide = currentSlide === 0;
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-gray-900">
-      {/* Animated Background Image */}
+    <div className="relative h-screen w-full overflow-hidden bg-secondary">
+      {/* Video Background */}
       <motion.div
         initial={{ scale: 1.1 }}
         animate={{ scale: 1 }}
         transition={{ duration: 30, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
         className="absolute inset-0"
       >
-        <img
+        <video
           src={Banner}
-          alt="Art Gallery Background"
+          autoPlay
+          loop
+          muted
+          playsInline
           className="w-full h-full object-cover"
         />
+        {/* Dark Overlay */}
         <div className="absolute z-10" />
       </motion.div>
     </div>

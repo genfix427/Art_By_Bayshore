@@ -187,7 +187,7 @@ const AboutCompanySection = () => {
             variants={textReveal}
             className="inline-block text-sm font-medium tracking-[0.3em] text-gray-800 uppercase mb-6"
           >
-            About Us
+            Art By Bayshore
           </motion.span>
 
           <motion.h2
