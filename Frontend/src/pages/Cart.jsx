@@ -166,7 +166,7 @@ const FlowerDecor = ({ className }) => (
 );
 
 const Cart = () => {
-  useSEO({ title: 'Shopping Cart | Art Haven' });
+  useSEO({ title: 'Shopping Cart | Art By Bayshore' });
 
   const { cart, loading, updateCartItem, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();

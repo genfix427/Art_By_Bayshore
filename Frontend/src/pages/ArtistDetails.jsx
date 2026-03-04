@@ -226,8 +226,8 @@ const ArtistDetails = () => {
   };
 
   useSEO({
-    title: artist ? `${artist.name} | Artist Profile` : 'Artist Profile',
-    description: artist?.biography?.substring(0, 160) || 'Artist profile page',
+    title: artist ? `${artist.name} | Art By Bayshore` : 'Art By Bayshore - Artist Profile',
+    description: artist?.biography?.substring(0, 160) || 'Art By Bayshore - Artist Profile',
   });
 
   useEffect(() => {
@@ -246,7 +246,7 @@ const ArtistDetails = () => {
       const artworksResponse = await productService.getAll({
         artist: artistResponse.data._id,
         isActive: true,
-        limit: 12,
+        limit: 100,
       });
       setArtworks(artworksResponse.data);
       

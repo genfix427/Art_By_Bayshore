@@ -229,7 +229,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const Orders = () => {
-  useSEO({ title: 'My Orders | Art Haven' });
+  useSEO({ title: 'My Orders | Art By Bayshore' });
 
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({});

@@ -194,7 +194,7 @@ const PasswordStrength = ({ password }) => {
 };
 
 const Register = () => {
-  useSEO({ title: 'Create Account | Art Haven' });
+  useSEO({ title: 'Create Account | Art By Bayshore' });
 
   const navigate = useNavigate();
   const { register } = useAuth();

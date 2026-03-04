@@ -326,7 +326,7 @@ const OrderProgress = ({ status }) => {
 };
 
 const OrderDetail = () => {
-  useSEO({ title: 'Order Details | Art Haven' });
+  useSEO({ title: 'Order Details | Art By Bayshore' });
 
   const { orderId } = useParams();
   const location = useLocation();

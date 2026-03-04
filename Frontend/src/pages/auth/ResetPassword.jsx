@@ -194,7 +194,7 @@ const PasswordStrength = ({ password }) => {
 };
 
 const ResetPassword = () => {
-  useSEO({ title: 'Reset Password | Art Haven' });
+  useSEO({ title: 'Reset Password | Art By Bayshore' });
 
   const { token } = useParams();
   const navigate = useNavigate();

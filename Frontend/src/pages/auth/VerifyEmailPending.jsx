@@ -140,7 +140,7 @@ const FlowerDecor = ({ className }) => (
 );
 
 const VerifyEmailPending = () => {
-  useSEO({ title: 'Verify Your Email | Art Haven' });
+  useSEO({ title: 'Verify Your Email | Art By Bayshore' });
 
   const location = useLocation();
   const { resendVerification } = useAuth();

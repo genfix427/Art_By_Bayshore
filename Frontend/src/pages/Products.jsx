@@ -184,7 +184,7 @@ const itemVariants = {
 
 const Products = () => {
   useSEO({
-    title: 'Browse Artworks | Discover Unique Art',
+    title: 'Artworks Store | Art By Bayshore',
     description: 'Browse our curated collection of artworks from talented artists worldwide',
   });
 

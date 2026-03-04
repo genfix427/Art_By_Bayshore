@@ -146,7 +146,7 @@ const FlowerDecor = ({ className }) => (
 );
 
 const Login = () => {
-  useSEO({ title: 'Login | Art Haven' });
+  useSEO({ title: 'Login | Art By Bayshore' });
 
   const navigate = useNavigate();
   const location = useLocation();

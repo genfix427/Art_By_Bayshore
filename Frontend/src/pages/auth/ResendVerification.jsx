@@ -142,7 +142,7 @@ const FlowerDecor = ({ className }) => (
 );
 
 const ResendVerification = () => {
-  useSEO({ title: 'Resend Verification Email | Art Haven' });
+  useSEO({ title: 'Resend Verification Email | Art By Bayshore' });
 
   const { resendVerification } = useAuth();
   const navigate = useNavigate();

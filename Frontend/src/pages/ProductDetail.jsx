@@ -266,7 +266,7 @@ const ProductDetails = () => {
   };
 
   useSEO({
-    title: product ? `${product.title} | Art Haven` : 'Product Details',
+    title: product ? `${product.title} | Art By Bayshore` : 'Product Details',
     description: product?.description?.substring(0, 160) || 'Art product details',
   });
 

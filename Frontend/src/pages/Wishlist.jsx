@@ -154,7 +154,7 @@ const FlowerDecor = ({ className, color = theme.primary }) => (
 
 const Wishlist = () => {
   useSEO({
-    title: 'My Wishlist | Saved Artworks',
+    title: 'My Wishlist | Art By Bayshore',
     description: 'Browse your saved artworks and favorite pieces',
   });
 

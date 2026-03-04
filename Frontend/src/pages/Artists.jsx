@@ -143,8 +143,9 @@ const FlowerDecor = ({ className, color = theme.primary }) => (
 
 const Artists = () => {
   useSEO({
-    title: 'Artists Collection | Discover Talented Creators',
-    description: 'Explore our curated collection of talented artists from around the world',
+    title: 'Artists Collection | Art By Bayshore',
+    description: 'Discover talented artists from around the world. Explore their unique styles, biographies, and stunning artwork collections.',
+    keywords: 'artists, painters, sculptors, digital artists, contemporary art, fine art',
   });
 
   const [artists, setArtists] = useState([]);

@@ -113,7 +113,7 @@ const VirtualGallery = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useSEO({
-    title: 'Virtual Gallery - Coming Soon | Art Haven',
+    title: 'Virtual Gallery - Coming Soon | Art By Bayshore',
     description: 'Experience art in a whole new dimension. Our immersive virtual gallery is coming soon.',
   });
 

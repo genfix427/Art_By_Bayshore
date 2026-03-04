@@ -211,7 +211,7 @@ const PasswordStrength = ({ password }) => {
 };
 
 const Profile = () => {
-  useSEO({ title: 'My Profile | Art Haven' });
+  useSEO({ title: 'My Profile | Art By Bayshore' });
   const { user, updateProfile, logout } = useAuth();
 
   const [activeTab, setActiveTab] = useState('profile');

@@ -23,6 +23,7 @@ import {
 import { Link } from 'react-router-dom';
 import { FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa'
 import { FaXTwitter } from "react-icons/fa6";
+import { useSEO } from '../hooks/useSEO';
 
 // Theme Colors
 const theme = {
@@ -159,6 +160,11 @@ const FlowerDecor = ({ className, color = theme.primary }) => (
 );
 
 const ContactPage = () => {
+  useSEO({
+      title: 'Contact Us | Art By Bayshore',
+      description: 'Get in touch with Art By Bayshore. Have questions about our artwork or services? Reach out to us today.',
+      keywords: 'contact us, art gallery, artists, contemporary art, fine art',
+    });
   const [formData, setFormData] = useState({
     name: '',
     phone: '',

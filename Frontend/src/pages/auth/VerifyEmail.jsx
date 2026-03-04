@@ -145,7 +145,7 @@ const FlowerDecor = ({ className }) => (
 );
 
 const VerifyEmail = () => {
-  useSEO({ title: 'Verify Email | Art Haven' });
+  useSEO({ title: 'Verify Email | Art By Bayshore' });
 
   const { token } = useParams();
   const navigate = useNavigate();

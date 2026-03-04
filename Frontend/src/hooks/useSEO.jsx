@@ -1,4 +1,4 @@
-
+import { useEffect } from "react";
 
 export const useSEO = ({
   title,
@@ -6,39 +6,73 @@ export const useSEO = ({
   keywords,
   image,
   url,
-  type = 'website',
+  type = "website",
 }) => {
-  const siteName = 'Artwork Store';
-  const defaultDescription = 'Discover unique artworks and paintings from talented artists. Buy original art online.';
-  const defaultImage = '/og-image.jpg';
+  const siteName = "Artwork Store";
+  const defaultDescription =
+    "Discover unique artworks and paintings from talented artists. Buy original art online.";
+  const defaultImage = "/og-image.jpg";
 
   const fullTitle = title ? `${title} | ${siteName}` : siteName;
   const fullDescription = description || defaultDescription;
   const fullImage = image || defaultImage;
   const fullUrl = url || window.location.href;
 
-  return (
-    <>
-      <title>{fullTitle}</title>
-      <meta name="description" content={fullDescription} />
-      {keywords && <meta name="keywords" content={keywords} />}
+  useEffect(() => {
+    // Set title
+    document.title = fullTitle;
 
-      {/* Open Graph */}
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={fullDescription} />
-      <meta property="og:image" content={fullImage} />
-      <meta property="og:url" content={fullUrl} />
-      <meta property="og:type" content={type} />
-      <meta property="og:site_name" content={siteName} />
+    const setMetaTag = (name, content, property = false) => {
+      let element;
 
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={fullDescription} />
-      <meta name="twitter:image" content={fullImage} />
+      if (property) {
+        element = document.querySelector(`meta[property="${name}"]`);
+      } else {
+        element = document.querySelector(`meta[name="${name}"]`);
+      }
 
-      {/* Canonical */}
-      <link rel="canonical" href={fullUrl} />
-    </>
-  );
+      if (!element) {
+        element = document.createElement("meta");
+
+        if (property) {
+          element.setAttribute("property", name);
+        } else {
+          element.setAttribute("name", name);
+        }
+
+        document.head.appendChild(element);
+      }
+
+      element.setAttribute("content", content);
+    };
+
+    // Basic SEO
+    setMetaTag("description", fullDescription);
+    if (keywords) setMetaTag("keywords", keywords);
+
+    // Open Graph
+    setMetaTag("og:title", fullTitle, true);
+    setMetaTag("og:description", fullDescription, true);
+    setMetaTag("og:image", fullImage, true);
+    setMetaTag("og:url", fullUrl, true);
+    setMetaTag("og:type", type, true);
+    setMetaTag("og:site_name", siteName, true);
+
+    // Twitter
+    setMetaTag("twitter:card", "summary_large_image");
+    setMetaTag("twitter:title", fullTitle);
+    setMetaTag("twitter:description", fullDescription);
+    setMetaTag("twitter:image", fullImage);
+
+    // Canonical
+    let canonical = document.querySelector("link[rel='canonical']");
+
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+
+    canonical.setAttribute("href", fullUrl);
+  }, [title, description, keywords, image, url, type]);
 };

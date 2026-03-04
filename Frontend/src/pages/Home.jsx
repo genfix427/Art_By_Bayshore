@@ -11,7 +11,7 @@ import ProductSlider from '../components/products/ProductSlider';
 
 const Home = () => {
   useSEO({
-    title: 'Home',
+    title: 'Home | Art By Bayshore',
     description: 'Discover unique artworks and paintings from talented artists. Buy original art online.',
   });
 

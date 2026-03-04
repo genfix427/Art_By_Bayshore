@@ -204,7 +204,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const OrderConfirmation = () => {
-  useSEO({ title: 'Order Confirmed | Art Haven' });
+  useSEO({ title: 'Order Confirmed | Art By Bayshore' });
 
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);

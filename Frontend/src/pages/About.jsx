@@ -26,6 +26,7 @@ import AboutImg02 from "../assets/about2.jpeg"
 import AboutImg03 from "../assets/about3.jpeg"
 import AboutImg04 from "../assets/about4.jpeg"
 import AboutImg05 from "../assets/about5.jpeg"
+import { useSEO } from '../hooks/useSEO';
 
 // Theme Colors
 const theme = {
@@ -241,6 +242,11 @@ const SectionHeading = ({ label, title, titleItalic, centered = false }) => {
 };
 
 const About = () => {
+  useSEO({
+      title: 'About Us | Art By Bayshore',
+      description: 'Learn more about Art By Bayshore, our mission, and the passionate team behind our curated collection of unique artworks.',
+      keywords: 'about us, art gallery, artists, contemporary art, fine art',
+    });
   const [activeValue, setActiveValue] = useState(0);
   
   // Generate floating petals

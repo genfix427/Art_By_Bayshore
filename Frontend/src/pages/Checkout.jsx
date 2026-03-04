@@ -402,7 +402,7 @@ const CheckoutForm = ({ clientSecret, orderSummary, shippingAddress, onSuccess, 
 };
 
 const Checkout = () => {
-  useSEO({ title: 'Checkout' });
+  useSEO({ title: 'Checkout | Art By Bayshore' });
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
