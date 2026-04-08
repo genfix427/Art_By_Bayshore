@@ -1,112 +1,89 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import HeroBG from "../../assets/homeHero.png";
-import Slider1 from '../../assets/heroSlider/slider1.jpeg'
-import Slider2 from '../../assets/heroSlider/slider2.jpeg'
-import Slider3 from '../../assets/heroSlider/slider3.jpeg'
-import Slider4 from '../../assets/heroSlider/slider4.jpeg'
-import Slider5 from '../../assets/heroSlider/slider5.jpeg'
-import Slider6 from '../../assets/heroSlider/slider6.jpeg'
-import Slider7 from '../../assets/heroSlider/slider7.jpeg'
-import Slider8 from '../../assets/heroSlider/slider8.jpeg'
-import Banner from '../../assets/heroBanner.mp4'
-
-// Replace these with your actual painting images
-const paintings = [
-  Slider1,
-  Slider2,
-  Slider3,
-  Slider4,
-  Slider5,
-  Slider6,
-  Slider7,
-  Slider8
-];
-
-// Smooth animation variants - no gaps
-const slideAnimations = [
-  // Elegant Fade & Scale
-  {
-    initial: { opacity: 0, scale: 1.1 },
-    animate: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 },
-  },
-  // Smooth Slide Up
-  {
-    initial: { opacity: 0, y: 50, scale: 1.05 },
-    animate: { opacity: 1, y: 0, scale: 1 },
-    exit: { opacity: 0, y: -30, scale: 0.98 },
-  },
-  // Crossfade with Zoom
-  {
-    initial: { opacity: 0, scale: 0.9 },
-    animate: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 1.1 },
-  },
-  // Slide from Right
-  {
-    initial: { opacity: 0, x: 60, scale: 1.02 },
-    animate: { opacity: 1, x: 0, scale: 1 },
-    exit: { opacity: 0, x: -40, scale: 0.98 },
-  },
-  // Ken Burns Style
-  {
-    initial: { opacity: 0, scale: 1.15, rotate: 1 },
-    animate: { opacity: 1, scale: 1, rotate: 0 },
-    exit: { opacity: 0, scale: 1.05, rotate: -1 },
-  },
-  // Soft Blur Fade
-  {
-    initial: { opacity: 0, scale: 1.08, filter: 'blur(10px)' },
-    animate: { opacity: 1, scale: 1, filter: 'blur(0px)' },
-    exit: { opacity: 0, scale: 0.95, filter: 'blur(5px)' },
-  },
-];
+import { Link } from "react-router-dom";
+import HeroBG from "../../assets/homeHero.jpg";
+import { motion } from "framer-motion";
 
 const HeroSlider = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [currentAnimation, setCurrentAnimation] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Auto advance slides
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentSlide((prev) => {
-          if (prev === 0) return 1;
-          return prev >= paintings.length ? 1 : prev + 1;
-        });
-        setCurrentAnimation((prev) => (prev + 1) % slideAnimations.length);
-        setIsTransitioning(false);
-      }, 100);
-    }, currentSlide === 0 ? 4500 : 4000);
-
-    return () => clearInterval(timer);
-  }, [currentSlide]);
-
-  const isWelcomeSlide = currentSlide === 0;
-
   return (
     <div className="relative h-screen w-full overflow-hidden bg-secondary">
-      {/* Video Background */}
+      {/* Background Image/Video */}
       <motion.div
         initial={{ scale: 1.1 }}
         animate={{ scale: 1 }}
         transition={{ duration: 30, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
         className="absolute inset-0"
       >
-        <video
-          src={Banner}
-          autoPlay
-          loop
-          muted
-          playsInline
+        <img
+          src={HeroBG}
+          alt="Hero Background"
           className="w-full h-full object-cover"
         />
-        {/* Dark Overlay */}
-        <div className="absolute z-10" />
       </motion.div>
+
+      {/* Black Opacity Overlay - Left Side Only */}
+      <div className="absolute inset-y-0 left-0 w-full md:w-1/2 lg:w-3/5 bg-gradient-to-r from-black/90 via-black/80 rounded-r-5xl to-transparent z-20">
+        {/* Content Container */}
+        <div className="flex flex-col justify-center items-start h-full px-6 sm:px-10 md:px-16 lg:px-20 max-w-2xl">
+          {/* Heading */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 leading-tight"
+          >
+            Welcome To
+            <span className="block text-primary mt-2 text-2xl sm:text-3xl md:text-5xl lg:text-7xl">Art By Bayshore</span>
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-base sm:text-lg md:text-xl text-gray-200 mb-8 leading-relaxed"
+          >
+            Elevate your space with unique pieces that reflect your style. Connect effortlessly to the art world through every masterpiece you choose.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <Link to='/products'>
+              <button className="px-8 py-3 bg-transparent border-2 border-white hover:bg-white/10 text-white font-semibold rounded-lg transition-all duration-300 cursor-pointer">
+                Explore Artworks
+              </button>
+            </Link>
+            <Link to='/about'>
+              <button className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-all duration-300 cursor-pointer">
+                Learn More
+              </button>
+            </Link>
+          </motion.div>
+
+          {/* Optional: Stats or Additional Info */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="flex gap-8 mt-12 pt-8 border-t border-white/20"
+          >
+            <div>
+              <div className="text-2xl font-bold text-white">120+</div>
+              <div className="text-sm text-gray-300">Artworks</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-white">12+</div>
+              <div className="text-sm text-gray-300">Artists</div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Optional: Bottom gradient for smooth transition */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/50 to-transparent z-10 pointer-events-none" />
     </div>
   );
 };
