@@ -9,6 +9,8 @@ import {
   cancelOrder,
   getOrderStats,
   resendOrderConfirmation,
+  downloadLabel,
+  viewLabel, // Add this
 } from '../controllers/orderController.js';
 import { protect, authorize } from '../middleware/auth.js';
 
@@ -25,6 +27,8 @@ router.get('/', authorize('admin', 'superadmin'), getOrders);
 
 // Order specific routes
 router.get('/:id', getOrder);
+router.get('/:id/download-label', authorize('admin', 'superadmin'), downloadLabel);
+router.get('/:id/view-label', authorize('admin', 'superadmin'), viewLabel); // Add this
 router.put('/:id/status', authorize('admin', 'superadmin'), updateOrderStatus);
 router.post('/:id/ship', authorize('admin', 'superadmin'), createShipment);
 router.post('/:id/update-tracking', authorize('admin', 'superadmin'), updateOrderTracking);

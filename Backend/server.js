@@ -31,6 +31,10 @@ import cartRoutes from './routes/cartRoutes.js';
 import shippingRoutes from './routes/shippingRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 // Load environment variables
 // dotenv.config();
 
@@ -39,6 +43,16 @@ connectDB();
 
 // Initialize Express app
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Create necessary directories
+const labelsDir = path.join(__dirname, 'public', 'labels');
+if (!fs.existsSync(labelsDir)) {
+  fs.mkdirSync(labelsDir, { recursive: true });
+  console.log('✓ Labels directory created');
+}
 
 // Trust proxy
 app.set('trust proxy', 1);

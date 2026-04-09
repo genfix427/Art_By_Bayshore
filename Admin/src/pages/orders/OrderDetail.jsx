@@ -279,11 +279,7 @@ const OrderDetail = () => {
                 <button
                   onClick={handleUpdateTracking}
                   disabled={trackingRefreshing}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-all duration-200 active:scale-95 ${
-                    trackingRefreshing
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'border-2 border-black text-black cursor-pointer hover:bg-black hover:text-white'
-                  }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md border-2 border-black hover:bg-black hover:text-white transition-all ${trackingRefreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${trackingRefreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -292,66 +288,65 @@ const OrderDetail = () => {
                 </button>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Tracking Number</p>
-                    <p className="text-lg font-mono font-bold text-black">{order.fedexShipment.trackingNumber}</p>
+                    <p className="text-xs text-gray-500">Tracking Number</p>
+                    <p className="font-mono font-bold text-lg">{order.fedexShipment.trackingNumber}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Service Type</p>
-                    <p className="text-sm font-semibold text-black">{order.fedexShipment.serviceType?.replace(/_/g, ' ')}</p>
+                    <p className="text-xs text-gray-500">Service</p>
+                    <p className="font-semibold">{order.fedexShipment.serviceType?.replace(/_/g, ' ')}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Shipping Status</p>
+                    <p className="text-xs text-gray-500">Status</p>
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white text-black border border-black">
                       <span className="w-1.5 h-1.5 rounded-full bg-black" />
-                      {order.shippingStatus?.toUpperCase().replace('-', ' ')}
+                      {order.shippingStatus?.toUpperCase().replace(/-/g, ' ')}
                     </span>
                   </div>
                   {order.fedexShipment.estimatedDelivery && (
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Estimated Delivery</p>
-                      <p className="text-sm font-semibold text-black">{formatDateTime(order.fedexShipment.estimatedDelivery)}</p>
+                      <p className="text-xs text-gray-500">Estimated Delivery</p>
+                      <p className="font-semibold">{formatDateTime(order.fedexShipment.estimatedDelivery)}</p>
                     </div>
                   )}
                 </div>
 
+                {/* ✅ UPDATED: Direct Cloudinary Links */}
                 {order.fedexShipment.labelUrl && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="mt-6 flex gap-3">
                     <a
                       href={order.fedexShipment.labelUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-black text-white text-sm font-semibold rounded-md hover:bg-gray-800 transition-all duration-200 active:scale-95 cursor-pointer"
+                      className="flex-1 py-3 bg-white border-2 border-black text-black font-semibold rounded-md hover:bg-black hover:text-white transition-all text-center"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Download Shipping Label
+                      View Label
+                    </a>
+                    <a
+                      href={order.fedexShipment.labelUrl + '?fl_attachment=label_' + order.orderNumber}
+                      download={`label_${order.orderNumber}.pdf`}
+                      className="flex-1 py-3 bg-black text-white font-semibold rounded-md hover:bg-gray-800 transition-all text-center"
+                    >
+                      Download Label
                     </a>
                   </div>
                 )}
               </div>
 
-              {/* Tracking Timeline */}
-              {order.trackingHistory && order.trackingHistory.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-bold text-black mb-4">Tracking History</h4>
+              {/* Tracking History */}
+              {order.trackingHistory?.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="font-bold mb-3">Tracking History</h4>
                   <div className="relative pl-8">
-                    {/* Line */}
                     <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gray-200" />
 
                     {order.trackingHistory.map((event, index) => (
                       <div key={index} className="relative mb-6 last:mb-0">
-                        {/* Dot */}
-                        <div className={`absolute -left-8 top-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${
-                          index === 0 ? 'bg-black' : 'bg-gray-300'
-                        }`} />
+                        <div className={`absolute -left-8 top-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${index === 0 ? 'bg-black' : 'bg-gray-300'}`} />
 
-                        <div className={`p-4 rounded-lg border ${
-                          index === 0 ? 'bg-gray-50 border-gray-300' : 'bg-white border-gray-200'
-                        }`}>
+                        <div className={`p-4 rounded-lg border ${index === 0 ? 'bg-gray-50 border-gray-300' : 'bg-white border-gray-200'}`}>
                           <div className="flex items-center justify-between mb-1">
                             <p className={`text-sm font-semibold ${index === 0 ? 'text-black' : 'text-gray-600'}`}>
                               {event.status}
@@ -359,13 +354,7 @@ const OrderDetail = () => {
                             <span className="text-xs text-gray-400">{formatDateTime(event.timestamp)}</span>
                           </div>
                           {event.location && event.location !== 'N/A' && (
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              <span className="text-xs text-gray-500">{event.location}</span>
-                            </div>
+                            <p className="text-xs text-gray-500 mt-1">📍 {event.location}</p>
                           )}
                           {event.description && (
                             <p className="text-xs text-gray-600 mt-1">{event.description}</p>
@@ -376,38 +365,6 @@ const OrderDetail = () => {
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Status History */}
-          {order.statusHistory && order.statusHistory.length > 0 && (
-            <div className="bg-white border border-gray-300 rounded-lg p-6">
-              <h3 className="text-base font-bold text-black mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Status History
-              </h3>
-
-              <div className="space-y-3">
-                {order.statusHistory.map((history, index) => {
-                  const info = getOrderStatusInfo(history.status);
-                  return (
-                    <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors duration-200">
-                      <div className="flex items-center gap-3">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${info.styles}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${info.dot}`} />
-                          {info.label}
-                        </span>
-                        {history.note && (
-                          <span className="text-xs text-gray-500">{history.note}</span>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-400 flex-shrink-0">{formatDateTime(history.timestamp)}</span>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           )}
         </div>
@@ -544,11 +501,10 @@ const OrderDetail = () => {
               <button
                 onClick={handleUpdateStatus}
                 disabled={updating || newStatus === order.orderStatus}
-                className={`w-full py-2.5 rounded-md text-sm font-semibold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 ${
-                  updating || newStatus === order.orderStatus
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-black text-white cursor-pointer hover:bg-gray-800'
-                }`}
+                className={`w-full py-2.5 rounded-md text-sm font-semibold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 ${updating || newStatus === order.orderStatus
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-black text-white cursor-pointer hover:bg-gray-800'
+                  }`}
               >
                 {updating ? (
                   <>

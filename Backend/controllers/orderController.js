@@ -9,6 +9,13 @@ import emailService from '../config/sendgrid.js';
 import stripe from '../config/stripe.js';
 import logger from '../utils/logger.js';
 
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // @desc    Get all orders (Admin)
 // @route   GET /api/v1/orders
 // @access  Private/Admin
@@ -156,7 +163,7 @@ export const createShipment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Order not found', 404));
   }
 
-  if (order.fedexShipment?.trackingNumber) {
+  if (order.fedexShipment.trackingNumber) {
     return next(new ErrorResponse('Shipment already created for this order', 400));
   }
 
@@ -168,288 +175,164 @@ export const createShipment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Cannot create shipment for unpaid order', 400));
   }
 
-  // ===================================
-  // STEP 1: Validate Shipping Address
-  // ===================================
-  logger.info('Validating shipping address before creating shipment...', {
-    orderId: order._id,
-    orderNumber: order.orderNumber,
-  });
-
-  const addressValidation = await fedexService.validateAddress({
-    addressLine1: order.shippingAddress.addressLine1,
-    addressLine2: order.shippingAddress.addressLine2,
-    city: order.shippingAddress.city,
-    state: order.shippingAddress.state,
-    zipCode: order.shippingAddress.zipCode,
-    country: order.shippingAddress.country || 'US',
-  });
-
-  // Block invalid addresses - admin must fix address first
-  if (!addressValidation.isValid) {
-    logger.error('Shipping address validation failed', {
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-      error: addressValidation.error,
-      address: order.shippingAddress,
-    });
-
-    return next(
-      new ErrorResponse(
-        `Shipping address is invalid: ${addressValidation.error}. Please update the order address before creating shipment.`,
-        400
-      )
-    );
-  }
-
-  logger.info('Shipping address validated successfully', {
-    orderId: order._id,
-    classification: addressValidation.classification,
-  });
-
-  // ===================================
-  // STEP 2: Prepare Shipment Data
-  // ===================================
-
-  // Prepare from address (warehouse)
+  // Prepare from address
   const fromAddress = {
     fullName: process.env.COMPANY_NAME || 'Art By Bayshore',
     phoneNumber: process.env.SUPPORT_PHONE || '1234567890',
-    addressLine1: process.env.WAREHOUSE_ADDRESS_LINE1 || '1717 N Bayshore Dr',
-    addressLine2: process.env.WAREHOUSE_ADDRESS_LINE2 || 'Unit 121',
+    addressLine1: process.env.WAREHOUSE_ADDRESS_LINE1 || '1717 N Bayshore Dr 121',
     city: process.env.WAREHOUSE_CITY || 'Miami',
     state: process.env.WAREHOUSE_STATE || 'FL',
     zipCode: process.env.WAREHOUSE_ZIP || '33132',
     country: 'US',
   };
 
-  // Prepare to address
-  const toAddress = {
-    fullName: order.shippingAddress.fullName,
-    phoneNumber: order.shippingAddress.phoneNumber,
-    email: order.user?.email || order.shippingAddress.email,
-    addressLine1: order.shippingAddress.addressLine1,
-    addressLine2: order.shippingAddress.addressLine2,
-    city: order.shippingAddress.city,
-    state: order.shippingAddress.state,
-    zipCode: order.shippingAddress.zipCode,
-    country: order.shippingAddress.country || 'US',
-    residential: addressValidation.classification === 'RESIDENTIAL',
-  };
-
-  // Prepare packages from order items
+  // Prepare packages
   const cartItems = order.items.map(item => ({
     quantity: item.quantity,
     price: item.price,
-    dimensions: item.dimensions || {
-      length: 24,
-      width: 24,
-      height: 4,
-      unit: 'IN',
-    },
-    weight: item.weight || {
-      value: 5,
-      unit: 'LB',
-    },
+    dimensions: item.dimensions || { length: 24, width: 24, height: 4, unit: 'in' },
+    weight: item.weight || { value: 5, unit: 'lb' },
   }));
 
   const packages = fedexService.calculatePackageDimensions(cartItems);
 
-  // Calculate total cart value for insurance/signature requirements
-  const cartValue = order.total || order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
   const shipmentData = {
     fromAddress,
-    toAddress,
+    toAddress: order.shippingAddress,
     packages,
-    serviceType: order.fedexShipment?.serviceType || req.body.serviceType || 'FEDEX_GROUND',
+    serviceType: order.fedexShipment.serviceType || 'FEDEX_GROUND',
     shipDate: new Date().toISOString().split('T')[0],
     reference: order.orderNumber,
-    cartValue, // For signature requirements
   };
-
-  // ===================================
-  // STEP 3: Create FedEx Shipment
-  // ===================================
 
   let shipmentResult;
 
-  // Only create real shipment in production/sandbox mode
-  if (process.env.FEDEX_MODE === 'production' || process.env.FEDEX_MODE === 'sandbox') {
-    logger.info('Creating FedEx shipment...', {
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-      mode: process.env.FEDEX_MODE,
-      packages: packages.length,
-    });
-
-    try {
-      shipmentResult = await fedexService.createShipment(shipmentData);
-
-      if (!shipmentResult.success) {
-        logger.error('FedEx shipment creation failed', {
-          orderId: order._id,
-          orderNumber: order.orderNumber,
-          error: shipmentResult.error,
-        });
-
-        return next(
-          new ErrorResponse(
-            `Failed to create FedEx shipment: ${shipmentResult.error}`,
-            400
-          )
-        );
-      }
-
-      logger.info('✅ FedEx shipment created successfully', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        trackingNumber: shipmentResult.trackingNumber,
-        service: shipmentResult.serviceName,
-      });
-
-    } catch (error) {
-      logger.error('FedEx shipment creation error', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        error: error.message,
-        stack: error.stack,
-      });
-
-      return next(
-        new ErrorResponse(
-          `Failed to create FedEx shipment: ${error.message}`,
-          500
-        )
-      );
-    }
-  } else {
-    // Development mode - use mock data
-    logger.warn('⚠️  DEVELOPMENT MODE - Using mock shipment data', {
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-    });
-
-    shipmentResult = {
-      success: true,
-      trackingNumber: `DEV-${Date.now()}`,
-      masterId: `MASTER-${Date.now()}`,
-      labelUrl: 'https://example.com/mock-label.pdf',
-      serviceType: shipmentData.serviceType,
-      serviceName: fedexService.getServiceName(shipmentData.serviceType),
-      shipDate: new Date().toISOString().split('T')[0],
-      mock: true,
-    };
+  try {
+    shipmentResult = await fedexService.createShipment(shipmentData);
+  } catch (error) {
+    logger.error(`FedEx shipment creation error for order ${order.orderNumber}: ${error.message}`);
+    return next(new ErrorResponse(error.message || 'Failed to create shipment', 400));
   }
 
-  // ===================================
-  // STEP 4: Update Order with Shipment Details
-  // ===================================
+  if (!shipmentResult.success) {
+    return next(new ErrorResponse(
+      shipmentResult.error || 'Failed to create shipment',
+      400
+    ));
+  }
 
-  order.fedexShipment = {
-    trackingNumber: shipmentResult.trackingNumber,
-    masterId: shipmentResult.masterId || shipmentResult.trackingNumber,
-    labelUrl: shipmentResult.labelUrl,
-    serviceType: shipmentResult.serviceType,
-    serviceName: shipmentResult.serviceName || fedexService.getServiceName(shipmentResult.serviceType),
-    estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days default
-    createdAt: new Date(),
-  };
+  // Verify label was saved
+  if (!shipmentResult.labelPath) {
+    logger.warn(`Shipment created but label not saved for order ${order.orderNumber}`);
+  }
 
+  // Update order
+  order.fedexShipment.trackingNumber = shipmentResult.trackingNumber;
+  order.fedexShipment.masterId = shipmentResult.masterId;
+  order.fedexShipment.labelUrl = shipmentResult.label?.url || null;
+  order.fedexShipment.serviceType = shipmentResult.serviceType;
+  order.fedexShipment.estimatedDelivery = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
   order.shippingStatus = 'label-created';
   order.orderStatus = 'shipped';
-
-  // Clear notification flags
-  if (order.notificationCleared !== undefined) {
-    order.notificationCleared = true;
-    order.notificationClearedAt = new Date();
-  }
+  order.notificationCleared = true;
+  order.notificationClearedAt = new Date();
 
   order.statusHistory.push({
     status: 'shipped',
     timestamp: new Date(),
     updatedBy: req.user.id,
-    note: `Shipment created. Tracking: ${shipmentResult.trackingNumber}${shipmentResult.mock ? ' (MOCK)' : ''}`,
+    note: `Shipment created. Tracking: ${shipmentResult.trackingNumber}`,
   });
 
   await order.save();
 
-  logger.info('Order updated with shipment details', {
-    orderId: order._id,
-    orderNumber: order.orderNumber,
-    trackingNumber: shipmentResult.trackingNumber,
-  });
+  logger.info(`Shipment created for order ${order.orderNumber}. Tracking: ${shipmentResult.trackingNumber}`);
 
-  // ===================================
-  // STEP 5: Send Shipping Confirmation Email
-  // ===================================
-
+  // Send emails
   try {
-    const user = order.user?._id ? order.user : await User.findById(order.user);
+    const user = await User.findById(order.user._id || order.user);
 
-    if (user && user.email) {
+    if (user) {
       const emailResult = await emailService.shippingConfirmationEmail(order, user);
 
       order.emailsSent.push({
         type: 'shipping',
         sentAt: new Date(),
-        success: emailResult?.success || false,
+        success: emailResult.success,
       });
       await order.save();
 
-      if (emailResult?.success) {
-        logger.info('Shipping confirmation email sent', {
-          orderNumber: order.orderNumber,
-          email: user.email,
-        });
-      } else {
-        logger.warn('Failed to send shipping confirmation email', {
-          orderNumber: order.orderNumber,
-          error: emailResult?.error,
-        });
+      if (emailResult.success) {
+        logger.info(`Shipping confirmation email sent for order: ${order.orderNumber}`);
       }
     }
   } catch (emailError) {
-    logger.error('Email error during shipment creation', {
-      orderNumber: order.orderNumber,
-      error: emailError.message,
-    });
-    // Don't fail shipment creation if email fails
+    logger.error(`Email error for order ${order.orderNumber}: ${emailError.message}`);
   }
-
-  // ===================================
-  // STEP 6: Notify Owner
-  // ===================================
 
   try {
     await emailService.ownerShipmentNotification(order);
-    logger.info('Owner notification sent for shipment', {
-      orderNumber: order.orderNumber,
-    });
   } catch (ownerEmailError) {
-    logger.error('Owner notification error', {
-      orderNumber: order.orderNumber,
-      error: ownerEmailError.message,
-    });
+    logger.error(`Owner notification error: ${ownerEmailError.message}`);
   }
-
-  // ===================================
-  // STEP 7: Return Response
-  // ===================================
 
   res.status(200).json({
     success: true,
-    message: shipmentResult.mock
-      ? 'Mock shipment created (Development Mode)'
-      : 'Shipment created successfully',
+    message: 'Shipment created successfully',
     data: {
       trackingNumber: shipmentResult.trackingNumber,
-      labelUrl: shipmentResult.labelUrl,
-      serviceName: shipmentResult.serviceName,
+      labelUrl: shipmentResult.label?.url,
       estimatedDelivery: order.fedexShipment.estimatedDelivery,
       order,
-      mock: shipmentResult.mock || false,
     },
+  });
+});
+
+// @desc    Download shipping label
+// @route   GET /api/v1/orders/:id/download-label
+// @access  Private/Admin
+export const downloadLabel = asyncHandler(async (req, res, next) => {
+  const order = await Order.findById(req.params.id);
+
+  if (!order || !order.fedexShipment.labelUrl) {
+    return next(new ErrorResponse('Label not found', 404));
+  }
+
+  return res.redirect(order.fedexShipment.labelUrl);
+});
+
+// @desc    View shipping label in browser
+// @route   GET /api/v1/orders/:id/view-label
+// @access  Private/Admin
+export const viewLabel = asyncHandler(async (req, res, next) => {
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    return next(new ErrorResponse('Order not found', 404));
+  }
+
+  if (!order.fedexShipment.labelPath) {
+    return next(new ErrorResponse('Label not found for this order', 404));
+  }
+
+  const filePath = path.join(process.cwd(), 'public', order.fedexShipment.labelPath);
+
+  if (!fs.existsSync(filePath)) {
+    logger.error(`Label file not found at path: ${filePath}`);
+    return next(new ErrorResponse('Label file not found on server', 404));
+  }
+
+  // Set headers to display in browser
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="label_${order.orderNumber}.pdf"`);
+
+  // Stream the file
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
+
+  fileStream.on('error', (err) => {
+    logger.error(`Error streaming label file: ${err.message}`);
+    return next(new ErrorResponse('Error viewing label', 500));
   });
 });
 
@@ -464,7 +347,7 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Order not found', 404));
   }
 
-  if (!order.fedexShipment?.trackingNumber) {
+  if (!order.fedexShipment.trackingNumber) {
     return next(new ErrorResponse('No tracking number found for this order', 400));
   }
 
@@ -473,104 +356,52 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
 
   let trackingResult;
 
-  // ===================================
-  // STEP 1: Get Tracking Information
-  // ===================================
-
-  // Only get real tracking in production/sandbox mode
-  if (process.env.FEDEX_MODE === 'production' || process.env.FEDEX_MODE === 'sandbox') {
-    logger.info('Retrieving FedEx tracking information...', {
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-      trackingNumber: order.fedexShipment.trackingNumber,
-    });
-
-    try {
-      trackingResult = await fedexService.trackShipment(order.fedexShipment.trackingNumber);
-
-      if (!trackingResult.success) {
-        logger.error('FedEx tracking retrieval failed', {
-          orderId: order._id,
-          orderNumber: order.orderNumber,
-          trackingNumber: order.fedexShipment.trackingNumber,
-          error: trackingResult.error,
-        });
-
-        return next(
-          new ErrorResponse(
-            `Failed to retrieve tracking: ${trackingResult.error}`,
-            400
-          )
-        );
-      }
-
-      logger.info('FedEx tracking retrieved successfully', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        status: trackingResult.status,
-      });
-
-    } catch (error) {
-      logger.error('FedEx tracking API error', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        error: error.message,
-      });
-
-      return next(
-        new ErrorResponse(
-          `Failed to retrieve tracking: ${error.message}`,
-          500
-        )
-      );
-    }
-  } else {
-    // Development mode - simulate tracking progression
-    logger.warn('⚠️  DEVELOPMENT MODE - Using mock tracking data', {
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-    });
-
-    const mockStatuses = [
-      'label-created',
-      'picked-up',
-      'in-transit',
-      'out-for-delivery',
-      'delivered'
-    ];
-    
-    const currentIndex = mockStatuses.indexOf(order.shippingStatus) || 0;
-    const nextIndex = Math.min(currentIndex + 1, mockStatuses.length - 1);
-    const newStatus = mockStatuses[nextIndex];
-
-    trackingResult = {
-      success: true,
-      trackingNumber: order.fedexShipment.trackingNumber,
-      status: newStatus.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      events: [
-        {
-          timestamp: new Date().toISOString(),
-          status: newStatus.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          location: 'Miami, FL',
-          description: `Package ${newStatus.replace(/-/g, ' ')}`,
-        },
-        ...(order.trackingHistory || []).map(h => ({
-          timestamp: h.timestamp,
-          status: h.status,
-          location: h.location,
-          description: h.description,
-        })),
-      ],
-      mock: true,
-    };
+  try {
+    trackingResult = await fedexService.trackShipment(order.fedexShipment.trackingNumber);
+  } catch (error) {
+    logger.error(`Tracking API error for order ${order.orderNumber}: ${error.message}`);
+    trackingResult = { success: false, error: error.message };
   }
 
-  // ===================================
-  // STEP 2: Update Tracking History
-  // ===================================
+  if (!trackingResult.success) {
+    // If in development and FedEx not configured, use mock data
+    if (process.env.NODE_ENV === 'development') {
+      logger.warn('Using mock tracking data in development mode');
 
-  if (trackingResult.events && Array.isArray(trackingResult.events) && trackingResult.events.length > 0) {
+      // Simulate tracking progression
+      const mockStatuses = ['label-created', 'picked-up', 'in-transit', 'out-for-delivery', 'delivered'];
+      const currentIndex = mockStatuses.indexOf(order.shippingStatus);
+      const nextIndex = Math.min(currentIndex + 1, mockStatuses.length - 1);
+      const newStatus = mockStatuses[nextIndex];
+
+      trackingResult = {
+        success: true,
+        trackingNumber: order.fedexShipment.trackingNumber,
+        status: newStatus.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        events: [
+          {
+            timestamp: new Date().toISOString(),
+            status: newStatus.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            location: 'Miami, FL',
+            description: `Package ${newStatus.replace(/-/g, ' ')}`,
+          },
+          ...(order.trackingHistory || []).map(h => ({
+            timestamp: h.timestamp,
+            status: h.status,
+            location: h.location,
+            description: h.description,
+          })),
+        ],
+        mock: true,
+      };
+    } else {
+      return next(new ErrorResponse(trackingResult.error || 'Failed to retrieve tracking', 400));
+    }
+  }
+
+  // Update order tracking history
+  if (trackingResult.events && trackingResult.events.length > 0) {
     order.trackingHistory = trackingResult.events.map(event => ({
       status: event.status,
       location: event.location,
@@ -579,10 +410,7 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
     }));
   }
 
-  // ===================================
-  // STEP 3: Update Shipping Status
-  // ===================================
-
+  // Update shipping status based on latest event
   const latestStatus = (trackingResult.status || '').toLowerCase();
 
   if (latestStatus.includes('delivered')) {
@@ -598,7 +426,6 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
     order.shippingStatus = 'exception';
   }
 
-  // Update estimated delivery
   if (trackingResult.estimatedDelivery) {
     order.fedexShipment.estimatedDelivery = new Date(trackingResult.estimatedDelivery);
   }
@@ -609,26 +436,18 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
       status: order.shippingStatus,
       timestamp: new Date(),
       updatedBy: req.user.id,
-      note: `Tracking updated: ${trackingResult.status}${trackingResult.mock ? ' (MOCK)' : ''}`,
+      note: `Tracking updated: ${trackingResult.status}`,
     });
   }
 
   await order.save();
 
-  logger.info('Order tracking updated', {
-    orderId: order._id,
-    orderNumber: order.orderNumber,
-    previousStatus: previousShippingStatus,
-    newStatus: order.shippingStatus,
-  });
+  logger.info(`Tracking updated for order ${order.orderNumber}: ${order.shippingStatus}`);
 
-  // ===================================
-  // STEP 4: Send Delivery Email if Delivered
-  // ===================================
-
+  // Send delivery confirmation email if just delivered
   if (order.shippingStatus === 'delivered' && previousShippingStatus !== 'delivered') {
     try {
-      const user = order.user?._id ? order.user : await User.findById(order.user);
+      const user = order.user._id ? order.user : await User.findById(order.user);
 
       if (user && user.email) {
         // Check if delivery email was already sent
@@ -642,53 +461,33 @@ export const updateOrderTracking = asyncHandler(async (req, res, next) => {
           order.emailsSent.push({
             type: 'delivery',
             sentAt: new Date(),
-            success: emailResult?.success || false,
+            success: emailResult.success,
           });
           await order.save();
 
-          if (emailResult?.success) {
-            logger.info('Delivery confirmation email sent', {
-              orderNumber: order.orderNumber,
-              email: user.email,
-            });
+          if (emailResult.success) {
+            logger.info(`Delivery confirmation email sent for order: ${order.orderNumber}`);
           } else {
-            logger.warn('Failed to send delivery confirmation email', {
-              orderNumber: order.orderNumber,
-              error: emailResult?.error,
-            });
+            logger.warn(`Failed to send delivery email for order ${order.orderNumber}: ${emailResult.error}`);
           }
         }
       }
     } catch (emailError) {
-      logger.error('Delivery email error', {
-        orderNumber: order.orderNumber,
-        error: emailError.message,
-      });
+      logger.error(`Delivery email error for order ${order.orderNumber}: ${emailError.message}`);
+      // Don't fail the tracking update if email fails
     }
 
     // Notify owner about delivery
     try {
       await emailService.ownerDeliveryNotification(order);
-      logger.info('Owner delivery notification sent', {
-        orderNumber: order.orderNumber,
-      });
     } catch (ownerEmailError) {
-      logger.error('Owner delivery notification error', {
-        orderNumber: order.orderNumber,
-        error: ownerEmailError.message,
-      });
+      logger.error(`Owner delivery notification error for order ${order.orderNumber}: ${ownerEmailError.message}`);
     }
   }
 
-  // ===================================
-  // STEP 5: Return Response
-  // ===================================
-
   res.status(200).json({
     success: true,
-    message: trackingResult.mock
-      ? 'Tracking updated (Development Mode)'
-      : 'Tracking updated successfully',
+    message: 'Tracking updated successfully',
     data: {
       tracking: trackingResult,
       order,
@@ -707,10 +506,7 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Order not found', 404));
   }
 
-  // ===================================
-  // STEP 1: Check Authorization
-  // ===================================
-
+  // Check authorization
   if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
     if (order.user._id.toString() !== req.user.id) {
       return next(new ErrorResponse('Not authorized to cancel this order', 403));
@@ -718,12 +514,7 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
 
     // Users can only cancel pending or confirmed orders
     if (!['pending', 'confirmed'].includes(order.orderStatus)) {
-      return next(
-        new ErrorResponse(
-          'This order cannot be cancelled. Please contact support.',
-          400
-        )
-      );
+      return next(new ErrorResponse('This order cannot be cancelled. Please contact support.', 400));
     }
   }
 
@@ -732,83 +523,23 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
   }
 
   if (order.orderStatus === 'delivered') {
-    return next(
-      new ErrorResponse(
-        'Delivered orders cannot be cancelled. Please request a return instead.',
-        400
-      )
-    );
+    return next(new ErrorResponse('Delivered orders cannot be cancelled. Please request a return instead.', 400));
   }
 
-  // ===================================
-  // STEP 2: Cancel FedEx Shipment
-  // ===================================
-
-  if (order.fedexShipment?.trackingNumber) {
-    // Only cancel real shipment in production/sandbox mode
-    if (process.env.FEDEX_MODE === 'production' || process.env.FEDEX_MODE === 'sandbox') {
-      logger.info('Cancelling FedEx shipment...', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        trackingNumber: order.fedexShipment.trackingNumber,
-      });
-
-      try {
-        const cancelResult = await fedexService.cancelShipment(
-          order.fedexShipment.trackingNumber,
-          req.body.reason || 'Order cancellation'
-        );
-
-        if (cancelResult.success) {
-          logger.info('✅ FedEx shipment cancelled', {
-            orderId: order._id,
-            orderNumber: order.orderNumber,
-            trackingNumber: order.fedexShipment.trackingNumber,
-          });
-        } else {
-          logger.error('FedEx shipment cancellation failed', {
-            orderId: order._id,
-            orderNumber: order.orderNumber,
-            trackingNumber: order.fedexShipment.trackingNumber,
-            error: cancelResult.error,
-          });
-
-          // Add note to order but continue with cancellation
-          if (!order.notes) order.notes = {};
-          order.notes.admin = `${order.notes.admin || ''}\nFedEx cancellation failed: ${cancelResult.error}. May require manual void.`;
-        }
-      } catch (fedexError) {
-        logger.error('FedEx cancellation error', {
-          orderId: order._id,
-          orderNumber: order.orderNumber,
-          error: fedexError.message,
-        });
-
-        // Add note but continue
-        if (!order.notes) order.notes = {};
-        order.notes.admin = `${order.notes.admin || ''}\nFedEx cancellation error: ${fedexError.message}. May require manual void.`;
-      }
-    } else {
-      logger.warn('⚠️  DEVELOPMENT MODE - Skipping FedEx cancellation', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-      });
+  // Cancel FedEx shipment if exists
+  if (order.fedexShipment.trackingNumber) {
+    try {
+      await fedexService.cancelShipment(order.fedexShipment.trackingNumber);
+      logger.info(`FedEx shipment cancelled for order ${order.orderNumber}`);
+    } catch (fedexError) {
+      logger.error(`Failed to cancel FedEx shipment for order ${order.orderNumber}: ${fedexError.message}`);
+      // Continue with order cancellation even if FedEx cancellation fails
     }
   }
 
-  // ===================================
-  // STEP 3: Refund Payment
-  // ===================================
-
+  // Refund payment if already paid
   if (order.paymentStatus === 'paid' && order.paymentIntentId) {
     try {
-      logger.info('Processing refund...', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        paymentIntentId: order.paymentIntentId,
-        amount: order.total,
-      });
-
       const refund = await stripe.refunds.create({
         payment_intent: order.paymentIntentId,
         reason: 'requested_by_customer',
@@ -822,30 +553,13 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
         refundId: refund.id,
       };
 
-      logger.info('✅ Refund processed', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        refundId: refund.id,
-        amount: refund.amount / 100,
-      });
-
+      logger.info(`Refund processed for order ${order.orderNumber}: ${refund.id}`);
     } catch (refundError) {
-      logger.error('Refund failed', {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        error: refundError.message,
-      });
-
+      logger.error(`Refund failed for order ${order.orderNumber}: ${refundError.message}`);
       // Mark as needing manual refund
-      if (!order.notes) order.notes = {};
-      order.notes.admin = `${order.notes.admin || ''}\n⚠️ AUTO-REFUND FAILED: ${refundError.message}. MANUAL REFUND REQUIRED!`;
-      order.paymentStatus = 'refund-pending';
+      order.notes.admin = `${order.notes.admin || ''}\nAUTO-REFUND FAILED: ${refundError.message}. Manual refund required.`;
     }
   }
-
-  // ===================================
-  // STEP 4: Update Order Status
-  // ===================================
 
   order.orderStatus = 'cancelled';
   order.shippingStatus = 'cancelled';
@@ -859,44 +573,21 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
 
   await order.save();
 
-  // ===================================
-  // STEP 5: Restore Product Stock
-  // ===================================
-
+  // Restore product stock
   for (const item of order.items) {
-    try {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: {
-          stockQuantity: item.quantity,
-          salesCount: -item.quantity,
-        },
-      });
-
-      logger.debug('Stock restored for product', {
-        productId: item.product,
-        quantity: item.quantity,
-      });
-    } catch (stockError) {
-      logger.error('Failed to restore stock', {
-        productId: item.product,
-        error: stockError.message,
-      });
-    }
+    await Product.findByIdAndUpdate(item.product, {
+      $inc: {
+        stockQuantity: item.quantity,
+        salesCount: -item.quantity,
+      },
+    });
   }
 
-  logger.info('Order cancelled', {
-    orderId: order._id,
-    orderNumber: order.orderNumber,
-    cancelledBy: req.user.email,
-    reason: req.body.reason,
-  });
+  logger.info(`Order ${order.orderNumber} cancelled by ${req.user.email}`);
 
-  // ===================================
-  // STEP 6: Send Cancellation Email
-  // ===================================
-
+  // Send cancellation email
   try {
-    const user = order.user?._id ? order.user : await User.findById(order.user);
+    const user = order.user._id ? order.user : await User.findById(order.user);
 
     if (user && user.email) {
       const emailResult = await emailService.orderCancellationEmail(order, user);
@@ -904,27 +595,17 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
       order.emailsSent.push({
         type: 'cancellation',
         sentAt: new Date(),
-        success: emailResult?.success || false,
+        success: emailResult.success,
       });
       await order.save();
 
-      if (emailResult?.success) {
-        logger.info('Cancellation email sent', {
-          orderNumber: order.orderNumber,
-          email: user.email,
-        });
+      if (emailResult.success) {
+        logger.info(`Cancellation email sent for order: ${order.orderNumber}`);
       }
     }
   } catch (emailError) {
-    logger.error('Cancellation email error', {
-      orderNumber: order.orderNumber,
-      error: emailError.message,
-    });
+    logger.error(`Cancellation email error for order ${order.orderNumber}: ${emailError.message}`);
   }
-
-  // ===================================
-  // STEP 7: Return Response
-  // ===================================
 
   res.status(200).json({
     success: true,
@@ -944,7 +625,7 @@ export const resendOrderConfirmation = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Order not found', 404));
   }
 
-  const user = order.user?._id ? order.user : await User.findById(order.user);
+  const user = order.user._id ? order.user : await User.findById(order.user);
 
   if (!user || !user.email) {
     return next(new ErrorResponse('User email not found', 400));
@@ -956,29 +637,21 @@ export const resendOrderConfirmation = asyncHandler(async (req, res, next) => {
     order.emailsSent.push({
       type: 'confirmation',
       sentAt: new Date(),
-      success: emailResult?.customerEmail?.success || false,
+      success: emailResult.customerEmail?.success || false,
     });
     await order.save();
 
-    if (emailResult?.success || emailResult?.customerEmail?.success) {
-      logger.info('Order confirmation email resent', {
-        orderNumber: order.orderNumber,
-        email: user.email,
-      });
-
+    if (emailResult.success) {
+      logger.info(`Order confirmation email resent for order: ${order.orderNumber}`);
       res.status(200).json({
         success: true,
         message: 'Order confirmation email sent successfully',
       });
     } else {
-      throw new Error(emailResult?.error || 'Failed to send email');
+      throw new Error(emailResult.error || 'Failed to send email');
     }
   } catch (error) {
-    logger.error('Failed to resend confirmation email', {
-      orderNumber: order.orderNumber,
-      error: error.message,
-    });
-
+    logger.error(`Failed to resend confirmation email for order ${order.orderNumber}: ${error.message}`);
     return next(new ErrorResponse('Failed to send email', 500));
   }
 });
@@ -1054,118 +727,4 @@ export const getOrderStats = asyncHandler(async (req, res, next) => {
     success: true,
     data: stats,
   });
-});
-
-// @desc    Validate shipping address
-// @route   POST /api/v1/orders/validate-address
-// @access  Private
-export const validateShippingAddress = asyncHandler(async (req, res, next) => {
-  const { address } = req.body;
-
-  if (!address) {
-    return next(new ErrorResponse('Address is required', 400));
-  }
-
-  try {
-    const validation = await fedexService.validateAddress({
-      addressLine1: address.addressLine1,
-      addressLine2: address.addressLine2,
-      city: address.city,
-      state: address.state,
-      zipCode: address.zipCode,
-      country: address.country || 'US',
-    });
-
-    res.status(200).json({
-      success: true,
-      data: validation,
-    });
-
-  } catch (error) {
-    logger.error('Address validation error', {
-      error: error.message,
-      address,
-    });
-
-    return next(new ErrorResponse('Failed to validate address', 500));
-  }
-});
-
-// @desc    Get shipping rates for cart
-// @route   POST /api/v1/orders/shipping-rates
-// @access  Private
-export const getShippingRates = asyncHandler(async (req, res, next) => {
-  const { items, shippingAddress } = req.body;
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return next(new ErrorResponse('Cart items are required', 400));
-  }
-
-  if (!shippingAddress) {
-    return next(new ErrorResponse('Shipping address is required', 400));
-  }
-
-  // Validate address first
-  const addressValidation = await fedexService.validateAddress({
-    addressLine1: shippingAddress.addressLine1,
-    addressLine2: shippingAddress.addressLine2,
-    city: shippingAddress.city,
-    state: shippingAddress.state,
-    zipCode: shippingAddress.zipCode,
-    country: shippingAddress.country || 'US',
-  });
-
-  if (!addressValidation.isValid) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid shipping address',
-      error: addressValidation.error,
-      suggestion: addressValidation.resolvedAddress,
-    });
-  }
-
-  // Get product details
-  const cartItems = [];
-  for (const item of items) {
-    const product = await Product.findById(item.product);
-    if (product) {
-      cartItems.push({
-        quantity: item.quantity || 1,
-        price: product.price,
-        dimensions: product.dimensions,
-        weight: product.weight,
-      });
-    }
-  }
-
-  if (cartItems.length === 0) {
-    return next(new ErrorResponse('No valid products found in cart', 400));
-  }
-
-  // Calculate packages
-  const packages = fedexService.calculatePackageDimensions(cartItems);
-
-  // Get rates
-  const fromAddress = {
-    addressLine1: process.env.WAREHOUSE_ADDRESS_LINE1,
-    city: process.env.WAREHOUSE_CITY,
-    state: process.env.WAREHOUSE_STATE,
-    zipCode: process.env.WAREHOUSE_ZIP,
-    country: process.env.WAREHOUSE_COUNTRY || 'US',
-  };
-
-  const ratesResult = await fedexService.getShippingRates({
-    fromAddress,
-    toAddress: {
-      addressLine1: shippingAddress.addressLine1,
-      city: shippingAddress.city,
-      state: shippingAddress.state,
-      zipCode: shippingAddress.zipCode,
-      country: shippingAddress.country || 'US',
-      residential: addressValidation.classification === 'RESIDENTIAL',
-    },
-    packages,
-  });
-
-  res.json(ratesResult);
 });

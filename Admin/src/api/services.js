@@ -44,6 +44,8 @@ export const orderService = {
   updateStatus: (id, data) => api.put(`/orders/${id}/status`, data),
   createShipment: (id) => api.post(`/orders/${id}/ship`),
   updateTracking: (id) => api.post(`/orders/${id}/update-tracking`),
+  downloadLabel: (id) => api.get(`/orders/${id}/download-label`, { responseType: 'blob' }),
+  viewLabel: (id) => `${api.defaults.baseURL}/orders/${id}/view-label`, // Add this
   getStats: () => api.get('/orders/stats/overview'),
 };
 

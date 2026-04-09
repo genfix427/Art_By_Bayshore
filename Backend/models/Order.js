@@ -71,7 +71,7 @@ const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
     unique: true,
-    sparse: true, // Allow null during creation
+    sparse: true,
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -134,16 +134,18 @@ const orderSchema = new mongoose.Schema({
   },
   shippingStatus: {
     type: String,
-    enum: ['pending', 'label-created', 'picked-up', 'in-transit', 'out-for-delivery', 'delivered', 'exception', 'returned'],
+    enum: ['pending', 'label-created', 'picked-up', 'in-transit', 'out-for-delivery', 'delivered', 'exception', 'returned', 'cancelled'],
     default: 'pending',
   },
-  fedexShipment: {
+   fedexShipment: {
     trackingNumber: String,
-    labelUrl: String,
     masterId: String,
-    rateId: String,
-    estimatedDelivery: Date,
+    labelUrl: String,           // Cloudinary secure URL
+    labelPublicId: String,      // Cloudinary public ID for deletion
+    labelStorage: { type: String, enum: ['cloudinary'], default: 'cloudinary' },
     serviceType: String,
+    estimatedDelivery: Date,
+    rateId: String,
   },
   trackingHistory: [{
     status: String,
@@ -197,14 +199,14 @@ const orderSchema = new mongoose.Schema({
   toObject: { virtuals: true },
 });
 
-// Indexes for better performance
+// Indexes
 orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ 'fedexShipment.trackingNumber': 1 });
 
-// Generate order number before validation
+// Generate order number
 orderSchema.pre('validate', async function(next) {
   if (this.isNew && !this.orderNumber) {
     try {
@@ -213,21 +215,19 @@ orderSchema.pre('validate', async function(next) {
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       
-      // Count existing orders to generate sequential number
       const count = await mongoose.model('Order').countDocuments();
       const orderNum = String(count + 1).padStart(6, '0');
       
       this.orderNumber = `ORD${year}${month}${day}${orderNum}`;
     } catch (error) {
       console.error('Error generating order number:', error);
-      // Fallback to timestamp-based number
       this.orderNumber = `ORD${Date.now()}`;
     }
   }
   next();
 });
 
-// Add status to history when order status changes
+// Add status to history
 orderSchema.pre('save', function(next) {
   if (this.isModified('orderStatus') && !this.isNew) {
     this.statusHistory.push({
