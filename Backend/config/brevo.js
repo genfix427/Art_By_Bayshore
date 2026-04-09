@@ -1,19 +1,27 @@
-import sgMail from '@sendgrid/mail';
+import SibApiV3Sdk from 'sib-api-v3-sdk';
 import logger from '../utils/logger.js';
 
-// Initialize SendGrid
-if (!process.env.SENDGRID_API_KEY) {
-  console.warn("⚠️ SENDGRID_API_KEY is missing. Emails disabled.");
+// Initialize Brevo
+let defaultClient = null;
+let apiInstance = null;
+let transactionalEmailsApi = null;
+
+if (!process.env.BREVO_API_KEY) {
+  console.warn("⚠️ BREVO_API_KEY is missing. Emails disabled.");
 } else {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  console.log("✅ SendGrid initialized successfully.");
+  defaultClient = SibApiV3Sdk.ApiClient.instance;
+  const apiKey = defaultClient.authentications['api-key'];
+  apiKey.apiKey = process.env.BREVO_API_KEY;
+  apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+  transactionalEmailsApi = apiInstance;
+  console.log("✅ Brevo initialized successfully.");
 }
 
 class EmailService {
   constructor() {
     this.from = {
-      email: process.env.SENDGRID_FROM_EMAIL || 'hello@em7143.artbybayshore.com',
-      name: process.env.SENDGRID_FROM_NAME || 'Art By Bayshore',
+      email: process.env.BREVO_FROM_EMAIL || 'hello@em7143.artbybayshore.com',
+      name: process.env.BREVO_FROM_NAME || 'Art By Bayshore',
     };
     this.ownerEmail = process.env.OWNER_EMAIL || 'bayshoredesigncenter@gmail.com';
     this.companyName = process.env.COMPANY_NAME || 'Art By Bayshore';
@@ -25,22 +33,24 @@ class EmailService {
 
   async send(to, subject, html, text = null) {
     try {
-      if (!process.env.SENDGRID_API_KEY) {
-        logger.warn(`Email not sent (SendGrid not configured): ${subject} to ${to}`);
-        return { success: false, error: 'SendGrid not configured' };
+      if (!process.env.BREVO_API_KEY) {
+        logger.warn(`Email not sent (Brevo not configured): ${subject} to ${to}`);
+        return { success: false, error: 'Brevo not configured' };
       }
 
-      const msg = {
-        to,
-        from: this.from,
-        subject,
-        html,
-        text: text || this.stripHtml(html),
+      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.to = [{ email: to }];
+      sendSmtpEmail.sender = { 
+        email: this.from.email, 
+        name: this.from.name 
       };
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = html;
+      sendSmtpEmail.textContent = text || this.stripHtml(html);
 
-      const result = await sgMail.send(msg);
+      const result = await transactionalEmailsApi.sendTransacEmail(sendSmtpEmail);
       logger.info(`Email sent successfully to ${to}`);
-      return { success: true, messageId: result[0].headers['x-message-id'] };
+      return { success: true, messageId: result.messageId };
     } catch (error) {
       logger.error(`Email sending failed: ${error.message}`);
       return { success: false, error: error.message };
@@ -49,14 +59,23 @@ class EmailService {
 
   async sendMultiple(emails) {
     try {
-      if (!process.env.SENDGRID_API_KEY) {
-        logger.warn('Bulk emails not sent (SendGrid not configured)');
-        return { success: false, error: 'SendGrid not configured' };
+      if (!process.env.BREVO_API_KEY) {
+        logger.warn('Bulk emails not sent (Brevo not configured)');
+        return { success: false, error: 'Brevo not configured' };
       }
 
-      const result = await sgMail.send(emails);
+      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.to = emails.map(email => ({ email: email.to }));
+      sendSmtpEmail.sender = { 
+        email: this.from.email, 
+        name: this.from.name 
+      };
+      sendSmtpEmail.subject = emails[0]?.subject || 'Message';
+      sendSmtpEmail.htmlContent = emails[0]?.html || '';
+      
+      const result = await transactionalEmailsApi.sendTransacEmail(sendSmtpEmail);
       logger.info(`Bulk emails sent successfully: ${emails.length} recipients`);
-      return { success: true, count: emails.length };
+      return { success: true, count: emails.length, messageId: result.messageId };
     } catch (error) {
       logger.error(`Bulk email sending failed: ${error.message}`);
       return { success: false, error: error.message };
@@ -125,7 +144,7 @@ class EmailService {
               ${item.image ? `
                 <td style="padding-right: 15px; vertical-align: top;">
                   <img src="${item.image}" alt="${item.title}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 4px; display: block;">
-                </td>
+                 </td>
               ` : ''}
               <td style="vertical-align: top;">
                 <p style="margin: 0; font-weight: 600; color: #111827; font-size: 15px;">${item.title}</p>
@@ -135,14 +154,14 @@ class EmailService {
                   </p>
                 ` : ''}
                 <p style="margin: 5px 0 0; font-size: 13px; color: #6B7280;">Qty: ${item.quantity}</p>
-              </td>
-            </tr>
-          </table>
-        </td>
+               </td>
+             </tr>
+           </table>
+         </td>
         <td style="padding: 15px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; vertical-align: top; font-weight: 600; color: #111827; font-size: 15px;">
           ${this.formatCurrency(item.price * item.quantity)}
-        </td>
-      </tr>
+         </td>
+       </tr>
     `).join('');
 
     const content = `
@@ -796,7 +815,7 @@ class EmailService {
   }
 
   // Welcome email
-  welcomeEmail(user) {
+  async welcomeEmail(user) {
     const subject = `Welcome to ${this.companyName}!`;
     const content = `
       <tr>
@@ -834,13 +853,12 @@ class EmailService {
   }
 
   // Email verification
-  // In sendgrid.js - emailVerificationEmail method
-  emailVerificationEmail(user, verificationUrl) {
+  async emailVerificationEmail(user, verificationUrl) {
     console.log('📧 Sending verification email:');
     console.log('To:', user.email);
     console.log('URL:', verificationUrl);
 
-    const subject = `Verify Your Email - ${process.env.COMPANY_NAME}`;
+    const subject = `Verify Your Email - ${this.companyName}`;
     const html = `
     <!DOCTYPE html>
     <html>
@@ -850,29 +868,44 @@ class EmailService {
       </head>
       <body>
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <!-- ... other content ... -->
-          
-          <div style="text-align: center; margin: 40px 0;">
-            <a href="${verificationUrl}" 
-               style="background-color: #111827; 
-                      color: white; 
-                      padding: 16px 40px; 
-                      text-decoration: none; 
-                      font-weight: 600;
-                      display: inline-block;
-                      letter-spacing: 0.5px;">
-              VERIFY EMAIL ADDRESS
-            </a>
+          <div style="background-color: #111827; padding: 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0;">${this.companyName}</h1>
           </div>
           
-          <p style="color: #6B7280; font-size: 14px; line-height: 1.6;">
-            Or copy and paste this link in your browser:
-          </p>
-          <p style="color: #3B82F6; font-size: 14px; word-break: break-all;">
-            ${verificationUrl}
-          </p>
+          <div style="padding: 30px;">
+            <h2>Welcome ${user.firstName}!</h2>
+            <p>Please verify your email address to complete your registration.</p>
+            
+            <div style="text-align: center; margin: 40px 0;">
+              <a href="${verificationUrl}" 
+                 style="background-color: #111827; 
+                        color: white; 
+                        padding: 16px 40px; 
+                        text-decoration: none; 
+                        font-weight: 600;
+                        display: inline-block;
+                        letter-spacing: 0.5px;">
+                VERIFY EMAIL ADDRESS
+              </a>
+            </div>
+            
+            <p style="color: #6B7280; font-size: 14px; line-height: 1.6;">
+              Or copy and paste this link in your browser:
+            </p>
+            <p style="color: #3B82F6; font-size: 14px; word-break: break-all;">
+              ${verificationUrl}
+            </p>
+            
+            <p style="color: #6B7280; font-size: 14px;">
+              This link will expire in 24 hours.
+            </p>
+          </div>
           
-          <!-- ... rest of email ... -->
+          <div style="background-color: #111827; padding: 20px; text-align: center;">
+            <p style="margin: 0; color: #9CA3AF; font-size: 12px;">
+              ${this.companyName} | ${this.companyAddress}
+            </p>
+          </div>
         </div>
       </body>
     </html>
@@ -881,7 +914,7 @@ class EmailService {
   }
 
   // Password reset
-  passwordResetEmail(user, resetUrl) {
+  async passwordResetEmail(user, resetUrl) {
     const subject = `Password Reset Request - ${this.companyName}`;
     const content = `
       <tr>
@@ -913,37 +946,8 @@ class EmailService {
     return this.send(user.email, subject, html);
   }
 
-  welcomeEmail(user) {
-    const subject = `Welcome to ${process.env.COMPANY_NAME}!`;
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body>
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1>Welcome ${user.firstName}!</h1>
-            <p>Thank you for registering with ${process.env.COMPANY_NAME}.</p>
-            <p>We're excited to have you as part of our community of art enthusiasts.</p>
-            <p>Explore our curated collection of unique artworks and paintings from talented artists around the world.</p>
-            <p>If you have any questions, feel free to reach out to our support team at ${process.env.SUPPORT_EMAIL}</p>
-            <p>Best regards,<br>The ${process.env.COMPANY_NAME} Team</p>
-            <hr>
-            <p style="font-size: 12px; color: #666;">
-              ${process.env.COMPANY_NAME}<br>
-              ${process.env.COMPANY_ADDRESS}
-            </p>
-          </div>
-        </body>
-      </html>
-    `;
-    return this.send(user.email, subject, html);
-  }
-
   // Inquiry confirmation email
-  inquiryConfirmationEmail(inquiry, product) {
+  async inquiryConfirmationEmail(inquiry, product) {
     const subject = `We received your inquiry - ${inquiry.inquiryNumber}`;
     const html = `
       <!DOCTYPE html>
@@ -964,12 +968,12 @@ class EmailService {
               <p>${inquiry.message}</p>
             </div>
             <p>Our team will review your inquiry and respond within 24-48 hours.</p>
-            <p>If you need immediate assistance, please contact us at ${process.env.SUPPORT_EMAIL}</p>
-            <p>Best regards,<br>The ${process.env.COMPANY_NAME} Team</p>
+            <p>If you need immediate assistance, please contact us at ${this.supportEmail}</p>
+            <p>Best regards,<br>The ${this.companyName} Team</p>
             <hr>
             <p style="font-size: 12px; color: #666;">
-              ${process.env.COMPANY_NAME}<br>
-              ${process.env.COMPANY_ADDRESS}
+              ${this.companyName}<br>
+              ${this.companyAddress}
             </p>
           </div>
         </body>
@@ -979,7 +983,7 @@ class EmailService {
   }
 
   // Inquiry response email
-  inquiryResponseEmail(inquiry, response) {
+  async inquiryResponseEmail(inquiry, response) {
     const subject = `Response to your inquiry - ${inquiry.inquiryNumber}`;
     const html = `
       <!DOCTYPE html>
@@ -999,12 +1003,12 @@ class EmailService {
               <p>${response}</p>
             </div>
             <p>If you have any additional questions, please don't hesitate to contact us.</p>
-            <p>Best regards,<br>The ${process.env.COMPANY_NAME} Team</p>
+            <p>Best regards,<br>The ${this.companyName} Team</p>
             <hr>
             <p style="font-size: 12px; color: #666;">
-              ${process.env.COMPANY_NAME}<br>
-              ${process.env.COMPANY_ADDRESS}<br>
-              Email: ${process.env.SUPPORT_EMAIL}
+              ${this.companyName}<br>
+              ${this.companyAddress}<br>
+              Email: ${this.supportEmail}
             </p>
           </div>
         </body>
@@ -1014,9 +1018,9 @@ class EmailService {
   }
 
   // Newsletter subscription confirmation
-  newsletterSubscriptionEmail(subscriber) {
-    const unsubscribeUrl = `${process.env.FRONTEND_URL}/newsletter/unsubscribe/${subscriber.unsubscribeToken}`;
-    const subject = `Subscription Confirmed - ${process.env.COMPANY_NAME}`;
+  async newsletterSubscriptionEmail(subscriber) {
+    const unsubscribeUrl = `${this.frontendUrl}/newsletter/unsubscribe/${subscriber.unsubscribeToken}`;
+    const subject = `Subscription Confirmed - ${this.companyName}`;
     const html = `
       <!DOCTYPE html>
       <html>
@@ -1028,7 +1032,7 @@ class EmailService {
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h1>Subscription Confirmed!</h1>
             <p>Hi${subscriber.firstName ? ' ' + subscriber.firstName : ''},</p>
-            <p>Thank you for subscribing to the ${process.env.COMPANY_NAME} newsletter!</p>
+            <p>Thank you for subscribing to the ${this.companyName} newsletter!</p>
             <p>You'll now receive updates about:</p>
             <ul>
               <li>New artwork arrivals</li>
@@ -1042,8 +1046,8 @@ class EmailService {
             </p>
             <hr>
             <p style="font-size: 12px; color: #666;">
-              ${process.env.COMPANY_NAME}<br>
-              ${process.env.COMPANY_ADDRESS}
+              ${this.companyName}<br>
+              ${this.companyAddress}
             </p>
           </div>
         </body>
@@ -1053,9 +1057,9 @@ class EmailService {
   }
 
   // Admin notification for new inquiry
-  adminInquiryNotification(inquiry, product) {
+  async adminInquiryNotification(inquiry, product) {
     const subject = `New Inquiry Received - ${inquiry.inquiryNumber}`;
-    const adminUrl = `${process.env.ADMIN_URL}/inquiries/${inquiry._id}`;
+    const adminUrl = `${this.adminUrl}/inquiries/${inquiry._id}`;
     const html = `
       <!DOCTYPE html>
       <html>
@@ -1080,7 +1084,7 @@ class EmailService {
         </body>
       </html>
     `;
-    return this.send(process.env.SUPPORT_EMAIL, subject, html);
+    return this.send(this.ownerEmail, subject, html);
   }
 
   async sendNewsletterCampaign(campaign, subscribers) {

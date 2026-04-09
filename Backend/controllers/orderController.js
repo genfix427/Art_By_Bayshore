@@ -5,7 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import ErrorResponse from '../utils/errorResponse.js';
 import { getPagination, getPaginationMeta } from '../utils/pagination.js';
 import fedexService from '../config/fedex.js';
-import emailService from '../config/sendgrid.js';
+import emailService from '../config/brevo.js';
 import stripe from '../config/stripe.js';
 import logger from '../utils/logger.js';
 

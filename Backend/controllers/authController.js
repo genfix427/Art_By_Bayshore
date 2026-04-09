@@ -3,7 +3,7 @@ import User from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import ErrorResponse from '../utils/errorResponse.js';
 import logger from '../utils/logger.js';
-import emailService from '../config/sendgrid.js';
+import emailService from '../config/brevo.js';
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
