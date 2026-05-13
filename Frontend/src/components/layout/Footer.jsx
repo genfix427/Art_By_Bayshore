@@ -169,7 +169,7 @@ const Footer = () => {
                 <img 
                   src={CompanyLogo} 
                   alt="ArtByBayshore Logo" 
-                  className="h-24 w-auto filter grayscale hover:grayscale-0 transition-all duration-500" 
+                  className="h-24 w-auto filter transition-all duration-500" 
                 />
                 <motion.div
                   initial={{ scaleX: 0 }}

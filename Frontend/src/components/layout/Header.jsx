@@ -109,7 +109,7 @@ const Header = () => {
                 title="ArtByBayshore Home"
               >
                 <span className="font-parisienne text-4xl font-bold group-hover:opacity-80 transition-opacity">
-                  <img src={CompanyLogo} alt="ArtByBayshore Logo" className="h-16 w-auto" />
+                  <img src={CompanyLogo} alt="ArtByBayshore Logo" className="h-22 w-auto py-1" />
                 </span>
               </Link>
             </div>
