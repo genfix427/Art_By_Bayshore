@@ -1,347 +1,171 @@
-// pages/VirtualGallery.jsx
-import { useState, useEffect } from 'react';
+// src/sections/home/VirtualGallerySection.jsx
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  Eye, 
-  Layers, 
-  Zap,
-  ArrowRight,
-  Mail,
-  Bell,
-  CheckCircle,
-  Loader2
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useSEO } from '../hooks/useSEO';
+import { X, Maximize2, Minimize2, Info, ExternalLink } from 'lucide-react';
+// import SectionHeading from '@components/ui/SectionHeading';
 
-// Floating petal component
-const FloatingPetal = ({ delay, startX, duration, size = 14 }) => (
-  <motion.div
-    className="absolute pointer-events-none z-0"
-    style={{ left: `${startX}%`, top: "-5%" }}
-    initial={{ opacity: 0, y: -20, rotate: 0 }}
-    animate={{
-      opacity: [0, 0.08, 0.08, 0],
-      y: [-20, 400, 800],
-      rotate: [0, 180, 360],
-      x: [0, 30, -20],
-    }}
-    transition={{
-      duration: duration,
-      delay: delay,
-      repeat: Infinity,
-      ease: "linear",
-    }}
-  >
-    <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-900">
-      <path
-        d="M12 2C12 2 14 6 14 8C14 10 12 12 12 12C12 12 10 10 10 8C10 6 12 2 12 2Z"
-        fill="currentColor"
-      />
-    </svg>
-  </motion.div>
-);
+export default function VirtualGallerySection() {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+  const containerRef = useRef(null);
+  const iframeRef = useRef(null);
 
-// Geometric shapes floating
-const FloatingShape = ({ delay, shape, size = 40, startX, startY, duration }) => {
-  const shapes = {
-    circle: (
-      <circle cx={size / 2} cy={size / 2} r={size / 3} stroke="currentColor" strokeWidth="1" fill="none" />
-    ),
-    square: (
-      <rect x={size / 6} y={size / 6} width={size / 1.5} height={size / 1.5} stroke="currentColor" strokeWidth="1" fill="none" />
-    ),
-    triangle: (
-      <polygon points={`${size / 2},${size / 6} ${size - size / 6},${size - size / 6} ${size / 6},${size - size / 6}`} stroke="currentColor" strokeWidth="1" fill="none" />
-    ),
-  };
-
-  return (
-    <motion.div
-      className="absolute pointer-events-none z-0"
-      style={{ left: `${startX}%`, top: `${startY}%` }}
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{
-        opacity: [0, 0.15, 0.15, 0],
-        scale: [0, 1, 1, 0],
-        rotate: [0, 360],
-        y: [0, -200],
-      }}
-      transition={{
-        duration: duration,
-        delay: delay,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="text-gray-900">
-        {shapes[shape]}
-      </svg>
-    </motion.div>
-  );
-};
-
-// Glowing orb
-const GlowingOrb = ({ size = 200, delay = 0 }) => (
-  <motion.div
-    className="absolute rounded-full"
-    style={{
-      width: size,
-      height: size,
-      background: 'radial-gradient(circle, rgba(0,0,0,0.1) 0%, transparent 70%)',
-      filter: 'blur(40px)',
-    }}
-    initial={{ opacity: 0, scale: 0.5 }}
-    animate={{ 
-      opacity: [0.3, 0.6, 0.3],
-      scale: [0.8, 1.2, 0.8],
-    }}
-    transition={{
-      duration: 4,
-      delay: delay,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  />
-);
-
-const VirtualGallery = () => {
-  const [email, setEmail] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  useSEO({
-    title: 'Virtual Gallery - Coming Soon | Art By Bayshore',
-    description: 'Experience art in a whole new dimension. Our immersive virtual gallery is coming soon.',
-  });
-
-  // Generate floating elements
-  const petals = Array.from({ length: 15 }).map((_, i) => ({
-    delay: i * 1.2,
-    startX: 5 + i * 6.5,
-    duration: 12 + Math.random() * 8,
-    size: 10 + Math.random() * 8,
-  }));
-
-  const shapes = Array.from({ length: 8 }).map((_, i) => ({
-    delay: i * 2,
-    shape: ['circle', 'square', 'triangle'][i % 3],
-    size: 30 + Math.random() * 30,
-    startX: 10 + i * 12,
-    startY: 20 + Math.random() * 60,
-    duration: 15 + Math.random() * 10,
-  }));
-
-  // Track mouse position for parallax effect
+  // Handle fullscreen changes
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth - 0.5) * 20,
-        y: (e.clientY / window.innerHeight - 0.5) * 20,
-      });
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
     };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  const handleSubscribe = async (e) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubscribed(true);
-      setIsSubmitting(false);
-      setEmail('');
-    }, 1500);
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      await containerRef.current.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
   };
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.3,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8, ease: "easeOut" },
-    },
-  };
-
-  const floatingVariants = {
-    animate: {
-      y: [0, -20, 0],
-      transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut",
-      },
-    },
-  };
+  // ArtSteps embed code with responsive dimensions (16:9 ratio base, but full width/height in fullscreen)
+  const embedCode = "https://www.artsteps.com/embed/6a055ece96e33e5284c4af5b";
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Background Pattern */}
-      <div 
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111827' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}
-      />
-
-      {/* Floating Petals */}
+    <section 
+      className="bg-gray-50 relative overflow-hidden" 
+      aria-label="Virtual Gallery Tour"
+    >
+      {/* Simple dot and plus background animation (preserved from original) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {petals.map((petal, i) => (
-          <FloatingPetal key={i} {...petal} />
-        ))}
+        <div className="absolute top-10 left-[5%] w-3 h-3 rounded-full bg-primary-300/30 animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute top-20 right-[10%] w-2 h-2 rounded-full bg-primary-400/40 animate-ping" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+        <div className="absolute top-1/3 left-[15%] w-4 h-4 rounded-full bg-primary-500/20 animate-bounce" style={{ animationDuration: '6s', animationDelay: '1s' }} />
+        <div className="absolute bottom-1/4 right-[8%] w-3 h-3 rounded-full bg-primary-600/25 animate-pulse" style={{ animationDuration: '5s', animationDelay: '0.3s' }} />
+        <div className="absolute top-2/3 left-[20%] w-2 h-2 rounded-full bg-primary-700/30 animate-ping" style={{ animationDuration: '3.5s', animationDelay: '0.8s' }} />
+        <div className="absolute bottom-10 right-[20%] w-5 h-5 rounded-full bg-primary-300/20 animate-bounce" style={{ animationDuration: '7s', animationDelay: '0.2s' }} />
+        
+        <div className="absolute top-40 left-[30%] text-primary-400/25 text-4xl font-thin animate-pulse" style={{ animationDuration: '8s' }}>+</div>
+        <div className="absolute bottom-32 left-[10%] text-primary-500/20 text-3xl font-thin animate-ping" style={{ animationDuration: '5s', animationDelay: '0.4s' }}>+</div>
+        <div className="absolute top-1/2 right-[15%] text-primary-600/30 text-5xl font-thin animate-bounce" style={{ animationDuration: '6s', animationDelay: '1.2s' }}>+</div>
+        <div className="absolute bottom-20 right-[25%] text-primary-300/25 text-4xl font-thin animate-pulse" style={{ animationDuration: '4.5s', animationDelay: '0.6s' }}>+</div>
+        <div className="absolute top-24 right-[40%] text-primary-700/20 text-2xl font-thin animate-ping" style={{ animationDuration: '3s', animationDelay: '0.1s' }}>+</div>
+        <div className="absolute bottom-40 left-[35%] text-primary-400/20 text-3xl font-thin animate-bounce" style={{ animationDuration: '5.5s', animationDelay: '0.9s' }}>+</div>
+        
+        <div className="absolute top-1/4 right-[5%] w-1.5 h-1.5 rounded-full bg-primary-200/40 animate-pulse" style={{ animationDuration: '3s', animationDelay: '0.7s' }} />
+        <div className="absolute bottom-1/3 left-[40%] w-2.5 h-2.5 rounded-full bg-primary-400/30 animate-ping" style={{ animationDuration: '4s', animationDelay: '0.2s' }} />
+        <div className="absolute top-3/4 right-[30%] w-2 h-2 rounded-full bg-primary-500/25 animate-bounce" style={{ animationDuration: '5s', animationDelay: '1.5s' }} />
+        <div className="absolute top-10 left-[60%] w-3 h-3 rounded-full bg-primary-600/20 animate-pulse" style={{ animationDuration: '6s', animationDelay: '0.4s' }} />
+        <div className="absolute bottom-10 left-[70%] w-1.5 h-1.5 rounded-full bg-primary-300/35 animate-ping" style={{ animationDuration: '3.8s', animationDelay: '0.6s' }} />
+        <div className="absolute top-1/2 left-[45%] text-primary-500/20 text-4xl font-thin animate-pulse" style={{ animationDuration: '7s', animationDelay: '0.5s' }}>+</div>
+        <div className="absolute bottom-1/4 left-[55%] w-2 h-2 rounded-full bg-primary-700/25 animate-bounce" style={{ animationDuration: '4.2s', animationDelay: '1.1s' }} />
+        <div className="absolute top-32 left-[75%] w-4 h-4 rounded-full bg-primary-400/20 animate-ping" style={{ animationDuration: '5s', animationDelay: '0.3s' }} />
+        <div className="absolute bottom-48 right-[5%] text-primary-300/20 text-3xl font-thin animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.8s' }}>+</div>
       </div>
 
-      {/* Floating Geometric Shapes */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {shapes.map((shape, i) => (
-          <FloatingShape key={i} {...shape} />
-        ))}
-      </div>
+      <div className="container-custom relative z-10">
+        {/* <SectionHeading
+          subtitle="Virtual Experience"
+          title="Explore Our Virtual Gallery"
+          description="Step into our immersive 360° virtual gallery. Walk through the space, examine exhibits up close, and experience our work from anywhere in the world."
+        /> */}
 
-      {/* Glowing Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4">
-          <GlowingOrb size={300} delay={0} />
-        </div>
-        <div className="absolute bottom-1/4 right-1/4">
-          <GlowingOrb size={250} delay={1} />
-        </div>
-        <div className="absolute top-1/2 right-1/3">
-          <GlowingOrb size={200} delay={2} />
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <motion.div 
-        className="relative z-10 min-h-screen flex items-center justify-center px-6 py-20"
-        style={{
-          transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)`,
-          transition: 'transform 0.3s ease-out',
-        }}
-      >
-        <motion.div
-          className="max-w-4xl mx-auto text-center"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+        {/* Gallery Container - Professional Card Style */}
+        <div 
+          ref={containerRef}
+          className={`
+            relative mx-auto shadow-2xl overflow-hidden 
+            bg-black/5 backdrop-blur-sm transition-all duration-500
+            ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'w-full h-[90vh]'}
+          `}
+          style={{
+            height: isFullscreen ? '100vh' : 'clamp(300px, 90vh, 100vh)',
+          }}
         >
-
-          {/* Badge */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <span className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary text-sm font-medium">
-              <Zap className="w-4 h-4" />
-              <span className="tracking-wider">Art By Bayshore</span>
-            </span>
-          </motion.div>
-
-          {/* Main Heading */}
-          <motion.h1 
-            variants={itemVariants}
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold text-primary mb-6 leading-tight"
-          >
-            Virtual Gallery
-            <br />
-            <span className="relative inline-block mt-2">
-              Coming Soon
-              <motion.div
-                className="absolute -bottom-2 left-0 w-full h-1 bg-primary"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 1, delay: 1.5 }}
-              />
-            </span>
-          </motion.h1>
-
-          {/* Description */}
-          <motion.p 
-            variants={itemVariants}
-            className="text-xl sm:text-2xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed"
-          >
-            Experience art in a whole new dimension. Explore our immersive 
-            virtual gallery powered by cutting-edge AI technology.
-          </motion.p>
-
-          {/* Features Grid */}
-          <motion.div 
-            variants={itemVariants}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16 max-w-3xl mx-auto"
-          >
-            {[
-              { icon: Eye, label: '360° Views', desc: 'Immersive Experience' },
-              { icon: Sparkles, label: 'AI Curated', desc: 'Personalized Tours' },
-              { icon: Layers, label: '3D Spaces', desc: 'Virtual Environments' },
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ y: -5, scale: 1.02 }}
-                className="p-6 border border-gray-900/10 hover:border-gray-900 transition-all duration-300 bg-white/50 backdrop-blur-sm"
-              >
-                <feature.icon className="w-8 h-8 text-primary mx-auto mb-3" strokeWidth={1.5} />
-                <h3 className="font-bold text-primary mb-1">{feature.label}</h3>
-                <p className="text-sm text-gray-600">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Back to Home */}
-          <motion.div variants={itemVariants}>
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-primary hover:text-secondaru transition-colors group"
-            >
-              <span className="relative">
-                Back to Home
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-gray-900 group-hover:w-full transition-all duration-300" />
-              </span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
-
-          {/* Decorative Line */}
-          <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 1.5, delay: 2 }}
-            className="w-32 h-px bg-gray-900/20 mx-auto mt-16"
+          {/* Gradient Overlay for depth */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-900/5 to-transparent pointer-events-none z-10 rounded-2xl" />
+          
+          {/* Iframe - Fully Responsive */}
+          <iframe
+            ref={iframeRef}
+            src={embedCode}
+            className="w-full h-full border-0"
+            allowFullScreen
+            allow="autoplay; fullscreen; xr-spatial-tracking"
+            title="Buildcare Virtual Gallery - 360° Art Exhibition Tour"
           />
-        </motion.div>
-      </motion.div>
 
-      {/* Corner Decorations */}
-      <div className="absolute top-0 left-0 w-32 h-32 border-l-2 border-t-2 border-gray-900/10 pointer-events-none" />
-      <div className="absolute top-0 right-0 w-32 h-32 border-r-2 border-t-2 border-gray-900/10 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-32 h-32 border-l-2 border-b-2 border-gray-900/10 pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-32 h-32 border-r-2 border-b-2 border-gray-900/10 pointer-events-none" />
+          {/* Floating Controls - Professional UI */}
+          <div className="absolute bottom-4 right-4 flex gap-3 z-20">
+            {/* Info Button */}
+            <button
+              onClick={() => setIsInfoVisible(!isInfoVisible)}
+              className="w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center text-gray-700 hover:text-primary-600 hover:bg-white transition-all duration-300 cursor-pointer border border-gray-200/50"
+              aria-label="Gallery information"
+            >
+              <Info className="w-5 h-5" />
+            </button>
 
-      {/* Animated Scanlines */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.01) 2px, rgba(0,0,0,0.01) 4px)',
-        }}
-        animate={{ opacity: [0.5, 0.2, 0.5] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-      />
-    </div>
+            {/* Fullscreen Toggle Button */}
+            <button
+              onClick={toggleFullscreen}
+              className="w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center text-gray-700 hover:text-primary-600 hover:bg-white transition-all duration-300 cursor-pointer border border-gray-200/50"
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
+          </div>
+
+          {/* Info Panel - Animated */}
+          <AnimatePresence>
+            {isInfoVisible && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-20 right-4 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-xl p-4 z-20 border border-gray-100"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-heading font-semibold text-gray-900">Virtual Gallery Tour</h4>
+                  <button 
+                    onClick={() => setIsInfoVisible(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mb-3">
+                  Navigate through our immersive 360° exhibition space. Click and drag to look around, 
+                  or use the on-screen controls to walk through the gallery.
+                </p>
+                <div className="flex items-center text-xs text-primary-600 gap-1">
+                  <ExternalLink className="w-3 h-3" />
+                  <span>Powered by ArtSteps</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Gallery Footer - Tips & Instructions */}
+        <div className="max-w-3xl mx-auto mt-8 text-center">
+          <p className="text-sm text-gray-500 flex items-center justify-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full">
+              <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
+              Click & drag to look around
+            </span>
+            <span className="inline-flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full">
+              <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
+              Use arrow keys or on-screen buttons to move
+            </span>
+            <span className="inline-flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full">
+              <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
+              Fullscreen for best experience
+            </span>
+          </p>
+        </div>
+      </div>
+    </section>
   );
-};
-
-export default VirtualGallery;
+}
