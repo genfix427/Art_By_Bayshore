@@ -117,6 +117,14 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ROOT ROUTE
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Backend is running successfully',
+  });
+});
+
 // API Routes
 const API_VERSION = process.env.API_VERSION || 'v1';
 app.use(`/api/${API_VERSION}/auth`, authRoutes);
