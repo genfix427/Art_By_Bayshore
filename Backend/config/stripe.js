@@ -14,7 +14,7 @@ if (!stripeKey) {
 }
 
 const stripe = new Stripe(stripeKey, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2023-10-16', // #2026-01-28.clover
   typescript: false,
 });
 

@@ -72,7 +72,7 @@ app.use(helmet({
 
 // CORS configuration
 const corsOptions = {
-  origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL],
+  origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL, "https://www.artbybayshore.com", "https://artbybayshore.com", "https://admin.artbybayshore.com/", "https://www.admin.artbybayshore.com/"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
