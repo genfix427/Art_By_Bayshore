@@ -496,7 +496,7 @@ const ProductCard = ({ product, index = 0 }) => {
           {!isAskForPrice && (
             <>
               {isOutOfStock ? (
-                <Tooltip text="Sold Out">
+                <Tooltip text="Sold">
                   <div className="p-3 bg-gray-100 rounded-full opacity-50 cursor-not-allowed">
                     <Package className="w-5 h-5 text-gray-400" />
                   </div>
@@ -534,7 +534,7 @@ const ProductCard = ({ product, index = 0 }) => {
           )}
           {isOutOfStock && (
             <span className="bg-red-100 text-red-600 px-2 py-0.5 text-xs font-medium">
-              Sold Out
+              Sold
             </span>
           )}
         </div>

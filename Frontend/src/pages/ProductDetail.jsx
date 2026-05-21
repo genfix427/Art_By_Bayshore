@@ -1298,7 +1298,7 @@ const ProductDetails = () => {
                   ) : product.stockQuantity <= 5 ? (
                     <span className="text-sm text-amber-600 font-medium flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
-                      Only {product.stockQuantity} left in stock
+                      In stock
                     </span>
                   ) : (
                     <span className="text-sm text-emerald-600 font-medium flex items-center gap-1.5">
@@ -1316,7 +1316,7 @@ const ProductDetails = () => {
             {!isSoldOut ? (
               <div className="space-y-4">
                 {/* Quantity selector */}
-                {!isAskForPrice && (
+                {/* {!isAskForPrice && (
                   <div className="flex items-center justify-center gap-4">
                     <span 
                       className="text-sm"
@@ -1354,7 +1354,7 @@ const ProductDetails = () => {
                       </button>
                     </div>
                   </div>
-                )}
+                )} */}
 
                 {/* Main CTA */}
                 {isAskForPrice ? (

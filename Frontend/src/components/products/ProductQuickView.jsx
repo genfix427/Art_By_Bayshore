@@ -447,7 +447,7 @@ const ProductQuickView = ({ product, isOpen, onClose }) => {
                           <span>Adding...</span>
                         </>
                       ) : isOutOfStock ? (
-                        'Sold Out'
+                        'Sold'
                       ) : (
                         <>
                           <ShoppingCart size={18} className="mr-2" />
